@@ -6,9 +6,9 @@ Gem::Specification.new do |spec|
   spec.name = "aircana"
   spec.version = Aircana::VERSION
   spec.authors = ["Weston Dransfield"]
-  spec.homepage ="https://github.com/westonkd"
+  spec.homepage = "https://github.com/westonkd"
 
-  spec.summary = "Workflow utilities for engineering with agents"
+  spec.summary = "Humble workflow and context utilities for engineering with agents"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3.0"
 
