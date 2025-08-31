@@ -2,6 +2,6 @@
 
 # frozen_string_literal: true
 
-require "arcana/cli/app"
+require "aircana"
 
-Arcana::CLI.start(ARGV)
+Aircana::CLI::App.start(ARGV)

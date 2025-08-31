@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "lib/arcana/version"
+require_relative "lib/aircana/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "arcana"
-  spec.version = Arcana::VERSION
+  spec.name = "aircana"
+  spec.version = Aircana::VERSION
   spec.authors = ["Weston Dransfield"]
   spec.homepage ="https://github.com/westonkd"
 
