@@ -7,6 +7,7 @@ WORKDIR /app
 COPY . .
 
 RUN chown -R docker:docker /app
+RUN chown -R docker:docker /usr/local
 
 WORKDIR /app/arcana
 USER docker
