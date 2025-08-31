@@ -1,0 +1,14 @@
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+compose.yml
+.DS_Store
+node_modules
+*.log
+tmp/
+.byebug_history
+coverage/
+.rspec
+spec/

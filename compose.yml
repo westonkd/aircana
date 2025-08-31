@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    working_dir: /app/my_project
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+    stdin_open: true
+    tty: true
+
+volumes:
+  bundle_cache:

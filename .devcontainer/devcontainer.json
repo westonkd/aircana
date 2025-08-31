@@ -1,0 +1,36 @@
+{
+  "name": "Aircana",
+  "dockerComposeFile": "../compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-extensions-pack",
+        "Shopify.ruby-lsp",
+        "LoranKloeze.ruby-rubocop-revived"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "ruby.lsp.enabledFeatures": {
+          "codeActions": true,
+          "diagnostics": true,
+          "documentHighlights": true,
+          "documentLink": true,
+          "documentSymbols": true,
+          "foldingRanges": true,
+          "formatting": true,
+          "hover": true,
+          "inlayHint": true,
+          "onTypeFormatting": true,
+          "selectionRanges": true,
+          "semanticHighlighting": true,
+          "completion": true
+        }
+      }
+    }
+  },
+  "postCreateCommand": "echo 'Dev container ready!'",
+  "remoteUser": "docker"
+}
