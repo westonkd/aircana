@@ -4,6 +4,7 @@ require "logger"
 require_relative "aircana/version"
 require_relative "aircana/configuration"
 require_relative "aircana/cli"
+require_relative "aircana/generators"
 
 module Aircana
   class Error < StandardError; end
@@ -24,9 +25,15 @@ module Aircana
     def initialize!
       return if @initialized
 
-      logger.debug "Aircana gem initialized"
+      create_dir_if_needed(configuration.relevant_project_files_dir)
 
       @initialized = true
+    end
+
+    def create_dir_if_needed(directory)
+      return if Dir.exist?(directory)
+
+      FileUtils.mkdir_p(directory)
     end
   end
 end

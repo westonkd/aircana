@@ -8,7 +8,8 @@ module Aircana
     module DumpContext
       class << self
         def run(agent_name:, verbose: true)
-          print Contexts::RelevantFiles.to_s(verbose:)
+          Aircana.logger.level = Logger::ERROR
+          Contexts::RelevantFiles.print(verbose:)
         end
 
         private

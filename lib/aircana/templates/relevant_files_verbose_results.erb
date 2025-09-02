@@ -1,0 +1,18 @@
+# Relevant Files
+<%=
+    helpers.model_instructions(
+        <<~INSTRUCTIONS
+          The following files are considered important for the current task.
+
+          Use them for:
+            - Understanding task context
+            - Examples of how to structure your solutions
+        INSTRUCTIONS
+    )
+%>
+<% relevant_files.each do |file_path| %>
+## File: <%= File.realpath(file_path) %>
+```
+<%= File.read(file_path) %>
+```
+<% end %>

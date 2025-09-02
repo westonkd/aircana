@@ -4,21 +4,17 @@ module Aircana
   module Contexts
     class RelevantFiles
       class << self
-        def to_s(verbose: false)
-          create_dir_if_needed
-
-          Dir.glob("#{Aircana.configuration.relevant_project_files_dir}/*").map do |file|
-            real_path = File.realpath(file)
-            content = File.read(file).to_s
-
-            verbose ? "# In #{real_path}\n\n#{content}" : real_path
-          end.join("\n")
+        # TODO: Honor the provided verbose flag
+        def print(verbose: false)
+          verbose_generator(default_stream: true).generate
         end
 
         def add(files)
           files = Array(files)
 
-          create_dir_if_needed
+          return if files.empty?
+
+          Aircana.create_dir_if_needed(Aircana.configuration.relevant_project_files_dir)
 
           files.each do |file|
             absolute_file_path = File.expand_path(file)
@@ -27,15 +23,23 @@ module Aircana
             File.unlink(link_path) if File.exist?(link_path)
             File.symlink(absolute_file_path, link_path)
           end
+
+          rewrite_verbose_file
         end
 
         def remove(files)
           files = Array(files)
 
+          return if files.empty?
+
+          Aircana.create_dir_if_needed(Aircana.configuration.relevant_project_files_dir)
+
           files.each do |file|
             link_path = "#{Aircana.configuration.relevant_project_files_dir}/#{File.basename(file)}"
             File.unlink(link_path) if File.exist?(link_path)
           end
+
+          rewrite_verbose_file
         end
 
         def remove_all
@@ -44,19 +48,26 @@ module Aircana
           Dir.glob("#{Aircana.configuration.relevant_project_files_dir}/*").each do |file|
             File.unlink(file) if File.exist?(file)
           end
+
+          return unless Dir.empty?(Aircana.configuration.relevant_project_files_dir)
+
+          Dir.rmdir(Aircana.configuration.relevant_project_files_dir)
         end
 
         private
 
-        def directory_exists?
-          Dir.exist?(Aircana.configuration.relevant_project_files_dir)
+        def rewrite_verbose_file
+          verbose_generator.generate
         end
 
-        def create_dir_if_needed
-          # check if Aircana.configuration.relevant_project_files_dir exists. If not create it
-          return if directory_exists?
+        def verbose_generator(default_stream: false)
+          Generators::RelevantFilesVerboseResultsGenerator.new(
+            file_out: default_stream ? Aircana.configuration.stream : nil
+          )
+        end
 
-          FileUtils.mkdir_p(Aircana.configuration.relevant_project_files_dir)
+        def directory_exists?
+          Dir.exist?(Aircana.configuration.relevant_project_files_dir)
         end
       end
     end
