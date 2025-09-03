@@ -1,6 +1,6 @@
 # Aircana
 
-A humble utility for context management and SE workflows with AI agents.
+An in-progress, humble utility for context management and SE workflows with AI agents.
 
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/aircana.svg)](https://badge.fury.io/rb/aircana)
@@ -56,6 +56,7 @@ aircana install
 ## Concepts
 
 ### Knowledge
+TODO
 **Third-party Knowledge** - External documentation and references
 
 **Long-term Memory** - Persistent context across sessions
@@ -65,6 +66,7 @@ aircana install
 **Relevant Files** - Current working set of important files
 
 ### Agents
+TODO
 **Knowledge Encapsulation**
 - Long-term Memory
 - Domain Knowledge
