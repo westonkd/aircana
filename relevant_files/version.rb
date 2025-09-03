@@ -1,1 +1,0 @@
-/app/lib/aircana/version.rb

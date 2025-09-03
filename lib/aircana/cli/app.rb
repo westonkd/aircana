@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
 require "thor"
+
 require_relative "./commands/add_files"
 require_relative "./commands/clear_files"
 require_relative "./commands/dump_context"
+require_relative "./commands/generate"
+require_relative "./commands/install"
 
 module Aircana
   module CLI
@@ -29,6 +32,16 @@ module Aircana
       option :verbose, type: :boolean, default: true
       def dump_context(agent_name)
         DumpContext.run(agent_name: agent_name, verbose: options[:verbose])
+      end
+
+      desc "generate", "Generates all configured files and dumps the configured output directory"
+      def generate
+        Generate.run
+      end
+
+      desc "install", "Copies the generated files from `generate` to the proper directories in Claude Code config."
+      def install
+        Install.run
       end
     end
   end

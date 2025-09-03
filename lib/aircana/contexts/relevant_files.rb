@@ -57,7 +57,10 @@ module Aircana
         private
 
         def rewrite_verbose_file
-          verbose_generator.generate
+          bytes = verbose_generator.generate
+
+          # TODO: If the verbose file uses too many tokens, warn and instead use only
+          # the summary generatior or do something smart like summarize file contents
         end
 
         def verbose_generator(default_stream: false)

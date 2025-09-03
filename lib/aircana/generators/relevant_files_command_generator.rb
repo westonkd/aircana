@@ -15,7 +15,7 @@ module Aircana
       protected
 
       def locals
-        super.merge({ relevant_project_files_dir: })
+        super.merge({ relevant_project_files_path: })
       end
 
       private
@@ -25,11 +25,11 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "relevant_files_command.md")
+        File.join(Aircana.configuration.output_dir, "commands", "ac-add-relevant-files.md")
       end
 
-      def relevant_project_files_dir
-        Aircana.configuration.relevant_project_files_dir
+      def relevant_project_files_path
+        File.join(Aircana.configuration.relevant_project_files_dir, "relevant_files.md")
       end
     end
   end

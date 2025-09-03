@@ -6,7 +6,7 @@ module Aircana
       class << self
         def model_instructions(instructions, important: false)
           <<~INSTRUCTIONS
-            INSTRUCTIONS#{"**IMPORTANT**" if important}:
+            INSTRUCTIONS#{"IMPORTANT" if important}:
             #{instructions}
           INSTRUCTIONS
         end

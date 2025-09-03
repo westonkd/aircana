@@ -8,46 +8,66 @@ Use them for:
 
 
 
-## File: /app/lib/aircana/cli/commands/add_files.rb
+## File: /app/lib/aircana/cli.rb
 ```
 # frozen_string_literal: true
 
-require_relative "../shell_command"
-require_relative "../../contexts/relevant_files"
+require_relative "./cli/app"
+
+module Aircana::CLI
+end
+
+```
+
+## File: /app/lib/aircana/initializers.rb
+```
+# frozen_string_literal: true
+
+require_relative "initializers/project_configuration"
 
 module Aircana
-  module CLI
-    module AddFiles
-      class << self
-        def run
-          selected_files = ShellCommand.run("fzf -m")
-
-          selected_files = selected_files.split("\n").map(&:strip).reject(&:empty?)
-
-          if selected_files.empty?
-            Aircana.logger.info "No files selected. Exiting."
-            return
-          end
-
-          # For now remove all files from the relevant files context, but consider
-          # making this a more explicit action
-          Contexts::RelevantFiles.remove_all
-          Contexts::RelevantFiles.add(selected_files)
-        end
-      end
-    end
+  module Initializers
   end
 end
 
 ```
 
-## File: /app/lib/aircana/version.rb
+## File: /app/relevant_files/relevant_files.md
+```
+# Relevant Files
+INSTRUCTIONS:
+The following files are considered important for the current task.
+
+Use them for:
+  - Understanding task context
+  - Examples of how to structure your solutions
+
+
+
+## File: /app/lib/aircana/cli.rb
 ```
 # frozen_string_literal: true
 
-module Aircana
-  VERSION = "0.1.0"
+require_relative "./cli/app"
+
+module Aircana::CLI
 end
+
+```
+
+## File: /app/lib/aircana/initializers.rb
+```
+# frozen_string_literal: true
+
+require_relative "initializers/project_configuration"
+
+module Aircana
+  module Initializers
+  end
+end
+
+```
+
 
 ```
 
