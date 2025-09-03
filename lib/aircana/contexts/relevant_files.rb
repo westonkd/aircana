@@ -5,7 +5,7 @@ module Aircana
     class RelevantFiles
       class << self
         # TODO: Honor the provided verbose flag
-        def print(verbose: false)
+        def print(_verbose: false)
           verbose_generator(default_stream: true).generate
         end
 
@@ -20,7 +20,7 @@ module Aircana
             absolute_file_path = File.expand_path(file)
             link_path = "#{Aircana.configuration.relevant_project_files_dir}/#{File.basename(file)}"
 
-            File.unlink(link_path) if File.exist?(link_path)
+            FileUtils.rm_f(link_path)
             File.symlink(absolute_file_path, link_path)
           end
 
@@ -36,7 +36,7 @@ module Aircana
 
           files.each do |file|
             link_path = "#{Aircana.configuration.relevant_project_files_dir}/#{File.basename(file)}"
-            File.unlink(link_path) if File.exist?(link_path)
+            FileUtils.rm_f(link_path)
           end
 
           rewrite_verbose_file
@@ -46,7 +46,7 @@ module Aircana
           return unless directory_exists?
 
           Dir.glob("#{Aircana.configuration.relevant_project_files_dir}/*").each do |file|
-            File.unlink(file) if File.exist?(file)
+            FileUtils.rm_f(file)
           end
 
           return unless Dir.empty?(Aircana.configuration.relevant_project_files_dir)
@@ -58,6 +58,9 @@ module Aircana
 
         def rewrite_verbose_file
           verbose_generator.generate
+
+          # TODO: If the verbose file uses too many tokens, warn and instead use only
+          # the summary generatior or do something smart like summarize file contents
         end
 
         def verbose_generator(default_stream: false)

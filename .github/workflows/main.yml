@@ -3,12 +3,12 @@ name: Ruby
 on:
   push:
     branches:
-      - 
-
+      - main
+      - master
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
     strategy:
@@ -23,5 +23,12 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
-    - name: Run the default task
-      run: bundle exec rake
+
+    - name: Run RuboCop
+      run: bundle exec rubocop
+
+    - name: Run tests
+      run: bundle exec rspec
+
+    - name: Build gem
+      run: gem build aircana.gemspec

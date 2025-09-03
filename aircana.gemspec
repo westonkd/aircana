@@ -6,13 +6,20 @@ Gem::Specification.new do |spec|
   spec.name = "aircana"
   spec.version = Aircana::VERSION
   spec.authors = ["Weston Dransfield"]
-  spec.homepage = "https://github.com/westonkd"
+  spec.email = ["weston@dransfield.dev"]
+  spec.homepage = "https://github.com/westonkd/aircana"
 
   spec.summary = "Humble workflow and context utilities for engineering with agents"
+  spec.description = "Aircana provides context management and workflow utilities for " \
+                     "software engineering with AI agents, including file organization and template generation."
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = "https://github.com/westonkd/aircana"
+  spec.metadata["changelog_uri"] = "https://github.com/westonkd/aircana/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/westonkd/aircana/issues"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

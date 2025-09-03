@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "./cli/app"
+require_relative "cli/app"
 
-module Aircana::CLI
+module Aircana
+  module CLI
+  end
 end

@@ -2,7 +2,7 @@
 
 require "erb"
 require "fileutils"
-require_relative "./helpers"
+require_relative "helpers"
 
 module Aircana
   module Generators
@@ -15,22 +15,31 @@ module Aircana
       end
 
       def generate
-        FileUtils.mkdir_p(File.dirname(file_out)) if file_out.is_a?(String)
+        prepare_output_directory
+        content = generate_content
+        write_content(content)
+      end
 
+      private
+
+      def prepare_output_directory
+        return unless file_out.is_a?(String)
+
+        FileUtils.mkdir_p(File.dirname(file_out))
+      end
+
+      def generate_content
         erb = ERB.new(template)
-
         Aircana.logger.info "Generating #{file_out} from #{file_in}"
         Aircana.logger.debug "With locals: #{locals}"
+        erb.result_with_hash(locals)
+      end
 
-        result = erb.result_with_hash(locals)
-
-        # Existing streams like STDOUT
+      def write_content(content)
         if file_out.respond_to?(:write)
-          file_out.write(result)
+          file_out.write(content)
         else
-          File.open(file_out, "w") do |file|
-            file.write(result)
-          end
+          File.write(file_out, content)
         end
       end
 
