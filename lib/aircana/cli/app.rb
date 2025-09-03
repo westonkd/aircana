@@ -2,11 +2,11 @@
 
 require "thor"
 
-require_relative "./commands/add_files"
-require_relative "./commands/clear_files"
-require_relative "./commands/dump_context"
-require_relative "./commands/generate"
-require_relative "./commands/install"
+require_relative "commands/add_files"
+require_relative "commands/clear_files"
+require_relative "commands/dump_context"
+require_relative "commands/generate"
+require_relative "commands/install"
 
 module Aircana
   module CLI

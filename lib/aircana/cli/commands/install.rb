@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "./generate"
+require_relative "generate"
 
 module Aircana
   module CLI

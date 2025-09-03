@@ -18,7 +18,7 @@ module Aircana
       @output_dir = File.join(@global_dir, "aircana.out")
 
       # Where is claude code's configuration stored?
-      @claude_code_config_path = @global_dir = File.join(Dir.home, ".claude")
+      @claude_code_config_path = File.join(Dir.home, ".claude")
 
       # Default stream to write command output to
       @stream = $stdout

@@ -6,6 +6,7 @@ RSpec.describe Aircana do
   end
 
   it "does something useful" do
-    expect(false).to eq(true)
+    expect(Aircana).to respond_to(:configuration)
+    expect(Aircana).to respond_to(:logger)
   end
 end

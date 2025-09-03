@@ -2,7 +2,7 @@
 
 require "erb"
 require "fileutils"
-require_relative "./helpers"
+require_relative "helpers"
 
 module Aircana
   module Generators
@@ -28,9 +28,7 @@ module Aircana
         if file_out.respond_to?(:write)
           file_out.write(result)
         else
-          File.open(file_out, "w") do |file|
-            file.write(result)
-          end
+          File.write(file_out, result)
         end
       end
 
