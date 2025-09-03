@@ -7,7 +7,7 @@ module Aircana
   module CLI
     module DumpContext
       class << self
-        def run(agent_name:, verbose: true)
+        def run(_agent_name:, verbose: true)
           Aircana.logger.level = Logger::ERROR
           Contexts::RelevantFiles.print(verbose:)
         end

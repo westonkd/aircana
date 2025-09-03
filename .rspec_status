@@ -1,6 +1,6 @@
 example_id                                  | status | run_time        |
 ------------------------------------------- | ------ | --------------- |
-./spec/aircana/configuration_spec.rb[1:1:1] | passed | 0.00033 seconds |
+./spec/aircana/configuration_spec.rb[1:1:1] | passed | 0.00032 seconds |
 ./spec/aircana/configuration_spec.rb[1:2:1] | passed | 0.00004 seconds |
-./spec/aircana_spec.rb[1:1]                 | passed | 0.00143 seconds |
-./spec/aircana_spec.rb[1:2]                 | passed | 0.00046 seconds |
+./spec/aircana_spec.rb[1:1]                 | passed | 0.00024 seconds |
+./spec/aircana_spec.rb[1:2]                 | passed | 0.00043 seconds |

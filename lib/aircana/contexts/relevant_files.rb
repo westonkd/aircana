@@ -5,7 +5,7 @@ module Aircana
     class RelevantFiles
       class << self
         # TODO: Honor the provided verbose flag
-        def print(verbose: false)
+        def print(_verbose: false)
           verbose_generator(default_stream: true).generate
         end
 
