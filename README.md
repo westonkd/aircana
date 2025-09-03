@@ -1,6 +1,8 @@
 # Aircana
 
-An in-progress, humble utility for context management and SE workflows with AI agents.
+An in-progress, humble utility for context management and SE workflows with AI agents (specifically, Claude Code).
+
+This document is a work in progress and will be updated as the project reaches its first release.
 
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/aircana.svg)](https://badge.fury.io/rb/aircana)
@@ -23,22 +25,22 @@ Or install it yourself as:
 
 ## Usage
 
-### Adding Files to Context
+### Adding "Relevant Files"
 
 ```bash
-aircana add_files
+aircana add-files
 ```
 
-### Viewing Current Context
+### Clearing "Relevant Files"
 
 ```bash
-aircana dump_context agent_name
+aircana clear-files
 ```
 
-### Clearing Context
+### Viewing an agent's current context
 
 ```bash
-aircana clear_files
+aircana dump-context <agent name>
 ```
 
 ### Generating Templates
@@ -57,11 +59,18 @@ aircana install
 
 ### Knowledge
 TODO
-**Third-party Knowledge** - External documentation and references
 
-**Long-term Memory** - Persistent context across sessions
+#### Third-party
+Knowledge of third-party libraries, frameworks, etc
 
-**Domain Knowledge** - Project-specific understanding
+**Strategy**: Existing MCP tools and servers (Context7, AWS MCP tools, etc.)
+
+#### Long-term
+Persistent key memories and decisions paritioned by agent and project.
+
+**Strategy**: SessionEnd Hook to capture key details from Claude Code session.
+
+**Domain** - Project-specific understanding
 
 **Relevant Files** - Current working set of important files
 
