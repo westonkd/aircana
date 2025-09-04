@@ -12,7 +12,7 @@ module Aircana
       @project_dir = Dir.pwd
 
       # Where are links to relevant project files stored?
-      @relevant_project_files_dir = File.join(@project_dir, "relevant_files")
+      @relevant_project_files_dir = File.join(@project_dir, ".aircana", "relevant_files")
 
       # Where should `generate` write files by default?
       @output_dir = File.join(@global_dir, "aircana.out")
