@@ -24,6 +24,7 @@ Or install it yourself as:
     $ gem install aircana
 
 ## Usage
+This section is very much in the "TODO" category. A clear guide and best practices section will be added.
 
 ### Adding "Relevant Files"
 

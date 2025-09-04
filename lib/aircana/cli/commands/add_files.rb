@@ -17,9 +17,6 @@ module Aircana
             return
           end
 
-          # For now remove all files from the relevant files context, but consider
-          # making this a more explicit action
-          Contexts::RelevantFiles.remove_all
           Contexts::RelevantFiles.add(selected_files)
         end
       end
