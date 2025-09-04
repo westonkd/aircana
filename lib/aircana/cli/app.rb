@@ -3,6 +3,7 @@
 require "thor"
 
 require_relative "commands/add_files"
+require_relative "commands/add_directory"
 require_relative "commands/clear_files"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
@@ -19,6 +20,12 @@ module Aircana
            "interactively add files or file groups to the current context. Use tab to mark multiple files."
       def add_files
         AddFiles.run
+      end
+
+      desc "add-dir DIRECTORY_PATH",
+           "add all files from the specified directory recursively to the current context"
+      def add_dir(directory_path)
+        AddDirectory.run(directory_path)
       end
 
       desc "clear-files",
