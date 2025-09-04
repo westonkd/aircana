@@ -15,19 +15,19 @@ module Aircana
       package_name "Aircana"
 
       # TODO: Decide how to represent and store file groups
-      desc "add files to 'relevant files'",
+      desc "add-files",
            "interactively add files or file groups to the current context. Use tab to mark multiple files."
       def add_files
         AddFiles.run
       end
 
-      desc "clear files from 'relevant files'",
+      desc "clear-files",
            "Removes all files from the current set of 'relevant files'"
       def clear_files
         ClearFiles.run
       end
 
-      desc "dump context for the specified agent",
+      desc "dump-context",
            "dumps relevant files, knowledge, memories, and decisions for the specified agent"
       option :verbose, type: :boolean, default: true
       def dump_context(agent_name)
