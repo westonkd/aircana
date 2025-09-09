@@ -7,10 +7,11 @@ WORKDIR /app
 COPY . .
 
 RUN chown -R docker:docker /app
-RUN chown -R docker:docker /usr/local
 
 USER docker
 
+# Install gems to a path owned by docker user
+RUN bundle config set --local path '/app/vendor/bundle'
 RUN bundle install
 
 CMD ["tail", "-f", "/dev/null"]
