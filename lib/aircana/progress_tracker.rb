@@ -5,12 +5,12 @@ require "tty-progressbar"
 
 module Aircana
   class ProgressTracker
-    def self.with_spinner(message, success_message: nil)
+    def self.with_spinner(message, success_message: nil, item: nil)
       spinner = TTY::Spinner.new("[:spinner] #{message}", format: :dots, clear: true)
       spinner.auto_spin
 
       begin
-        result = yield
+        result = yield(item)
         spinner.success("✅ #{success_message || message}")
         result
       rescue StandardError => e
@@ -37,7 +37,7 @@ module Aircana
 
     def self.with_batch_progress(items, message, &)
       total = items.size
-      return with_spinner("#{message} (#{total} item)", &) if total <= 1
+      return with_spinner("#{message} (#{total} item)", item: items.first, &) if total <= 1
 
       process_batch_with_progress(items, total, message, &)
     end
