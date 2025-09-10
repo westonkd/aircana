@@ -3,7 +3,8 @@
 module Aircana
   class Configuration
     attr_accessor :global_dir, :project_dir, :relevant_project_files_dir, :stream, :output_dir,
-                  :claude_code_config_path, :claude_code_project_config_path
+                  :claude_code_config_path, :claude_code_project_config_path, :agent_knowledge_dir,
+                  :confluence_base_url, :confluence_api_token
 
     def initialize
       # Global configuration directory for Aircana
@@ -26,6 +27,13 @@ module Aircana
 
       # Default stream to write command output to
       @stream = $stdout
+
+      # Where are agent knowledge files stored?
+      @agent_knowledge_dir = File.join(@project_dir, ".aircana", "agents")
+
+      # Confluence API configuration
+      @confluence_base_url = nil
+      @confluence_api_token = nil
     end
   end
 end

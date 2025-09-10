@@ -1,0 +1,47 @@
+# frozen_string_literal: true
+
+require "fileutils"
+
+module Aircana
+  module Contexts
+    class Local
+      def store_content(title:, content:, agent:)
+        agent_dir = create_agent_knowledge_dir(agent)
+        filename = sanitize_filename(title)
+        filepath = File.join(agent_dir, "#{filename}.md")
+
+        File.write(filepath, content)
+        Aircana.logger.info "Stored '#{title}' for agent '#{agent}' at #{filepath}"
+
+        filepath
+      end
+
+      private
+
+      def create_agent_knowledge_dir(agent)
+        config = Aircana.configuration
+        agent_dir = File.join(config.agent_knowledge_dir, agent, "knowledge")
+
+        FileUtils.mkdir_p(agent_dir)
+
+        agent_dir
+      end
+
+      def sanitize_filename(title)
+        # Replace invalid characters with safe alternatives
+        # Remove or replace characters that are problematic in filenames
+        sanitized = title.strip
+                         .gsub(%r{[<>:"/\\|?*]}, "-") # Replace invalid chars with hyphens
+                         .gsub(/\s+/, "-")             # Replace spaces with hyphens
+                         .gsub(/-+/, "-")              # Collapse multiple hyphens
+                         .gsub(/^-|-$/, "")            # Remove leading/trailing hyphens
+
+        # Ensure the filename isn't empty and isn't too long
+        sanitized = "untitled" if sanitized.empty?
+        sanitized = sanitized[0, 200] if sanitized.length > 200 # Limit to 200 chars
+
+        sanitized
+      end
+    end
+  end
+end

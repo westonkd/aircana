@@ -11,6 +11,13 @@ module Aircana
       SUPPORTED_CLAUDE_COLORS = %w[red blue green yellow purple orange pink cyan].freeze
 
       class << self
+        def refresh(agent)
+          normalized_agent = normalize_string(agent)
+          perform_refresh(normalized_agent)
+        rescue Aircana::Error => e
+          handle_refresh_error(normalized_agent, e)
+        end
+
         def create # rubocop:disable Metrics/MethodLength
           prompt = TTY::Prompt.new
 
@@ -33,6 +40,31 @@ module Aircana
         end
 
         private
+
+        def perform_refresh(normalized_agent)
+          confluence = Aircana::Contexts::Confluence.new
+          pages_count = confluence.fetch_pages_for(agent: normalized_agent)
+
+          log_refresh_result(normalized_agent, pages_count)
+        end
+
+        def log_refresh_result(normalized_agent, pages_count)
+          if pages_count.positive?
+            Aircana.logger.info "Successfully refreshed #{pages_count} pages for agent '#{normalized_agent}'"
+          else
+            log_no_pages_found(normalized_agent)
+          end
+        end
+
+        def log_no_pages_found(normalized_agent)
+          Aircana.logger.info "No pages found for agent '#{normalized_agent}'. " \
+                              "Make sure pages are labeled with '#{normalized_agent}' in Confluence."
+        end
+
+        def handle_refresh_error(normalized_agent, error)
+          Aircana.logger.error "Failed to refresh agent '#{normalized_agent}': #{error.message}"
+          exit 1
+        end
 
         def normalize_string(string)
           string.strip.downcase.gsub(" ", "-")
