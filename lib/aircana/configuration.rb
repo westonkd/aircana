@@ -2,7 +2,8 @@
 
 module Aircana
   class Configuration
-    attr_accessor :global_dir, :project_dir, :relevant_project_files_dir, :stream, :output_dir, :claude_code_config_path
+    attr_accessor :global_dir, :project_dir, :relevant_project_files_dir, :stream, :output_dir,
+                  :claude_code_config_path, :claude_code_project_config_path
 
     def initialize
       # Global configuration directory for Aircana
@@ -19,6 +20,9 @@ module Aircana
 
       # Where is claude code's configuration stored?
       @claude_code_config_path = File.join(Dir.home, ".claude")
+
+      # Where is claude code's project configuration stored?
+      @claude_code_project_config_path = File.join(Dir.pwd, ".claude")
 
       # Default stream to write command output to
       @stream = $stdout

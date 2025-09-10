@@ -18,6 +18,8 @@ module Aircana
         prepare_output_directory
         content = generate_content
         write_content(content)
+
+        file_out
       end
 
       private
