@@ -16,6 +16,7 @@
 /lib/bundler/man/
 .byebug_history
 .aircana/
+.claude/
 
 # Logs
 *.log
