@@ -20,34 +20,34 @@ module Aircana
     end
 
     def self.with_progress_bar(total, message, &)
-      if total <= 1
-        # For single items, use a spinner instead
-        with_spinner(message, &)
-      else
-        # For multiple items, show progress bar
-        bar = TTY::ProgressBar.new(
-          "#{message} [:bar] :current/:total (:percent) :elapsed",
-          total: total,
-          bar_format: :box
-        )
+      return with_spinner(message, &) if total <= 1
 
-        yield(bar)
-        bar
-      end
+      create_and_use_progress_bar(total, message, &)
+    end
+
+    def self.create_and_use_progress_bar(total, message)
+      bar = TTY::ProgressBar.new(
+        "#{message} [:bar] :current/:total (:percent) :elapsed",
+        total: total,
+        bar_format: :box
+      )
+      yield(bar)
+      bar
     end
 
     def self.with_batch_progress(items, message, &)
       total = items.size
+      return with_spinner("#{message} (#{total} item)", &) if total <= 1
 
-      if total <= 1
-        with_spinner("#{message} (#{total} item)", &)
-      else
-        with_progress_bar(total, message) do |bar|
-          items.each_with_index do |item, index|
-            result = yield(item, index)
-            bar.advance(1)
-            result
-          end
+      process_batch_with_progress(items, total, message, &)
+    end
+
+    def self.process_batch_with_progress(items, total, message)
+      with_progress_bar(total, message) do |bar|
+        items.each_with_index do |item, index|
+          result = yield(item, index)
+          bar.advance(1)
+          result
         end
       end
     end

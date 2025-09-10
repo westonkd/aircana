@@ -21,3 +21,13 @@ Metrics/BlockLength:
 
 Layout/LineLength:
   Max: 120
+
+Metrics/ClassLength:
+  Exclude:
+    - 'lib/aircana/human_logger.rb'
+    - 'lib/aircana/system_checker.rb'
+    - 'lib/aircana/cli/commands/add_directory.rb'
+
+Metrics/ModuleLength:
+  Exclude:
+    - 'lib/aircana/cli/commands/add_directory.rb'

@@ -17,19 +17,25 @@ module Aircana
         validate_configuration!
         setup_httparty
 
+        pages = search_and_log_pages(agent)
+        return 0 if pages.empty?
+
+        process_pages(pages, agent)
+        pages.size
+      end
+
+      def search_and_log_pages(agent)
         pages = ProgressTracker.with_spinner("Searching for pages labeled '#{agent}'") do
           fetch_pages_by_label(agent)
         end
-
         log_pages_found(pages.size, agent)
+        pages
+      end
 
-        return 0 if pages.empty?
-
+      def process_pages(pages, agent)
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
           store_page_as_markdown(page, agent)
         end
-
-        pages.size
       end
 
       private

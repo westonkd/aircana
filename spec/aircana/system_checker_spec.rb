@@ -13,14 +13,14 @@ RSpec.describe Aircana::SystemChecker do
     allow(mock_logger).to receive(:warn)
   end
 
-  describe ".check_dependencies" do
+  describe ".check_dependencies?" do
     context "when all required dependencies are available" do
       before do
         allow(described_class).to receive(:system).and_return(true)
       end
 
       it "returns true and shows success message" do
-        result = described_class.check_dependencies
+        result = described_class.check_dependencies?
 
         expect(result).to be true
         expect(mock_logger).to have_received(:success).with("All dependencies satisfied!")
@@ -35,7 +35,7 @@ RSpec.describe Aircana::SystemChecker do
       end
 
       it "returns false and shows error messages with installation instructions" do
-        result = described_class.check_dependencies
+        result = described_class.check_dependencies?
 
         expect(result).to be false
         expect(mock_logger).to have_received(:error)
@@ -55,7 +55,7 @@ RSpec.describe Aircana::SystemChecker do
       end
 
       it "shows warnings for missing optional dependencies" do
-        described_class.check_dependencies(show_optional: true)
+        described_class.check_dependencies?(show_optional: true)
 
         expect(mock_logger).to have_received(:warn).with("Optional dependency missing: bat (enhanced file previews)")
         expect(mock_logger).to have_received(:info).with("  Fallback: head/cat for basic previews")

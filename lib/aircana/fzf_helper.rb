@@ -4,20 +4,27 @@ module Aircana
   class FzfHelper
     class << self
       def select_files_interactively(header: "Select files", multi: true)
-        unless command_available?("fzf")
-          handle_missing_dependency
-          return []
-        end
+        return [] unless fzf_available?
 
-        command = build_fzf_command(header: header, multi: multi)
-        result = `#{command}`.strip
-
-        return [] if result.empty?
-
-        result.split("\n").map(&:strip).reject(&:empty?)
+        execute_fzf_selection(header: header, multi: multi)
       rescue StandardError => e
         Aircana.human_logger.error "File selection failed: #{e.message}"
         []
+      end
+
+      def fzf_available?
+        return true if command_available?("fzf")
+
+        handle_missing_dependency
+        false
+      end
+
+      def execute_fzf_selection(header:, multi:)
+        command = build_fzf_command(header: header, multi: multi)
+        result = `#{command}`.strip
+        return [] if result.empty?
+
+        result.split("\n").map(&:strip).reject(&:empty?)
       end
 
       private
@@ -43,20 +50,25 @@ module Aircana
       end
 
       def base_fzf_options(header:, multi:)
-        options = []
-        options << "--multi" if multi
-        options << "--ansi"
-        options << "--border"
-        options << "--height=80%"
-        options << "--layout=reverse"
-        options << "--info=inline"
-        options << "--header='#{header}'"
-        options << "--header-lines=0"
-        options << "--prompt='❯ '"
-        options << "--pointer='▶'"
-        options << "--marker='✓'"
-
+        options = build_fzf_option_list(multi: multi)
+        options += build_fzf_display_options(header: header)
         options.join(" ")
+      end
+
+      def build_fzf_option_list(multi:)
+        options = ["--ansi", "--border", "--height=80%", "--layout=reverse", "--info=inline"]
+        options << "--multi" if multi
+        options
+      end
+
+      def build_fzf_display_options(header:)
+        [
+          "--header='#{header}'",
+          "--header-lines=0",
+          "--prompt='❯ '",
+          "--pointer='▶'",
+          "--marker='✓'"
+        ]
       end
 
       def preview_command_options

@@ -80,29 +80,64 @@ module Aircana
 
     def detect_context_emoji(message)
       message_lower = message.downcase
+      detect_context_based_emoji(message_lower) || detect_action_based_emoji(message_lower)
+    end
 
-      # Context-based detection first (more specific)
+    def detect_context_based_emoji(message_lower)
+      detect_content_emoji(message_lower) || detect_network_emoji(message_lower)
+    end
+
+    def detect_content_emoji(message_lower)
       return EMOJIS[:agent] if message_lower.include?("agent")
       return EMOJIS[:pages] if message_lower.match?(/\d+\s+pages?/)
       return EMOJIS[:page] if message_lower.include?("page")
-      return EMOJIS[:files] if message_lower.match?(/\d+\s+files?/) || message_lower.include?("directory")
-      return EMOJIS[:file] if message_lower.include?("file") && !message_lower.match?(/\d+\s+files?/)
+      return EMOJIS[:files] if files_pattern_match?(message_lower)
+      return EMOJIS[:file] if single_file_pattern_match?(message_lower)
+
+      nil
+    end
+
+    def files_pattern_match?(message_lower)
+      message_lower.match?(/\d+\s+files?/) || message_lower.include?("directory")
+    end
+
+    def single_file_pattern_match?(message_lower)
+      message_lower.include?("file") && !message_lower.match?(/\d+\s+files?/)
+    end
+
+    def detect_network_emoji(message_lower)
       if message_lower.include?("http") || message_lower.include?("network") || message_lower.include?("api")
         return EMOJIS[:network]
       end
 
-      # Action-based detection (less specific)
-      if message_lower.include?("created") || message_lower.include?("generating") || 
-         message_lower.include?("generated")
-        return EMOJIS[:created]
-      end
-      return EMOJIS[:stored] if message_lower.include?("stored") || message_lower.include?("saving")
-      return EMOJIS[:refresh] if message_lower.include?("refresh") || message_lower.include?("sync")
+      nil
+    end
+
+    def detect_action_based_emoji(message_lower)
+      return EMOJIS[:created] if creation_keywords?(message_lower)
+      return EMOJIS[:stored] if storage_keywords?(message_lower)
+      return EMOJIS[:refresh] if refresh_keywords?(message_lower)
       return EMOJIS[:install] if message_lower.include?("install")
-      return EMOJIS[:added] if message_lower.include?("added") || message_lower.include?("successfully")
+      return EMOJIS[:added] if success_keywords?(message_lower)
       return EMOJIS[:found] if message_lower.include?("found")
 
       nil
+    end
+
+    def creation_keywords?(message_lower)
+      message_lower.include?("created") || message_lower.include?("generating") || message_lower.include?("generated")
+    end
+
+    def storage_keywords?(message_lower)
+      message_lower.include?("stored") || message_lower.include?("saving")
+    end
+
+    def refresh_keywords?(message_lower)
+      message_lower.include?("refresh") || message_lower.include?("sync")
+    end
+
+    def success_keywords?(message_lower)
+      message_lower.include?("added") || message_lower.include?("successfully")
     end
   end
 end

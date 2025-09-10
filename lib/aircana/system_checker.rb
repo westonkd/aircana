@@ -51,7 +51,7 @@ module Aircana
     }.freeze
 
     class << self
-      def check_dependencies(show_optional: false)
+      def check_dependencies?(show_optional: false)
         Aircana.human_logger.info "Checking system dependencies..."
 
         missing_required = check_required_commands
@@ -71,22 +71,30 @@ module Aircana
       end
 
       def detect_os
-        case RbConfig::CONFIG["host_os"]
-        when /darwin/
-          "macOS"
-        when /linux/
-          if File.exist?("/etc/debian_version")
-            "Ubuntu/Debian"
-          elsif File.exist?("/etc/fedora-release") || File.exist?("/etc/centos-release")
-            "Fedora/CentOS"
-          elsif File.exist?("/etc/arch-release")
-            "Arch"
-          else
-            "Other"
-          end
-        else
-          "Other"
-        end
+        return "macOS" if macos?
+        return detect_linux_distribution if linux?
+
+        "Other"
+      end
+
+      def macos?
+        RbConfig::CONFIG["host_os"].match?(/darwin/)
+      end
+
+      def linux?
+        RbConfig::CONFIG["host_os"].match?(/linux/)
+      end
+
+      def detect_linux_distribution
+        return "Ubuntu/Debian" if File.exist?("/etc/debian_version")
+        return "Fedora/CentOS" if fedora_or_centos?
+        return "Arch" if File.exist?("/etc/arch-release")
+
+        "Other"
+      end
+
+      def fedora_or_centos?
+        File.exist?("/etc/fedora-release") || File.exist?("/etc/centos-release")
       end
 
       private
@@ -119,15 +127,25 @@ module Aircana
       end
 
       def show_installation_help(missing_required, missing_optional)
-        return if missing_required.empty? && (missing_optional.nil? || missing_optional.empty?)
+        return if no_missing_dependencies?(missing_required, missing_optional)
 
+        display_installation_instructions(missing_required, missing_optional)
+      end
+
+      def no_missing_dependencies?(missing_required, missing_optional)
+        missing_required.empty? && (missing_optional.nil? || missing_optional.empty?)
+      end
+
+      def display_installation_instructions(missing_required, missing_optional)
         os = detect_os
         Aircana.human_logger.info "Installation instructions for #{os}:"
+        show_commands_installation(missing_required, missing_optional, os)
+      end
 
+      def show_commands_installation(missing_required, missing_optional, os)
         [missing_required, missing_optional].compact.flatten.each do |command|
           command_info = REQUIRED_COMMANDS[command] || OPTIONAL_COMMANDS[command]
           install_cmd = command_info[:install][os] || command_info[:install]["Other"]
-
           Aircana.human_logger.info "  #{command}: #{install_cmd}"
         end
       end
