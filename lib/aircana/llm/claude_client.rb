@@ -1,0 +1,69 @@
+# frozen_string_literal: true
+
+require "English"
+require "tty-spinner"
+
+module Aircana
+  module LLM
+    class ClaudeClient
+      def initialize
+        @spinner = nil
+      end
+
+      def prompt(text)
+        start_spinner("Generating response with Claude...")
+
+        begin
+          result = execute_claude_command(text)
+          success_spinner("Generated response with Claude")
+          result.strip
+        rescue StandardError => e
+          error_spinner("Failed to generate response: #{e.message}")
+          raise Error, "Claude request failed: #{e.message}"
+        end
+      end
+
+      private
+
+      def start_spinner(message)
+        @spinner = TTY::Spinner.new("[:spinner] #{message}", format: :dots)
+        @spinner.auto_spin
+      end
+
+      def success_spinner(message)
+        return unless @spinner
+
+        @spinner.stop("✓")
+        puts message
+      end
+
+      def error_spinner(message)
+        return unless @spinner
+
+        @spinner.stop("✗")
+        puts message
+      end
+
+      def execute_claude_command(text)
+        command = build_claude_command(text)
+        execute_system_command(command)
+      end
+
+      def execute_system_command(command)
+        result = `#{command}`
+
+        unless $CHILD_STATUS.success?
+          raise StandardError,
+                "Claude command failed with exit code #{$CHILD_STATUS.exitstatus}"
+        end
+
+        result
+      end
+
+      def build_claude_command(text)
+        escaped_text = text.gsub("'", "'\"'\"'")
+        "claude -p '#{escaped_text}'"
+      end
+    end
+  end
+end

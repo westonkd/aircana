@@ -34,6 +34,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  spec.add_dependency "httparty", "~> 0.21"
+  spec.add_dependency "reverse_markdown", "~> 2.1"
   spec.add_dependency "thor", "~> 0.19.1"
   spec.add_dependency "tty-prompt", "~> 0.23.1"
+  spec.add_dependency "tty-spinner", "~> 0.9"
 end

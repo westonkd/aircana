@@ -59,6 +59,11 @@ module Aircana
         def create
           Agents.create
         end
+
+        desc "refresh AGENT", "Refresh agent knowledge from Confluence pages with matching labels"
+        def refresh(agent)
+          Agents.refresh(agent)
+        end
       end
 
       desc "agents", "Create and manage agents and their knowledgebases"

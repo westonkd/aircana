@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 require "logger"
+require "fileutils"
 require_relative "aircana/version"
 require_relative "aircana/configuration"
 require_relative "aircana/cli"
 require_relative "aircana/generators"
+require_relative "aircana/contexts/confluence"
+require_relative "aircana/contexts/local"
+require_relative "aircana/llm/claude_client"
 
 module Aircana
   class Error < StandardError; end
