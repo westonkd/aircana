@@ -15,6 +15,7 @@
 /vendor/bundle
 /lib/bundler/man/
 .byebug_history
+.aircana/
 
 # Logs
 *.log
