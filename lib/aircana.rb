@@ -4,6 +4,10 @@ require "logger"
 require "fileutils"
 require_relative "aircana/version"
 require_relative "aircana/configuration"
+require_relative "aircana/human_logger"
+require_relative "aircana/fzf_helper"
+require_relative "aircana/system_checker"
+require_relative "aircana/progress_tracker"
 require_relative "aircana/cli"
 require_relative "aircana/generators"
 require_relative "aircana/contexts/confluence"
@@ -24,6 +28,10 @@ module Aircana
 
     def logger
       @logger ||= Logger.new($stdout)
+    end
+
+    def human_logger
+      @human_logger ||= HumanLogger.new
     end
 
     def initialize!

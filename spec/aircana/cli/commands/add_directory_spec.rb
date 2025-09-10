@@ -17,16 +17,20 @@ RSpec.describe Aircana::CLI::AddDirectory do
     allow(Aircana).to receive(:create_dir_if_needed)
 
     @log_messages = []
-    logger_double = instance_double("Logger")
-    allow(logger_double).to receive(:info) { |msg| @log_messages << [:info, msg] }
-    allow(logger_double).to receive(:warn) { |msg| @log_messages << [:warn, msg] }
-    allow(logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
-    allow(logger_double).to receive(:debug) { |msg| @log_messages << [:debug, msg] }
-    allow(Aircana).to receive(:logger).and_return(logger_double)
+    human_logger_double = instance_double("HumanLogger")
+    allow(human_logger_double).to receive(:info) { |msg| @log_messages << [:info, msg] }
+    allow(human_logger_double).to receive(:warn) { |msg| @log_messages << [:warn, msg] }
+    allow(human_logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
+    allow(human_logger_double).to receive(:success) { |msg| @log_messages << [:success, msg] }
+    allow(Aircana).to receive(:human_logger).and_return(human_logger_double)
 
     # Mock the RelevantFiles context
     allow(Aircana::Contexts::RelevantFiles).to receive(:remove_all)
     allow(Aircana::Contexts::RelevantFiles).to receive(:add)
+
+    # Mock progress tracker and prompts
+    allow(Aircana::ProgressTracker).to receive(:with_spinner).and_yield
+    allow(TTY::Prompt).to receive(:new).and_return(instance_double("TTY::Prompt", yes?: true))
   end
 
   after do
@@ -86,7 +90,7 @@ RSpec.describe Aircana::CLI::AddDirectory do
         described_class.run(test_dir)
 
         expect(@log_messages).to include([:info, "Found 3 files in directory: #{test_dir}"])
-        expect(@log_messages).to include([:info, "Successfully added 3 files from directory"])
+        expect(@log_messages).to include([:success, "Successfully added 3 files from directory"])
 
         expect(Aircana::Contexts::RelevantFiles).to have_received(:add) do |files|
           expect(files).to be_an(Array)
@@ -104,7 +108,8 @@ RSpec.describe Aircana::CLI::AddDirectory do
         it "warns about high token usage for large directories" do
           described_class.run(test_dir)
 
-          expect(@log_messages).to include([:warn, "Large number of files (104) may result in high token usage"])
+          expect(@log_messages).to include([:warn, "Large directory operation detected:"])
+          expect(@log_messages).to include([:warn, "  This may result in high token usage with Claude"])
         end
       end
     end

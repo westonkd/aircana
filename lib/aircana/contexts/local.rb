@@ -11,7 +11,7 @@ module Aircana
         filepath = File.join(agent_dir, "#{filename}.md")
 
         File.write(filepath, content)
-        Aircana.logger.info "Stored '#{title}' for agent '#{agent}' at #{filepath}"
+        Aircana.human_logger.success "Stored '#{title}' for agent '#{agent}' at #{filepath}"
 
         filepath
       end

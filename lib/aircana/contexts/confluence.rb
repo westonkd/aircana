@@ -17,9 +17,17 @@ module Aircana
         validate_configuration!
         setup_httparty
 
-        pages = fetch_pages_by_label(agent)
+        pages = ProgressTracker.with_spinner("Searching for pages labeled '#{agent}'") do
+          fetch_pages_by_label(agent)
+        end
+
         log_pages_found(pages.size, agent)
-        store_pages_as_markdown(pages, agent)
+
+        return 0 if pages.empty?
+
+        ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
+          store_page_as_markdown(page, agent)
+        end
 
         pages.size
       end
@@ -96,25 +104,23 @@ module Aircana
       end
 
       def handle_api_error(operation, error, message)
-        Aircana.logger.error "Failed to #{operation}: #{error.message}"
+        Aircana.human_logger.error "Failed to #{operation}: #{error.message}"
         raise Error, "#{message}: #{error.message}"
       end
 
       def log_pages_found(count, agent)
-        Aircana.logger.info "Found #{count} pages for agent '#{agent}'"
+        Aircana.human_logger.info "Found #{count} pages for agent '#{agent}'"
       end
 
-      def store_pages_as_markdown(pages, agent)
-        pages.each do |page|
-          content = fetch_page_content(page["id"])
-          markdown_content = convert_to_markdown(content)
+      def store_page_as_markdown(page, agent)
+        content = fetch_page_content(page["id"])
+        markdown_content = convert_to_markdown(content)
 
-          @local_storage.store_content(
-            title: page["title"],
-            content: markdown_content,
-            agent: agent
-          )
-        end
+        @local_storage.store_content(
+          title: page["title"],
+          content: markdown_content,
+          agent: agent
+        )
       end
     end
   end
