@@ -6,12 +6,13 @@ RSpec.describe Aircana::CLI::Agents do
   let(:mock_confluence) { instance_double(Aircana::Contexts::Confluence) }
 
   before do
-    # Mock logger to capture output
+    # Mock human logger to capture output
     @log_messages = []
-    logger_double = instance_double("Logger")
-    allow(logger_double).to receive(:info) { |msg| @log_messages << [:info, msg] }
-    allow(logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
-    allow(Aircana).to receive(:logger).and_return(logger_double)
+    human_logger_double = instance_double("HumanLogger")
+    allow(human_logger_double).to receive(:info) { |msg| @log_messages << [:info, msg] }
+    allow(human_logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
+    allow(human_logger_double).to receive(:success) { |msg| @log_messages << [:success, msg] }
+    allow(Aircana).to receive(:human_logger).and_return(human_logger_double)
 
     # Mock the Confluence context
     allow(Aircana::Contexts::Confluence).to receive(:new).and_return(mock_confluence)
@@ -25,7 +26,7 @@ RSpec.describe Aircana::CLI::Agents do
         described_class.refresh("Test Agent")
 
         expect(mock_confluence).to have_received(:fetch_pages_for).with(agent: "test-agent")
-        expect(@log_messages).to include([:info, "Successfully refreshed 3 pages for agent 'test-agent'"])
+        expect(@log_messages).to include([:success, "Successfully refreshed 3 pages for agent 'test-agent'"])
       end
 
       it "handles agent names with various formats" do
@@ -34,7 +35,7 @@ RSpec.describe Aircana::CLI::Agents do
         described_class.refresh("My Complex Agent Name")
 
         expect(mock_confluence).to have_received(:fetch_pages_for).with(agent: "my-complex-agent-name")
-        expect(@log_messages).to include([:info, "Successfully refreshed 1 pages for agent 'my-complex-agent-name'"])
+        expect(@log_messages).to include([:success, "Successfully refreshed 1 pages for agent 'my-complex-agent-name'"])
       end
 
       it "handles case when no pages are found" do

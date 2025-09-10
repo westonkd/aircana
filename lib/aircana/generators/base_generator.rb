@@ -32,8 +32,8 @@ module Aircana
 
       def generate_content
         erb = ERB.new(template)
-        Aircana.logger.info "Generating #{file_out} from #{file_in}"
-        Aircana.logger.debug "With locals: #{locals}"
+        Aircana.human_logger.info "Generating #{file_out} from #{file_in}"
+        # Debug info removed for cleaner output
         erb.result_with_hash(locals)
       end
 

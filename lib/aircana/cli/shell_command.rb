@@ -4,7 +4,7 @@ module Aircana
   module CLI
     class ShellCommand
       def self.run(command_string)
-        Aircana.logger.info("Running `#{command_string}`")
+        # Command execution logged by human_logger elsewhere if needed
 
         `#{command_string}`
       end

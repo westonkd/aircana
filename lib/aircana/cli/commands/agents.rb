@@ -35,7 +35,7 @@ module Aircana
             color: normalize_string(color)
           ).generate
 
-          Aircana.logger.info "Agent created at #{file}"
+          Aircana.human_logger.success "Agent created at #{file}"
         end
 
         private
@@ -49,19 +49,19 @@ module Aircana
 
         def log_refresh_result(normalized_agent, pages_count)
           if pages_count.positive?
-            Aircana.logger.info "Successfully refreshed #{pages_count} pages for agent '#{normalized_agent}'"
+            Aircana.human_logger.success "Successfully refreshed #{pages_count} pages for agent '#{normalized_agent}'"
           else
             log_no_pages_found(normalized_agent)
           end
         end
 
         def log_no_pages_found(normalized_agent)
-          Aircana.logger.info "No pages found for agent '#{normalized_agent}'. " \
-                              "Make sure pages are labeled with '#{normalized_agent}' in Confluence."
+          Aircana.human_logger.info "No pages found for agent '#{normalized_agent}'. " \
+                                    "Make sure pages are labeled with '#{normalized_agent}' in Confluence."
         end
 
         def handle_refresh_error(normalized_agent, error)
-          Aircana.logger.error "Failed to refresh agent '#{normalized_agent}': #{error.message}"
+          Aircana.human_logger.error "Failed to refresh agent '#{normalized_agent}': #{error.message}"
           exit 1
         end
 

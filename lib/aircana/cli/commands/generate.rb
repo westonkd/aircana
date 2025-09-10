@@ -16,7 +16,7 @@ module Aircana
 
         def run
           generators.each(&:generate)
-          Aircana.logger.info("Re-generated #{Aircana.configuration.output_dir} files.")
+          Aircana.human_logger.success("Re-generated #{Aircana.configuration.output_dir} files.")
         end
       end
     end

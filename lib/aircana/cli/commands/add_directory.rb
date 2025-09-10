@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "tty-prompt"
 require_relative "../../contexts/relevant_files"
 
 module Aircana
@@ -12,6 +13,8 @@ module Aircana
           selected_files = collect_files_recursively(directory_path)
           return log_no_files_found(directory_path) if selected_files.empty?
 
+          return unless confirm_large_operation?(selected_files.size, directory_path)
+
           process_files(directory_path, selected_files)
         end
 
@@ -19,12 +22,12 @@ module Aircana
 
         def directory_valid?(directory_path)
           unless File.directory?(directory_path)
-            Aircana.logger.error "Directory not found: #{directory_path}"
+            Aircana.human_logger.error "Directory not found: #{directory_path}"
             return false
           end
 
           unless File.readable?(directory_path)
-            Aircana.logger.error "Directory not readable: #{directory_path}"
+            Aircana.human_logger.error "Directory not readable: #{directory_path}"
             return false
           end
 
@@ -32,22 +35,79 @@ module Aircana
         end
 
         def log_no_files_found(directory_path)
-          Aircana.logger.info "No files found in directory: #{directory_path}"
+          Aircana.human_logger.info "No files found in directory: #{directory_path}"
+        end
+
+        def confirm_large_operation?(file_count, directory_path)
+          return true if file_count <= 50
+
+          show_large_operation_warning(file_count, directory_path)
+          TTY::Prompt.new.yes?("Continue with adding #{file_count} files?")
+        end
+
+        def show_large_operation_warning(file_count, directory_path)
+          estimated_size = estimate_total_size(directory_path, file_count)
+          Aircana.human_logger.warn "Large directory operation detected:"
+          Aircana.human_logger.info "  Directory: #{directory_path}"
+          Aircana.human_logger.info "  Files: #{file_count}"
+          Aircana.human_logger.info "  Estimated size: #{estimated_size}"
+          Aircana.human_logger.warn "  This may result in high token usage with Claude"
+        end
+
+        def estimate_total_size(directory_path, file_count)
+          sample_files = get_sample_files(directory_path, file_count)
+          return "Unknown" if sample_files.empty?
+
+          total_bytes = calculate_sample_size(sample_files)
+          estimated_total = extrapolate_total_size(total_bytes, sample_files.size, file_count)
+          format_file_size(estimated_total)
+        end
+
+        def get_sample_files(directory_path, file_count)
+          Dir.glob(File.join(directory_path, "**", "*"))
+             .reject { |f| File.directory?(f) }
+             .sample([file_count, 10].min)
+        end
+
+        def calculate_sample_size(sample_files)
+          sample_files.sum do |f|
+            File.size(f)
+          rescue StandardError
+            0
+          end
+        end
+
+        def extrapolate_total_size(total_bytes, sample_size, file_count)
+          avg_size = total_bytes / sample_size.to_f
+          (avg_size * file_count).to_i
+        end
+
+        def format_file_size(bytes)
+          units = %w[B KB MB GB]
+          size = bytes.to_f
+          unit_index = 0
+
+          while size >= 1024 && unit_index < units.length - 1
+            size /= 1024
+            unit_index += 1
+          end
+
+          "#{size.round(1)} #{units[unit_index]}"
         end
 
         def process_files(directory_path, selected_files)
           file_count = selected_files.length
-          Aircana.logger.info "Found #{file_count} files in directory: #{directory_path}"
+          Aircana.human_logger.info "Found #{file_count} files in directory: #{directory_path}"
 
-          log_token_warning(file_count) if file_count > 100
+          ProgressTracker.with_spinner("Adding #{file_count} files to context") do
+            Contexts::RelevantFiles.add(selected_files)
+          end
 
-          Contexts::RelevantFiles.add(selected_files)
-
-          Aircana.logger.info "Successfully added #{file_count} files from directory"
+          Aircana.human_logger.success "Successfully added #{file_count} files from directory"
         end
 
         def log_token_warning(file_count)
-          Aircana.logger.warn "Large number of files (#{file_count}) may result in high token usage"
+          Aircana.human_logger.warn "Large number of files (#{file_count}) may result in high token usage"
         end
 
         def collect_files_recursively(directory_path)
