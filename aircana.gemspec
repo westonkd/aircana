@@ -35,4 +35,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "thor", "~> 0.19.1"
+  spec.add_dependency "tty-prompt", "~> 0.23.1"
 end

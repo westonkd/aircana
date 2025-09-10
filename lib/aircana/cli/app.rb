@@ -9,6 +9,9 @@ require_relative "commands/dump_context"
 require_relative "commands/generate"
 require_relative "commands/install"
 
+require_relative "subcommand"
+require_relative "commands/agents"
+
 module Aircana
   module CLI
     # Thor application for the primary cli
@@ -22,7 +25,7 @@ module Aircana
         AddFiles.run
       end
 
-      desc "add-dir DIRECTORY_PATH",
+      desc "add-dir [DIRECTORY_PATH]",
            "add all files from the specified directory recursively to the current context"
       def add_dir(directory_path)
         AddDirectory.run(directory_path)
@@ -50,6 +53,16 @@ module Aircana
       def install
         Install.run
       end
+
+      class AgentsSubcommand < Subcommand
+        desc "create", "Create a new agent"
+        def create
+          Agents.create
+        end
+      end
+
+      desc "agents", "Create and manage agents and their knowledgebases"
+      subcommand "agents", AgentsSubcommand
     end
   end
 end
