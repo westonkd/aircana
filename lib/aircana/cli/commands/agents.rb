@@ -2,7 +2,6 @@
 
 require "tty-prompt"
 require_relative "../../generators/agents_generator"
-require_relative "../shell_command"
 
 module Aircana
   module CLI
@@ -70,7 +69,6 @@ module Aircana
           string.strip.downcase.gsub(" ", "-")
         end
 
-        # TODO: Extract into a utility class explicitly for interacting with Claude
         def description_from_claude(description)
           prompt = <<~PROMPT
             Create a concise Claude Code agent description file (without frontmatter)
@@ -79,7 +77,8 @@ module Aircana
             Print the output to STDOUT only, without any additional commentary.
           PROMPT
 
-          ShellCommand.run("claude -p '#{prompt}'")
+          claude_client = Aircana::LLM::ClaudeClient.new
+          claude_client.prompt(prompt)
         end
       end
     end
