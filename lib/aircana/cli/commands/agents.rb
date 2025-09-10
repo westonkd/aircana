@@ -11,7 +11,7 @@ module Aircana
       SUPPORTED_CLAUDE_COLORS = %w[red blue green yellow purple orange pink cyan].freeze
 
       class << self
-        def create
+        def create # rubocop:disable Metrics/MethodLength
           prompt = TTY::Prompt.new
 
           agent_name = prompt.ask("Agent name:")
