@@ -4,4 +4,10 @@
 
 require "aircana"
 
+Aircana.configure do |config|
+  config.confluence_base_url = ENV.fetch("CONFLUENCE_BASE_URL", nil)
+  config.confluence_username = ENV.fetch("CONFLUENCE_USERNAME", nil)
+  config.confluence_api_token = ENV.fetch("CONFLUENCE_API_TOKEN", nil)
+end
+
 Aircana::CLI::App.start(ARGV)

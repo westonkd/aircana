@@ -62,7 +62,24 @@ module Aircana
 
       def build_claude_command(text)
         escaped_text = text.gsub("'", "'\"'\"'")
-        "claude -p '#{escaped_text}'"
+        claude_path = find_claude_path
+        "#{claude_path} -p '#{escaped_text}'"
+      end
+
+      def find_claude_path
+        # Try common locations for Claude Code binary
+        possible_paths = [
+          File.expand_path("~/.claude/local/claude"),
+          `which claude`.strip,
+          "/usr/local/bin/claude"
+        ]
+
+        possible_paths.each do |path|
+          return path if !path.empty? && File.executable?(path)
+        end
+
+        # Fallback to just 'claude' and hope it's in PATH
+        "claude"
       end
     end
   end
