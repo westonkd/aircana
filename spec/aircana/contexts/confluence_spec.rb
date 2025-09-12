@@ -25,29 +25,39 @@ RSpec.describe Aircana::Contexts::Confluence do
     context "when configuration is valid" do
       it "fetches pages with matching label and stores them as markdown" do
         # Mock labels response
-        labels_response = double(success?: true, code: 200, body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
+        labels_response = double(success?: true, code: 200,
+                                 body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
         allow(labels_response).to receive(:[]).with("results").and_return([
-          { "id" => "10001", "name" => "test-agent", "prefix" => "global" }
-        ])
+                                                                            { "id" => "10001", "name" => "test-agent",
+                                                                              "prefix" => "global" }
+                                                                          ])
         allow(labels_response).to receive(:dig).with("_links", "next").and_return(nil)
         allow(described_class).to receive(:get).with("/wiki/api/v2/labels", anything).and_return(labels_response)
 
         # Mock pages for label response
-        pages_response = double(success?: true, code: 200, body: '{"results":[{"id":"123","title":"Test Page 1"},{"id":"456","title":"Test Page 2"}]}')
+        pages_response = double(success?: true, code: 200,
+                                body: '{"results":[{"id":"123","title":"Test Page 1"},' \
+                                      '{"id":"456","title":"Test Page 2"}]}')
         allow(pages_response).to receive(:[]).with("results").and_return([
-          { 
-            "id" => "123", 
-            "title" => "Test Page 1",
-            "body" => { "storage" => { "value" => "<h1>Test Content 1</h1><p>Some content</p>" } }
-          },
-          { 
-            "id" => "456", 
-            "title" => "Test Page 2",
-            "body" => { "storage" => { "value" => "<h1>Test Content 2</h1><p>More content</p>" } }
-          }
-        ])
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels/10001/pages", anything).and_return(pages_response)
-
+                                                                           {
+                                                                             "id" => "123",
+                                                                             "title" => "Test Page 1",
+                                                                             "body" => { "storage" => {
+                                                                               "value" => "<h1>Test Content 1</h1>" \
+                                                                                          "<p>Some content</p>"
+                                                                             } }
+                                                                           },
+                                                                           {
+                                                                             "id" => "456",
+                                                                             "title" => "Test Page 2",
+                                                                             "body" => { "storage" => {
+                                                                               "value" => "<h1>Test Content 2</h1>" \
+                                                                                          "<p>More content</p>"
+                                                                             } }
+                                                                           }
+                                                                         ])
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels/10001/pages",
+                                                     anything).and_return(pages_response)
 
         # Mock markdown conversion
         allow(ReverseMarkdown).to receive(:convert)
@@ -86,36 +96,50 @@ RSpec.describe Aircana::Contexts::Confluence do
 
       it "handles pagination when label is found on second page" do
         # Mock first page response (no matching label)
-        first_page_response = double(success?: true, code: 200, body: '{"results":[{"id":"10000","name":"other-label","prefix":"global"}]}')
+        first_page_response = double(success?: true, code: 200,
+                                     body: '{"results":[{"id":"10000","name":"other-label","prefix":"global"}]}')
         allow(first_page_response).to receive(:[]).with("results").and_return([
-          { "id" => "10000", "name" => "other-label", "prefix" => "global" }
-        ])
+                                                                                { "id" => "10000",
+                                                                                  "name" => "other-label",
+                                                                                  "prefix" => "global" }
+                                                                              ])
         allow(first_page_response).to receive(:dig).with("_links", "next").and_return("https://test.atlassian.net/wiki/api/v2/labels?cursor=abc123")
 
         # Mock second page response (with matching label)
-        second_page_response = double(success?: true, code: 200, body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
+        second_page_response = double(success?: true, code: 200,
+                                      body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
         allow(second_page_response).to receive(:[]).with("results").and_return([
-          { "id" => "10001", "name" => "test-agent", "prefix" => "global" }
-        ])
+                                                                                 { "id" => "10001",
+                                                                                   "name" => "test-agent",
+                                                                                   "prefix" => "global" }
+                                                                               ])
         allow(second_page_response).to receive(:dig).with("_links", "next").and_return(nil)
 
         # Mock pages for label response - without body content to test fallback
         pages_response = double(success?: true, code: 200, body: '{"results":[{"id":"123","title":"Test Page"}]}')
-        page_without_body = { 
-          "id" => "123", 
+        page_without_body = {
+          "id" => "123",
           "title" => "Test Page"
         }
         allow(pages_response).to receive(:[]).with("results").and_return([page_without_body])
 
         # Setup call sequence for pagination
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250, prefix: "global" } }).and_return(first_page_response)
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250, prefix: "global", cursor: "abc123" } }).and_return(second_page_response)
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels/10001/pages", anything).and_return(pages_response)
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels",
+                                                     { query: { limit: 250,
+                                                                prefix: "global" } }).and_return(first_page_response)
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels",
+                                                     { query: { limit: 250, prefix: "global",
+                                                                cursor: "abc123" } }).and_return(second_page_response)
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels/10001/pages",
+                                                     anything).and_return(pages_response)
 
         # Mock fallback page content fetch in case body content is not available
-        page_content_response = double(success?: true, code: 200, body: '{"body":{"storage":{"value":"<h1>Test Content</h1>"}}}')
-        allow(page_content_response).to receive(:dig).with("body", "storage", "value").and_return("<h1>Test Content</h1>")
-        allow(described_class).to receive(:get).with("/rest/api/content/123", anything).and_return(page_content_response)
+        page_content_response = double(success?: true, code: 200,
+                                       body: '{"body":{"storage":{"value":"<h1>Test Content</h1>"}}}')
+        allow(page_content_response).to receive(:dig).with("body", "storage",
+                                                           "value").and_return("<h1>Test Content</h1>")
+        allow(described_class).to receive(:get).with("/rest/api/content/123",
+                                                     anything).and_return(page_content_response)
         allow(described_class).to receive(:get).with("/rest/api/content/", anything).and_return(page_content_response)
 
         # Mock markdown conversion
@@ -163,7 +187,7 @@ RSpec.describe Aircana::Contexts::Confluence do
     context "when API calls fail" do
       it "raises error when labels lookup fails" do
         allow(described_class).to receive(:get).with("/wiki/api/v2/labels", anything).and_raise(StandardError,
-                                                                                                 "Network error")
+                                                                                                "Network error")
 
         expect do
           confluence.fetch_pages_for(agent: "test-agent")

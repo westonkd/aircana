@@ -7,31 +7,32 @@ module Aircana
                   :confluence_base_url, :confluence_username, :confluence_api_token
 
     def initialize
-      # Global configuration directory for Aircana
+      setup_directory_paths
+      setup_claude_code_paths
+      setup_stream
+      setup_confluence_config
+    end
+
+    private
+
+    def setup_directory_paths
       @global_dir = File.join(Dir.home, ".aircana")
-
-      # Project-specific configuration directory for Aircana
       @project_dir = Dir.pwd
-
-      # Where are links to relevant project files stored?
       @relevant_project_files_dir = File.join(@project_dir, ".aircana", "relevant_files")
-
-      # Where should `generate` write files by default?
       @output_dir = File.join(@global_dir, "aircana.out")
-
-      # Where is claude code's configuration stored?
-      @claude_code_config_path = File.join(Dir.home, ".claude")
-
-      # Where is claude code's project configuration stored?
-      @claude_code_project_config_path = File.join(Dir.pwd, ".claude")
-
-      # Default stream to write command output to
-      @stream = $stdout
-
-      # Where are agent knowledge files stored?
       @agent_knowledge_dir = File.join(@project_dir, ".aircana", "agents")
+    end
 
-      # Confluence API configuration
+    def setup_claude_code_paths
+      @claude_code_config_path = File.join(Dir.home, ".claude")
+      @claude_code_project_config_path = File.join(Dir.pwd, ".claude")
+    end
+
+    def setup_stream
+      @stream = $stdout
+    end
+
+    def setup_confluence_config
       @confluence_base_url = nil
       @confluence_username = nil
       @confluence_api_token = nil
