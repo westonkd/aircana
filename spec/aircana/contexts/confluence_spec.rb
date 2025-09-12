@@ -108,8 +108,8 @@ RSpec.describe Aircana::Contexts::Confluence do
         allow(pages_response).to receive(:[]).with("results").and_return([page_without_body])
 
         # Setup call sequence for pagination
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250 } }).and_return(first_page_response)
-        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250, cursor: "abc123" } }).and_return(second_page_response)
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250, prefix: "global" } }).and_return(first_page_response)
+        allow(described_class).to receive(:get).with("/wiki/api/v2/labels", { query: { limit: 250, prefix: "global", cursor: "abc123" } }).and_return(second_page_response)
         allow(described_class).to receive(:get).with("/wiki/api/v2/labels/10001/pages", anything).and_return(pages_response)
 
         # Mock fallback page content fetch in case body content is not available
@@ -127,7 +127,7 @@ RSpec.describe Aircana::Contexts::Confluence do
 
         expect(result).to eq(1)
         expect(mock_local_storage).to have_received(:store_content).with(
-          title: nil, # title is nil because page_without_body doesn't include title in our mock
+          title: "Test Page", # title comes from the mock page data
           content: "# Test Content",
           agent: "test-agent"
         )

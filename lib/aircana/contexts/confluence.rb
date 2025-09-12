@@ -99,15 +99,20 @@ module Aircana
         page_number = 1
 
         loop do
-          log_request("GET", path, query_params.merge("Page" => page_number))
+          log_request("GET", path, query_params.merge("Page" => page_number), pagination: true)
 
           response = self.class.get(path, { query: query_params })
-          log_response(response, "Labels lookup (page #{page_number})")
+          log_response(response, "Labels lookup (page #{page_number})", pagination: true)
           validate_response(response)
 
           labels = response["results"] || []
           matching_label = labels.find { |label| label["name"] == agent_name }
-          return matching_label["id"] if matching_label
+
+          if matching_label
+            # Clear the dynamic pagination line before returning
+            print "\r\e[K"
+            return matching_label["id"]
+          end
 
           # Check for next page
           next_url = get_next_page_url(response)
@@ -122,6 +127,8 @@ module Aircana
           page_number += 1
         end
 
+        # Clear the dynamic pagination line if we didn't find anything
+        print "\r\e[K"
         nil
       end
 
@@ -179,7 +186,10 @@ module Aircana
         end
       end
 
-      def log_response(response, context = nil)
+      def log_response(response, context = nil, pagination: false)
+        # During pagination, suppress response logs to avoid interfering with dynamic request display
+        return if pagination
+
         status_color = response.success? ? "32" : "31" # green for success, red for error
         status_text = response.success? ? "✓" : "✗"
 
