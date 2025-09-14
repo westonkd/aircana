@@ -3,11 +3,21 @@
 require "httparty"
 require "reverse_markdown"
 require_relative "local"
+require_relative "confluence_logging"
+require_relative "confluence_http"
+require_relative "confluence_content"
+require_relative "confluence_setup"
 
 module Aircana
   module Contexts
     class Confluence
       include HTTParty
+      include ConfluenceLogging
+      include ConfluenceHttp
+      include ConfluenceContent
+      include ConfluenceSetup
+
+      LABEL_PREFIX = "global"
 
       def initialize
         @local_storage = Local.new
@@ -43,90 +53,88 @@ module Aircana
       def validate_configuration!
         config = Aircana.configuration
 
-        if config.confluence_base_url.nil? || config.confluence_base_url.empty?
-          raise Error,
-                "Confluence base URL not configured"
-        end
-        return unless config.confluence_api_token.nil? || config.confluence_api_token.empty?
-
-        raise Error,
-              "Confluence API token not configured"
+        validate_base_url(config)
+        validate_username(config)
+        validate_api_token(config)
       end
 
-      def setup_httparty
-        config = Aircana.configuration
+      def validate_base_url(config)
+        return unless config.confluence_base_url.nil? || config.confluence_base_url.empty?
 
-        self.class.base_uri config.confluence_base_url
-        self.class.headers "Authorization" => "Bearer #{config.confluence_api_token}"
-        self.class.headers "Content-Type" => "application/json"
+        raise Error, "Confluence base URL not configured"
+      end
+
+      def validate_username(config)
+        return unless config.confluence_username.nil? || config.confluence_username.empty?
+
+        raise Error, "Confluence username not configured"
+      end
+
+      def validate_api_token(config)
+        return unless config.confluence_api_token.nil? || config.confluence_api_token.empty?
+
+        raise Error, "Confluence API token not configured"
       end
 
       def fetch_pages_by_label(agent)
-        cql = "label = \"#{agent}\""
-        response = search_pages(cql)
+        label_id = find_label_id(agent)
+        return [] if label_id.nil?
+
+        response = get_pages_for_label(label_id)
         response["results"] || []
       rescue HTTParty::Error, StandardError => e
-        handle_api_error("search pages for agent '#{agent}'", e, "Failed to fetch pages from Confluence")
+        handle_api_error("fetch pages for agent '#{agent}'", e, "Failed to fetch pages from Confluence")
       end
 
-      def fetch_page_content(page_id)
-        response = get_page_content(page_id)
-        response.dig("body", "storage", "value") || ""
-      rescue HTTParty::Error, StandardError => e
-        handle_api_error("fetch content for page #{page_id}", e, "Failed to fetch page content")
+      def find_label_id(agent_name)
+        path = "/wiki/api/v2/labels"
+        query_params = { limit: 250, prefix: LABEL_PREFIX }
+        page_number = 1
+
+        label_id = search_labels_pagination(path, query_params, agent_name, page_number)
+        clear_pagination_line
+        label_id
       end
 
-      def convert_to_markdown(html_content)
-        return "" if html_content.nil? || html_content.empty?
+      def search_labels_pagination(path, query_params, agent_name, page_number)
+        loop do
+          response = fetch_labels_page(path, query_params, page_number)
+          label_id = find_matching_label_id(response, agent_name)
+          return label_id if label_id
 
-        ReverseMarkdown.convert(html_content, github_flavored: true)
+          next_cursor = extract_next_cursor(response)
+          break unless next_cursor
+
+          query_params[:cursor] = next_cursor
+          page_number += 1
+        end
+
+        nil
       end
 
-      def search_pages(cql)
-        response = self.class.get("/rest/api/search", {
-                                    query: {
-                                      cql: cql,
-                                      limit: 100
-                                    }
-                                  })
+      def fetch_labels_page(path, query_params, page_number)
+        log_request("GET", path, query_params.merge("Page" => page_number), pagination: true)
+        response = self.class.get(path, { query: query_params })
+        log_response(response, "Labels lookup (page #{page_number})", pagination: true)
         validate_response(response)
         response
       end
 
-      def get_page_content(page_id)
-        response = self.class.get("/rest/api/content/#{page_id}", {
-                                    query: {
-                                      expand: "body.storage"
-                                    }
-                                  })
-        validate_response(response)
-        response
+      def find_matching_label_id(response, agent_name)
+        labels = response["results"] || []
+        matching_label = labels.find { |label| label["name"] == agent_name }
+        matching_label&.[]("id")
       end
 
-      def validate_response(response)
-        return if response.success?
+      def extract_next_cursor(response)
+        next_url = get_next_page_url(response)
+        return nil unless next_url&.include?("cursor=")
 
-        raise Error, "HTTP #{response.code}: #{response.message}"
+        next_url.match(/cursor=([^&]+)/)[1]
       end
 
-      def handle_api_error(operation, error, message)
-        Aircana.human_logger.error "Failed to #{operation}: #{error.message}"
-        raise Error, "#{message}: #{error.message}"
-      end
-
-      def log_pages_found(count, agent)
-        Aircana.human_logger.info "Found #{count} pages for agent '#{agent}'"
-      end
-
-      def store_page_as_markdown(page, agent)
-        content = fetch_page_content(page["id"])
-        markdown_content = convert_to_markdown(content)
-
-        @local_storage.store_content(
-          title: page["title"],
-          content: markdown_content,
-          agent: agent
-        )
+      def clear_pagination_line
+        print "\r\e[K"
       end
     end
   end
