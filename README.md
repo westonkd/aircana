@@ -1,5 +1,7 @@
 # Aircana
 
+This document is a work in progress and will updated before Aircana's first release.
+
 A Ruby CLI utility for enhanced context management and AI-powered software engineering workflows with Claude Code. Aircana provides intelligent file context management, specialized agent creation, and seamless integration with Claude Code for improved development productivity.
 
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
@@ -72,6 +74,8 @@ Launch Claude Code with specialized agents:
 aircana plan    # Start planning session with planner agent
 aircana work    # Start work session with worker agent
 ```
+
+Currently these commands work the best with Jira.
 
 ### Configuration Management
 
