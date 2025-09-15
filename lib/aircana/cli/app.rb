@@ -9,6 +9,7 @@ require_relative "commands/dump_context"
 require_relative "commands/generate"
 require_relative "commands/install"
 require_relative "commands/plan"
+require_relative "commands/work"
 
 require_relative "subcommand"
 require_relative "commands/agents"
@@ -58,6 +59,11 @@ module Aircana
       desc "plan", "Launch Claude Code with planner agent for Jira ticket planning"
       def plan
         Plan.run
+      end
+
+      desc "work", "Launch Claude Code with worker agent for Jira ticket implementation"
+      def work
+        Work.run
       end
 
       class AgentsSubcommand < Subcommand
