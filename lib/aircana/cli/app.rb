@@ -8,6 +8,7 @@ require_relative "commands/clear_files"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
 require_relative "commands/install"
+require_relative "commands/plan"
 
 require_relative "subcommand"
 require_relative "commands/agents"
@@ -52,6 +53,11 @@ module Aircana
       desc "install", "Copies the generated files from `generate` to the proper directories in Claude Code config."
       def install
         Install.run
+      end
+
+      desc "plan", "Launch Claude Code with planner agent for Jira ticket planning"
+      def plan
+        Plan.run
       end
 
       class AgentsSubcommand < Subcommand

@@ -15,6 +15,10 @@ RSpec.describe Aircana::LLM::ClaudeClient do
 
     # Mock puts to capture output
     allow(claude_client).to receive(:puts)
+
+    # Mock file system checks to force fallback to simple 'claude' command
+    allow(File).to receive(:executable?).and_return(false)
+    allow(claude_client).to receive(:`).with("which claude").and_return("")
   end
 
   describe "#prompt" do
