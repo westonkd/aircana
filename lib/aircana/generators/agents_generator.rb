@@ -23,7 +23,10 @@ module Aircana
       protected
 
       def locals
-        super.merge({ relevant_project_files_path:, agent_name:, short_description:, description:, model:, color: })
+        super.merge({
+                      relevant_project_files_path:, agent_name:, short_description:, description:,
+                      model:, color:, knowledge_path:
+                    })
       end
 
       private
@@ -38,6 +41,10 @@ module Aircana
 
       def relevant_project_files_path
         File.join(Aircana.configuration.relevant_project_files_dir, "relevant_files.md")
+      end
+
+      def knowledge_path
+        ".aircana/agents/#{agent_name}/knowledge"
       end
     end
   end
