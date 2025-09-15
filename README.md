@@ -1,85 +1,106 @@
 # Aircana
 
-An in-progress, humble utility for context management and SE workflows with AI agents (specifically, Claude Code).
-
-This document is a work in progress and will be updated as the project reaches its first release.
+A Ruby CLI utility for enhanced context management and AI-powered software engineering workflows with Claude Code. Aircana provides intelligent file context management, specialized agent creation, and seamless integration with Claude Code for improved development productivity.
 
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/aircana.svg)](https://badge.fury.io/rb/aircana)
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Install the gem:
+
+```bash
+gem install aircana
+```
+
+Or add to your Gemfile:
 
 ```ruby
 gem 'aircana'
 ```
 
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install aircana
-
-## Usage
-This section is very much in the "TODO" category. A clear guide and best practices section will be added.
-
-### Adding "Relevant Files"
+Then run:
 
 ```bash
-aircana add-files
+bundle install
 ```
 
-### Clearing "Relevant Files"
+## Features
 
+- **Context Management**: Intelligently manage relevant files for your current work session
+- **AI Agents**: Create and manage specialized Claude Code agents with domain-specific knowledge
+- **Confluence Integration**: Automatically sync knowledge from Confluence pages to agents
+- **Workflow Automation**: Quick-launch specialized planning and work sessions
+- **Claude Code Integration**: Seamlessly generate and install configurations for Claude Code
+
+## Usage
+
+### File Context Management
+
+Add files to your current working context:
+```bash
+aircana add-files          # Interactive file selection
+aircana add-dir [PATH]     # Add entire directory
+```
+
+Clear your current context:
 ```bash
 aircana clear-files
 ```
 
-### Viewing an agent's current context
-
+View current context for an agent:
 ```bash
-aircana dump-context <agent name>
+aircana dump-context [AGENT_NAME]
 ```
 
-### Generating Templates
+### Agent Management
 
+Create a new specialized agent:
+```bash
+aircana agents create
+```
+
+Refresh agent knowledge from Confluence:
+```bash
+aircana agents refresh [AGENT_NAME]
+```
+
+### Quick Workflows
+
+Launch Claude Code with specialized agents:
+```bash
+aircana plan    # Start planning session with planner agent
+aircana work    # Start work session with worker agent
+```
+
+### Configuration Management
+
+Generate all Claude Code configuration files:
 ```bash
 aircana generate
 ```
 
-### Installing to Claude Code
-
+Install generated files to Claude Code:
 ```bash
 aircana install
 ```
 
-## Concepts
+## Core Concepts
 
-### Knowledge
-TODO
-
-#### Third-party
-Knowledge of third-party libraries, frameworks, etc
-
-**Strategy**: Existing MCP tools and servers (Context7, AWS MCP tools, etc.)
-
-#### Long-term
-Persistent key memories and decisions paritioned by agent and project.
-
-**Strategy**: SessionEnd Hook to capture key details from Claude Code session.
-
-**Domain** - Project-specific understanding
-
-**Relevant Files** - Current working set of important files
+### Relevant Files
+Aircana maintains a curated set of "relevant files" - the current working set of important files for your development session. This context is automatically integrated into Claude Code sessions to provide better assistance.
 
 ### Agents
-TODO
-**Knowledge Encapsulation**
-- Long-term Memory
-- Domain Knowledge
+Specialized Claude Code agents with:
+- **Domain Knowledge**: Focused expertise in specific areas
+- **Confluence Integration**: Automatic knowledge sync from labeled pages
+- **Long-term Memory**: Persistent understanding across sessions
+- **Customizable Models**: Choose from different Claude models and interface colors
+
+### Knowledge Sources
+- **Confluence Pages**: Automatically fetched based on agent labels
+- **Local Context**: Project-specific files and configurations
+- **Relevant Files**: Current working set managed by Aircana
 
 ## Development
 
