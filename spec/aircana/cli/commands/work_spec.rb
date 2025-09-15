@@ -74,4 +74,3 @@ RSpec.describe Aircana::CLI::Work do
     end
   end
 end
-

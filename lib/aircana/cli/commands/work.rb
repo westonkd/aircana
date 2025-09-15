@@ -67,4 +67,3 @@ module Aircana
     end
   end
 end
-
