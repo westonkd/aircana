@@ -46,14 +46,14 @@ module Aircana
           agent_files_pattern = File.join(Aircana.configuration.claude_code_project_config_path, "agents", "*.md")
           Dir.glob(agent_files_pattern).each do |file|
             agent_name = File.basename(file, ".md")
-            if default_agent?(agent_name)
-              destination_file = File.join(destination_dir, File.basename(file))
-              # Skip copying if source and destination are the same
-              next if File.expand_path(file) == File.expand_path(destination_file)
+            next unless default_agent?(agent_name)
 
-              Aircana.human_logger.success("Installing default agent #{file} to #{destination_dir}")
-              FileUtils.cp(file, destination_dir)
-            end
+            destination_file = File.join(destination_dir, File.basename(file))
+            # Skip copying if source and destination are the same
+            next if File.expand_path(file) == File.expand_path(destination_file)
+
+            Aircana.human_logger.success("Installing default agent #{file} to #{destination_dir}")
+            FileUtils.cp(file, destination_dir)
           end
         end
 
