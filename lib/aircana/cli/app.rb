@@ -5,6 +5,7 @@ require "thor"
 require_relative "commands/add_files"
 require_relative "commands/add_directory"
 require_relative "commands/clear_files"
+require_relative "commands/doctor"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
 require_relative "commands/install"
@@ -37,6 +38,13 @@ module Aircana
            "Removes all files from the current set of 'relevant files'"
       def clear_files
         ClearFiles.run
+      end
+
+      desc "doctor", "Check system health and validate all dependencies"
+      option :verbose, type: :boolean, default: false, desc: "Show detailed information about optional dependencies"
+      def doctor
+        exit_code = Doctor.run(verbose: options[:verbose])
+        exit(exit_code)
       end
 
       desc "dump-context",

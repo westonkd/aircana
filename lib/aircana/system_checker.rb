@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "English"
 module Aircana
   class SystemChecker
     REQUIRED_COMMANDS = {
@@ -68,6 +69,28 @@ module Aircana
 
       def command_available?(command)
         system("which #{command}", out: File::NULL, err: File::NULL)
+      end
+
+      def claude_installed?
+        command_available?("claude")
+      end
+
+      def mcp_jira_installed?
+        return false unless claude_installed?
+
+        result = `claude mcp get jira 2>&1`
+        $CHILD_STATUS.success? && !result.include?("not found") && !result.include?("error")
+      rescue StandardError
+        false
+      end
+
+      def check_configuration_directories
+        {
+          global: File.expand_path("~/.aircana"),
+          project: File.join(Dir.pwd, ".aircana"),
+          claude_global: File.expand_path("~/.claude"),
+          claude_project: File.join(Dir.pwd, ".claude")
+        }.transform_values { |path| Dir.exist?(path) }
       end
 
       def detect_os
