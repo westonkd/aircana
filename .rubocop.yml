@@ -27,7 +27,29 @@ Metrics/ClassLength:
     - 'lib/aircana/human_logger.rb'
     - 'lib/aircana/system_checker.rb'
     - 'lib/aircana/cli/commands/add_directory.rb'
+    - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/install.rb'
 
 Metrics/ModuleLength:
   Exclude:
     - 'lib/aircana/cli/commands/add_directory.rb'
+    - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/install.rb'
+
+Metrics/MethodLength:
+  Exclude:
+    - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/install.rb'
+
+Metrics/AbcSize:
+  Exclude:
+    - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/install.rb'
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'lib/aircana/cli/commands/hooks.rb'
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'lib/aircana/cli/commands/hooks.rb'

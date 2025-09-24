@@ -31,6 +31,13 @@ RSpec.describe Aircana::Configuration do
     end
   end
 
+  describe "#hooks_dir" do
+    it "returns the .aircana/hooks directory within project_dir" do
+      expected_path = File.join(config.project_dir, ".aircana", "hooks")
+      expect(config.hooks_dir).to eq(expected_path)
+    end
+  end
+
   describe "confluence configuration" do
     it "allows setting confluence_base_url" do
       config.confluence_base_url = "https://company.atlassian.net/wiki"
