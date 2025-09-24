@@ -88,6 +88,7 @@ Create Claude Code agents with:
 2. **Set up your project**:
    ```bash
    cd your-project
+   aircana generate
    aircana install    # Set up Aircana integration in this project
    ```
 
