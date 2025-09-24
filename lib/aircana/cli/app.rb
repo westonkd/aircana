@@ -14,6 +14,7 @@ require_relative "commands/work"
 
 require_relative "subcommand"
 require_relative "commands/agents"
+require_relative "commands/hooks"
 
 module Aircana
   module CLI
@@ -86,8 +87,38 @@ module Aircana
         end
       end
 
+      class HooksSubcommand < Subcommand
+        desc "list", "List all available and installed hooks"
+        def list
+          Hooks.list
+        end
+
+        desc "enable HOOK_NAME", "Enable a specific hook"
+        def enable(hook_name)
+          Hooks.enable(hook_name)
+        end
+
+        desc "disable HOOK_NAME", "Disable a specific hook"
+        def disable(hook_name)
+          Hooks.disable(hook_name)
+        end
+
+        desc "create", "Create a new custom hook"
+        def create
+          Hooks.create
+        end
+
+        desc "status", "Show current hook configuration status"
+        def status
+          Hooks.status
+        end
+      end
+
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand
+
+      desc "hooks", "Manage Claude Code hooks"
+      subcommand "hooks", HooksSubcommand
     end
   end
 end
