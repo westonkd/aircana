@@ -101,7 +101,7 @@ module Aircana
         {
           "id" => page["id"],
           "title" => page["title"],
-          "last_updated" => page.dig("version", "when") || Time.now.utc.iso8601
+          "last_updated" => page.dig("version", "when") || Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
       end
 

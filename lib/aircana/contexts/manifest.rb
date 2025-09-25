@@ -28,7 +28,7 @@ module Aircana
           if File.exist?(manifest_path)
             existing_data = JSON.parse(File.read(manifest_path))
             manifest_data = existing_data.merge({
-                                                  "last_updated" => Time.now.utc.iso8601,
+                                                  "last_updated" => Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
                                                   "sources" => sources
                                                 })
           else
@@ -87,7 +87,7 @@ module Aircana
         end
 
         def build_manifest_data(agent, sources)
-          timestamp = Time.now.utc.iso8601
+          timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
           {
             "version" => "1.0",
