@@ -114,38 +114,65 @@ module Aircana
 
           # Map hook files to Claude Code hook events and their properties
           hook_mappings = {
-            "pre_tool_use" => { event: "preToolUse", output_type: "advanced", tool_filter: nil },
-            "post_tool_use" => { event: "postToolUse", output_type: "simple", tool_filter: nil },
-            "user_prompt_submit" => { event: "userPromptSubmit", output_type: "advanced", tool_filter: nil },
-            "session_start" => { event: "sessionStart", output_type: "advanced", tool_filter: nil },
-            "rubocop_pre_commit" => { event: "preToolUse", output_type: "simple", tool_filter: ["Bash"] },
-            "rspec_test" => { event: "postToolUse", output_type: "simple", tool_filter: ["Bash"] },
-            "bundle_install" => { event: "postToolUse", output_type: "simple", tool_filter: ["Bash"] }
+            "pre_tool_use" => { event: "PreToolUse", matcher: nil },
+            "post_tool_use" => { event: "PostToolUse", matcher: nil },
+            "user_prompt_submit" => { event: "UserPromptSubmit", matcher: nil },
+            "session_start" => { event: "SessionStart", matcher: nil },
+            "rubocop_pre_commit" => { event: "PreToolUse", matcher: "Bash" },
+            "rspec_test" => { event: "PostToolUse", matcher: "Bash" },
+            "bundle_install" => { event: "PostToolUse", matcher: "Bash" }
           }
 
           Dir.glob("#{Aircana.configuration.hooks_dir}/*.sh").each do |hook_file|
             hook_name = File.basename(hook_file, ".sh")
-            next unless hook_mappings.key?(hook_name)
 
-            mapping = hook_mappings[hook_name]
+            # Determine mapping for this hook
+            mapping = if hook_mappings.key?(hook_name)
+                        hook_mappings[hook_name]
+                      else
+                        # For custom hooks, try to infer the event type from the filename
+                        infer_hook_mapping(hook_name)
+                      end
+
+            next unless mapping
+
             event_key = mapping[:event]
 
             # Create relative path from project root
             relative_path = File.join(".aircana", "hooks", "#{hook_name}.sh")
 
             hook_entry = {
-              "script" => relative_path,
-              "outputType" => mapping[:output_type]
+              "hooks" => [
+                {
+                  "type" => "command",
+                  "command" => relative_path
+                }
+              ]
             }
 
-            # Add tool filter if specified
-            hook_entry["toolFilter"] = mapping[:tool_filter] if mapping[:tool_filter]
+            # Add matcher if specified
+            hook_entry["matcher"] = mapping[:matcher] if mapping[:matcher]
 
             hooks[event_key] ||= []
             hooks[event_key] << hook_entry
           end
 
           hooks
+        end
+
+        def infer_hook_mapping(hook_name)
+          # Try to infer the event type from common patterns in the hook name
+          case hook_name
+          when /pre_tool_use|pre_tool|before_tool/i
+            { event: "PreToolUse", matcher: nil }
+          when /user_prompt|prompt_submit|before_prompt/i
+            { event: "UserPromptSubmit", matcher: nil }
+          when /session_start|session_init|startup/i
+            { event: "SessionStart", matcher: nil }
+          else
+            # Default to PostToolUse for unknown custom hooks and post_tool patterns
+            { event: "PostToolUse", matcher: nil }
+          end
         end
       end
     end

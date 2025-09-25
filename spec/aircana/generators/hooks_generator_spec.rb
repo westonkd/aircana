@@ -7,6 +7,15 @@ RSpec.describe Aircana::Generators::HooksGenerator do
   describe ".available_default_hooks" do
     it "returns list of available default hooks" do
       expected_hooks = %w[
+        session_start
+      ]
+      expect(described_class.available_default_hooks).to eq(expected_hooks)
+    end
+  end
+
+  describe ".all_available_hooks" do
+    it "returns list of all available hooks" do
+      expected_hooks = %w[
         pre_tool_use
         post_tool_use
         user_prompt_submit
@@ -15,7 +24,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
         rspec_test
         bundle_install
       ]
-      expect(described_class.available_default_hooks).to eq(expected_hooks)
+      expect(described_class.all_available_hooks).to eq(expected_hooks)
     end
   end
 
@@ -57,7 +66,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
 
   describe ".create_all_default_hooks" do
     it "creates all default hooks" do
-      expect(described_class).to receive(:create_default_hook).exactly(7).times
+      expect(described_class).to receive(:create_default_hook).exactly(1).times
       described_class.create_all_default_hooks
     end
   end

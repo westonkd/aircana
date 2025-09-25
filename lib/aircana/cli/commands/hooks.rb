@@ -10,7 +10,7 @@ module Aircana
     module Hooks
       class << self
         def list
-          available_hooks = Aircana::Generators::HooksGenerator.available_default_hooks
+          available_hooks = Aircana::Generators::HooksGenerator.all_available_hooks
           installed_hooks_list = installed_hooks
 
           if available_hooks.empty?
@@ -22,14 +22,16 @@ module Aircana
           available_hooks.each do |hook_name|
             status = installed_hooks_list.include?(hook_name) ? "[INSTALLED]" : "[AVAILABLE]"
             description = hook_description(hook_name)
-            Aircana.human_logger.info "  #{status} #{hook_name} - #{description}"
+            is_default = Aircana::Generators::HooksGenerator.available_default_hooks.include?(hook_name)
+            default_marker = is_default ? " (default)" : ""
+            Aircana.human_logger.info "  #{status} #{hook_name} - #{description}#{default_marker}"
           end
         end
 
         def enable(hook_name)
-          unless Aircana::Generators::HooksGenerator.available_default_hooks.include?(hook_name)
+          unless Aircana::Generators::HooksGenerator.all_available_hooks.include?(hook_name)
             Aircana.human_logger.error "Hook '#{hook_name}' is not available."
-            available_hooks_list = Aircana::Generators::HooksGenerator.available_default_hooks.join(", ")
+            available_hooks_list = Aircana::Generators::HooksGenerator.all_available_hooks.join(", ")
             Aircana.human_logger.info "Available hooks: #{available_hooks_list}"
             return
           end
@@ -74,6 +76,10 @@ module Aircana
 
           description = prompt.ask("Brief description of what this hook does:")
 
+          # Ensure custom hook names include the event type for proper mapping
+          # unless the name already contains it
+          hook_name = "#{hook_name}_#{hook_event}" unless hook_name.include?(hook_event.gsub("_", ""))
+
           create_custom_hook(hook_name, hook_event, description)
         end
 
@@ -96,8 +102,12 @@ module Aircana
               hooks_config.each do |event, configs|
                 configs = [configs] unless configs.is_a?(Array)
                 configs.each do |config|
-                  script_name = File.basename(config["script"], ".sh") if config["script"]
-                  Aircana.human_logger.info "  #{event}: #{script_name} (#{config["outputType"]})"
+                  next unless config["hooks"] && config["hooks"][0] && config["hooks"][0]["command"]
+
+                  command_path = config["hooks"][0]["command"]
+                  script_name = File.basename(command_path, ".sh")
+                  matcher_info = config["matcher"] ? " (matcher: #{config["matcher"]})" : ""
+                  Aircana.human_logger.info "  #{event}: #{script_name}#{matcher_info}"
                 end
               end
             end
@@ -140,6 +150,10 @@ module Aircana
 
           Aircana.human_logger.success "Custom hook created at #{hook_file}"
           Aircana.human_logger.info "You may need to customize the hook script for your specific needs."
+
+          # Install hooks to Claude settings
+          Install.run
+          Aircana.human_logger.success "Hook installed to Claude settings"
 
           # Optionally offer to open in editor
           prompt = TTY::Prompt.new
