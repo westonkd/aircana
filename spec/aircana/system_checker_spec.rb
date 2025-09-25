@@ -31,6 +31,7 @@ RSpec.describe Aircana::SystemChecker do
       before do
         allow(described_class).to receive(:system).with("which fzf", any_args).and_return(false)
         allow(described_class).to receive(:system).with("which git", any_args).and_return(true)
+        allow(described_class).to receive(:system).with("which jq", any_args).and_return(true)
         allow(described_class).to receive(:detect_os).and_return("macOS")
       end
 
@@ -49,6 +50,7 @@ RSpec.describe Aircana::SystemChecker do
       before do
         allow(described_class).to receive(:system).with("which fzf", any_args).and_return(true)
         allow(described_class).to receive(:system).with("which git", any_args).and_return(true)
+        allow(described_class).to receive(:system).with("which jq", any_args).and_return(true)
         allow(described_class).to receive(:system).with("which bat", any_args).and_return(false)
         allow(described_class).to receive(:system).with("which fd", any_args).and_return(false)
         allow(described_class).to receive(:detect_os).and_return("Ubuntu/Debian")
