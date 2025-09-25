@@ -34,9 +34,9 @@ RSpec.describe Aircana::CLI::Agents do
       end
 
       it "handles agent names with various formats" do
-        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "my-complex-agent-name").and_return({
-                                                                                                              pages_count: 1, sources: []
-                                                                                                            })
+        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "my-complex-agent-name").and_return(
+          { pages_count: 1, sources: [] }
+        )
 
         described_class.refresh("My Complex Agent Name")
 
