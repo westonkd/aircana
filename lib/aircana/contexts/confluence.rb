@@ -3,6 +3,7 @@
 require "httparty"
 require "reverse_markdown"
 require_relative "local"
+require_relative "manifest"
 require_relative "confluence_logging"
 require_relative "confluence_http"
 require_relative "confluence_content"
@@ -28,10 +29,36 @@ module Aircana
         setup_httparty
 
         pages = search_and_log_pages(agent)
-        return 0 if pages.empty?
+        return { pages_count: 0, sources: [] } if pages.empty?
 
-        process_pages(pages, agent)
-        pages.size
+        sources = process_pages_with_manifest(pages, agent)
+        create_or_update_manifest(agent, sources)
+
+        { pages_count: pages.size, sources: sources }
+      end
+
+      def refresh_from_manifest(agent:)
+        sources = Manifest.sources_from_manifest(agent)
+        return { pages_count: 0, sources: [] } if sources.empty?
+
+        validate_configuration!
+        setup_httparty
+
+        confluence_sources = sources.select { |s| s["type"] == "confluence" }
+        return { pages_count: 0, sources: [] } if confluence_sources.empty?
+
+        all_pages = []
+        confluence_sources.each do |source|
+          pages = fetch_pages_from_source(source)
+          all_pages.concat(pages)
+        end
+
+        return { pages_count: 0, sources: [] } if all_pages.empty?
+
+        updated_sources = process_pages_with_manifest(all_pages, agent)
+        Manifest.update_manifest(agent, updated_sources)
+
+        { pages_count: all_pages.size, sources: updated_sources }
       end
 
       def search_and_log_pages(agent)
@@ -48,7 +75,53 @@ module Aircana
         end
       end
 
+      def process_pages_with_manifest(pages, agent)
+        page_metadata = []
+
+        ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
+          store_page_as_markdown(page, agent)
+          page_metadata << extract_page_metadata(page)
+        end
+
+        build_source_metadata(agent, page_metadata)
+      end
+
       private
+
+      def fetch_pages_from_source(source)
+        case source["type"]
+        when "confluence"
+          fetch_pages_by_label(source["label"])
+        else
+          []
+        end
+      end
+
+      def extract_page_metadata(page)
+        {
+          "id" => page["id"],
+          "title" => page["title"],
+          "last_updated" => page.dig("version", "when") || Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+      end
+
+      def build_source_metadata(agent, page_metadata)
+        [
+          {
+            "type" => "confluence",
+            "label" => agent,
+            "pages" => page_metadata
+          }
+        ]
+      end
+
+      def create_or_update_manifest(agent, sources)
+        if Manifest.manifest_exists?(agent)
+          Manifest.update_manifest(agent, sources)
+        else
+          Manifest.create_manifest(agent, sources)
+        end
+      end
 
       def validate_configuration!
         config = Aircana.configuration

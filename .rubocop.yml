@@ -29,6 +29,9 @@ Metrics/ClassLength:
     - 'lib/aircana/cli/commands/add_directory.rb'
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
+    - 'lib/aircana/contexts/confluence.rb'
+    - 'lib/aircana/contexts/manifest.rb'
+    - 'lib/aircana/symlink_manager.rb'
 
 Metrics/ModuleLength:
   Exclude:
@@ -43,6 +46,8 @@ Metrics/MethodLength:
     - 'lib/aircana/cli/commands/project.rb'
     - 'lib/aircana/generators/project_config_generator.rb'
     - 'lib/aircana/symlink_manager.rb'
+    - 'lib/aircana/contexts/confluence.rb'
+    - 'lib/aircana/contexts/manifest.rb'
 
 Metrics/AbcSize:
   Exclude:
