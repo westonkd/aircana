@@ -10,7 +10,8 @@ module Aircana
       end
 
       def self.subcommand_prefix
-        name.gsub(/.*::/, "").gsub(/^[A-Z]/) do |match|
+        # Extract the main command name from class name (e.g., "FilesSubcommand" -> "files")
+        name.gsub(/.*::/, "").gsub(/Subcommand$/, "").gsub(/^[A-Z]/) do |match|
           match[0].downcase
         end.gsub(/[A-Z]/) { |match| "-#{match[0].downcase}" } # rubocop:disable Style/MultilineBlockChain
       end

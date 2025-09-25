@@ -13,34 +13,19 @@ require_relative "commands/plan"
 require_relative "commands/work"
 
 require_relative "subcommand"
+require_relative "help_formatter"
 require_relative "commands/agents"
 require_relative "commands/hooks"
 require_relative "commands/project"
+require_relative "commands/files"
 
 module Aircana
   module CLI
     # Thor application for the primary cli
     class App < Thor
+      include HelpFormatter
+
       package_name "Aircana"
-
-      # TODO: Decide how to represent and store file groups
-      desc "add-files",
-           "interactively add files or file groups to the current context. Use tab to mark multiple files."
-      def add_files
-        AddFiles.run
-      end
-
-      desc "add-dir [DIRECTORY_PATH]",
-           "add all files from the specified directory recursively to the current context"
-      def add_dir(directory_path)
-        AddDirectory.run(directory_path)
-      end
-
-      desc "clear-files",
-           "Removes all files from the current set of 'relevant files'"
-      def clear_files
-        ClearFiles.run
-      end
 
       desc "doctor", "Check system health and validate all dependencies"
       option :verbose, type: :boolean, default: false, desc: "Show detailed information about optional dependencies"
@@ -66,14 +51,26 @@ module Aircana
         Install.run
       end
 
-      desc "plan", "Launch Claude Code with planner agent for Jira ticket planning"
-      def plan
-        Plan.run
-      end
+      class FilesSubcommand < Subcommand
+        desc "add", "Interactively add files to current context"
+        def add
+          Files.add
+        end
 
-      desc "work", "Launch Claude Code with worker agent for Jira ticket implementation"
-      def work
-        Work.run
+        desc "add-dir [DIRECTORY_PATH]", "Add all files from directory to context"
+        def add_dir(directory_path)
+          Files.add_dir(directory_path)
+        end
+
+        desc "clear", "Remove all files from current context"
+        def clear
+          Files.clear
+        end
+
+        desc "list", "Show current relevant files"
+        def list
+          Files.list
+        end
       end
 
       class AgentsSubcommand < Subcommand
@@ -85,6 +82,11 @@ module Aircana
         desc "refresh AGENT", "Refresh agent knowledge from Confluence pages with matching labels"
         def refresh(agent)
           Agents.refresh(agent)
+        end
+
+        desc "list", "List all configured agents"
+        def list
+          Agents.list
         end
       end
 
@@ -141,6 +143,9 @@ module Aircana
           Project.sync
         end
       end
+
+      desc "files", "Manage relevant files for context"
+      subcommand "files", FilesSubcommand
 
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand

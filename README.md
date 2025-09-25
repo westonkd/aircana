@@ -94,7 +94,7 @@ Create Claude Code agents with:
 
 3. **Add files to context**:
    ```bash
-   aircana add-files    # Interactive selection
+   aircana files add    # Interactive selection
    ```
 
    Then in Claude Code, include them with whenever you want to reload the files into the current context:
@@ -107,13 +107,10 @@ Create Claude Code agents with:
    aircana agents create    # Tag Confluence pages with the agent's name before or after creation to pull that knowledge into the agent's knowledge base. 
    ```
 
-5. **Launch Claude Code**:
-
-   _These command are still very much a work in progress_  
-
+5. **View your current context**:
    ```bash
-   aircana plan    # For planning work
-   aircana work    # For implementation
+   aircana files list     # See all tracked files
+   aircana agents list    # See all configured agents
    ```
 
 ## Confluence Setup (Optional)
@@ -209,30 +206,44 @@ aircana agents refresh backend-api
 
 ### File Management
 ```bash
-aircana add-files          # Interactively select files to add to context
-aircana add-dir [PATH]     # Add all files from directory
-aircana clear-files        # Clear current file context
-aircana dump-context [AGENT] # View current context for agent
+aircana files add         # Interactively select files to add to context
+aircana files add-dir [PATH] # Add all files from directory to context
+aircana files clear       # Clear current file context
+aircana files list        # Show current relevant files
 ```
 
 ### Agent Management
 ```bash
-aircana agents create      # Create new agent interactively
+aircana agents create     # Create new agent interactively
 aircana agents refresh [AGENT] # Sync agent knowledge from Confluence
+aircana agents list       # List all configured agents
 ```
 
-### Claude Code Integration
+### Hook Management
 ```bash
-aircana plan              # Launch Claude Code with planner agent (experimental)
-aircana work              # Launch Claude Code with worker agent (experimental)
-aircana generate          # Generate Claude Code configuration files
-aircana install           # Install generated files to Claude Code
+aircana hooks list        # List all available and installed hooks
+aircana hooks enable [HOOK] # Enable a specific hook
+aircana hooks disable [HOOK] # Disable a specific hook
+aircana hooks create      # Create custom hook
+aircana hooks status      # Show hook configuration status
+```
+
+### Project Management
+```bash
+aircana project init     # Initialize multi-root project configuration
+aircana project add [PATH] # Add folder to multi-root configuration
+aircana project remove [PATH] # Remove folder from multi-root configuration
+aircana project list     # List all configured folders and agents
+aircana project sync     # Manually sync symlinks for multi-root agents
 ```
 
 ### System
 ```bash
-aircana doctor            # Check system health and dependencies
-aircana doctor --verbose  # Show detailed dependency information
+aircana generate         # Generate Claude Code configuration files
+aircana install          # Install generated files to Claude Code
+aircana doctor           # Check system health and dependencies
+aircana doctor --verbose # Show detailed dependency information
+aircana dump-context [AGENT] # View current context for agent
 ```
 
 ## Development
