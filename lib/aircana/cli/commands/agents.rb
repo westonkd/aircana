@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "tty-prompt"
 require_relative "../../generators/agents_generator"
 
@@ -45,6 +46,16 @@ module Aircana
           prompt_for_agent_review(prompt, file)
 
           Aircana.human_logger.success "Agent '#{agent_name}' setup complete!"
+        end
+
+        def list
+          agent_dir = Aircana.configuration.agent_knowledge_dir
+          return print_no_agents_message unless Dir.exist?(agent_dir)
+
+          agent_folders = find_agent_folders(agent_dir)
+          return print_no_agents_message if agent_folders.empty?
+
+          print_agents_list(agent_folders)
         end
 
         private
@@ -141,6 +152,38 @@ module Aircana
           else
             Aircana.human_logger.warn "No editor found. Please edit #{file_path} manually."
           end
+        end
+
+        def print_no_agents_message
+          Aircana.human_logger.info("No agents configured yet.")
+        end
+
+        def find_agent_folders(agent_dir)
+          Dir.entries(agent_dir).select do |entry|
+            path = File.join(agent_dir, entry)
+            File.directory?(path) && !entry.start_with?(".")
+          end
+        end
+
+        def print_agents_list(agent_folders)
+          Aircana.human_logger.info("Configured agents:")
+          agent_folders.each_with_index do |agent_name, index|
+            description = get_agent_description(agent_name)
+            Aircana.human_logger.info("  #{index + 1}. #{agent_name} - #{description}")
+          end
+          Aircana.human_logger.info("\nTotal: #{agent_folders.length} agents")
+        end
+
+        def get_agent_description(agent_name)
+          agent_config_path = File.join(
+            Aircana.configuration.agent_knowledge_dir,
+            agent_name,
+            "agent.json"
+          )
+          return "Configuration incomplete" unless File.exist?(agent_config_path)
+
+          config = JSON.parse(File.read(agent_config_path))
+          config["description"] || "No description available"
         end
 
         def find_available_editor
