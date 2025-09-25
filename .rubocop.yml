@@ -40,16 +40,23 @@ Metrics/MethodLength:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
+    - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/generators/project_config_generator.rb'
+    - 'lib/aircana/symlink_manager.rb'
 
 Metrics/AbcSize:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
+    - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/symlink_manager.rb'
 
 Metrics/CyclomaticComplexity:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/project.rb'
 
 Metrics/PerceivedComplexity:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
+    - 'lib/aircana/cli/commands/project.rb'

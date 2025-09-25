@@ -15,6 +15,7 @@ require_relative "commands/work"
 require_relative "subcommand"
 require_relative "commands/agents"
 require_relative "commands/hooks"
+require_relative "commands/project"
 
 module Aircana
   module CLI
@@ -114,11 +115,41 @@ module Aircana
         end
       end
 
+      class ProjectSubcommand < Subcommand
+        desc "init", "Initialize project.json for multi-root support"
+        def init
+          Project.init
+        end
+
+        desc "add FOLDER_PATH", "Add a folder to multi-root configuration"
+        def add(folder_path)
+          Project.add(folder_path)
+        end
+
+        desc "remove FOLDER_PATH", "Remove a folder from multi-root configuration"
+        def remove(folder_path)
+          Project.remove(folder_path)
+        end
+
+        desc "list", "List all configured folders and their agents"
+        def list
+          Project.list
+        end
+
+        desc "sync", "Manually sync symlinks for multi-root agents"
+        def sync
+          Project.sync
+        end
+      end
+
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand
 
       desc "hooks", "Manage Claude Code hooks"
       subcommand "hooks", HooksSubcommand
+
+      desc "project", "Manage multi-root project configuration"
+      subcommand "project", ProjectSubcommand
     end
   end
 end
