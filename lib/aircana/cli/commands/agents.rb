@@ -3,6 +3,7 @@
 require "json"
 require "tty-prompt"
 require_relative "../../generators/agents_generator"
+require_relative "../../contexts/manifest"
 
 module Aircana
   module CLI
@@ -13,7 +14,7 @@ module Aircana
       class << self # rubocop:disable Metrics/ClassLength
         def refresh(agent)
           normalized_agent = normalize_string(agent)
-          perform_refresh(normalized_agent)
+          perform_manifest_aware_refresh(normalized_agent)
         rescue Aircana::Error => e
           handle_refresh_error(normalized_agent, e)
         end
@@ -62,9 +63,10 @@ module Aircana
 
         def perform_refresh(normalized_agent)
           confluence = Aircana::Contexts::Confluence.new
-          pages_count = confluence.fetch_pages_for(agent: normalized_agent)
+          result = confluence.fetch_pages_for(agent: normalized_agent)
 
-          log_refresh_result(normalized_agent, pages_count)
+          log_refresh_result(normalized_agent, result[:pages_count])
+          result
         end
 
         def log_refresh_result(normalized_agent, pages_count)
@@ -73,6 +75,31 @@ module Aircana
           else
             log_no_pages_found(normalized_agent)
           end
+        end
+
+        def perform_manifest_aware_refresh(normalized_agent)
+          confluence = Aircana::Contexts::Confluence.new
+
+          # Try manifest-based refresh first
+          if Aircana::Contexts::Manifest.manifest_exists?(normalized_agent)
+            Aircana.human_logger.info "Refreshing from knowledge manifest..."
+            result = confluence.refresh_from_manifest(agent: normalized_agent)
+          else
+            Aircana.human_logger.info "No manifest found, falling back to label-based search..."
+            result = confluence.fetch_pages_for(agent: normalized_agent)
+          end
+
+          log_refresh_result(normalized_agent, result[:pages_count])
+          result
+        end
+
+        def show_gitignore_recommendation
+          Aircana.human_logger.info ""
+          Aircana.human_logger.info "💡 Recommendation: Add knowledge directories to .gitignore:"
+          Aircana.human_logger.info "   echo \".aircana/agents/*/knowledge/\" >> .gitignore"
+          Aircana.human_logger.info ""
+          Aircana.human_logger.info "   This keeps knowledge sources in version control while excluding"
+          Aircana.human_logger.info "   the actual knowledge content from your repository."
         end
 
         def log_no_pages_found(normalized_agent)
@@ -114,7 +141,8 @@ module Aircana
 
           if prompt.yes?("Would you like to fetch knowledge for this agent from Confluence now?")
             Aircana.human_logger.info "Fetching knowledge from Confluence..."
-            perform_refresh(normalized_agent_name)
+            result = perform_refresh(normalized_agent_name)
+            show_gitignore_recommendation if result[:pages_count]&.positive?
           else
             Aircana.human_logger.info(
               "Skipping knowledge fetch. You can run 'aircana agents refresh #{normalized_agent_name}' later."

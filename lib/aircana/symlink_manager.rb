@@ -133,6 +133,26 @@ module Aircana
         to = Pathname.new(File.expand_path(to_path))
         to.relative_path_from(from).to_s
       end
+
+      # Helper methods for resolving symlinked agent paths
+      def resolve_agent_path(agent_name)
+        agent_path = File.join(Aircana.configuration.agent_knowledge_dir, agent_name)
+
+        if File.symlink?(agent_path)
+          File.readlink(agent_path)
+        else
+          agent_path
+        end
+      end
+
+      def agent_is_symlinked?(agent_name)
+        agent_path = File.join(Aircana.configuration.agent_knowledge_dir, agent_name)
+        File.symlink?(agent_path)
+      end
+
+      def resolve_symlinked_path(path)
+        File.symlink?(path) ? File.readlink(path) : path
+      end
     end
   end
 end

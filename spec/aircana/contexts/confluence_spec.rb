@@ -69,7 +69,9 @@ RSpec.describe Aircana::Contexts::Confluence do
 
         result = confluence.fetch_pages_for(agent: "test-agent")
 
-        expect(result).to eq(2)
+        expect(result[:pages_count]).to eq(2)
+        expect(result[:sources]).to be_an(Array)
+        expect(result[:sources].first["type"]).to eq("confluence")
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 1",
           content: "# Test Content 1\n\nSome content",
@@ -90,7 +92,8 @@ RSpec.describe Aircana::Contexts::Confluence do
 
         result = confluence.fetch_pages_for(agent: "nonexistent-agent")
 
-        expect(result).to eq(0)
+        expect(result[:pages_count]).to eq(0)
+        expect(result[:sources]).to eq([])
         expect(mock_local_storage).not_to have_received(:store_content)
       end
 
@@ -149,7 +152,8 @@ RSpec.describe Aircana::Contexts::Confluence do
 
         result = confluence.fetch_pages_for(agent: "test-agent")
 
-        expect(result).to eq(1)
+        expect(result[:pages_count]).to eq(1)
+        expect(result[:sources]).to be_an(Array)
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page", # title comes from the mock page data
           content: "# Test Content",

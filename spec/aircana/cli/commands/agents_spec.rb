@@ -16,12 +16,16 @@ RSpec.describe Aircana::CLI::Agents do
 
     # Mock the Confluence context
     allow(Aircana::Contexts::Confluence).to receive(:new).and_return(mock_confluence)
+
+    # Mock manifest existence to false by default (fallback to fetch_pages_for)
+    allow(Aircana::Contexts::Manifest).to receive(:manifest_exists?).and_return(false)
   end
 
   describe ".refresh" do
     context "when refresh is successful" do
       it "normalizes agent name and fetches pages" do
-        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "test-agent").and_return(3)
+        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "test-agent").and_return({ pages_count: 3,
+                                                                                                   sources: [] })
 
         described_class.refresh("Test Agent")
 
@@ -30,7 +34,9 @@ RSpec.describe Aircana::CLI::Agents do
       end
 
       it "handles agent names with various formats" do
-        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "my-complex-agent-name").and_return(1)
+        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "my-complex-agent-name").and_return({
+                                                                                                              pages_count: 1, sources: []
+                                                                                                            })
 
         described_class.refresh("My Complex Agent Name")
 
@@ -39,7 +45,8 @@ RSpec.describe Aircana::CLI::Agents do
       end
 
       it "handles case when no pages are found" do
-        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "empty-agent").and_return(0)
+        allow(mock_confluence).to receive(:fetch_pages_for).with(agent: "empty-agent").and_return({ pages_count: 0,
+                                                                                                    sources: [] })
 
         described_class.refresh("empty-agent")
 
