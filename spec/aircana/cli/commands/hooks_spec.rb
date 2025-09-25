@@ -35,7 +35,7 @@ RSpec.describe Aircana::CLI::Hooks do
   describe ".list" do
     context "when no hooks are available" do
       before do
-        allow(Aircana::Generators::HooksGenerator).to receive(:available_default_hooks).and_return([])
+        allow(Aircana::Generators::HooksGenerator).to receive(:all_available_hooks).and_return([])
       end
 
       it "shows no hooks available message" do
@@ -49,7 +49,8 @@ RSpec.describe Aircana::CLI::Hooks do
       let(:available_hooks) { %w[pre_tool_use post_tool_use rubocop_pre_commit] }
 
       before do
-        allow(Aircana::Generators::HooksGenerator).to receive(:available_default_hooks).and_return(available_hooks)
+        allow(Aircana::Generators::HooksGenerator).to receive(:all_available_hooks).and_return(available_hooks)
+        allow(Aircana::Generators::HooksGenerator).to receive(:available_default_hooks).and_return(["session_start"])
       end
 
       context "when no hooks are installed" do
@@ -86,7 +87,7 @@ RSpec.describe Aircana::CLI::Hooks do
     let(:available_hooks) { %w[pre_tool_use post_tool_use] }
 
     before do
-      allow(Aircana::Generators::HooksGenerator).to receive(:available_default_hooks).and_return(available_hooks)
+      allow(Aircana::Generators::HooksGenerator).to receive(:all_available_hooks).and_return(available_hooks)
     end
 
     context "when hook is not available" do
@@ -162,12 +163,16 @@ RSpec.describe Aircana::CLI::Hooks do
                                                       session_start
                                                     ]).and_return("pre_tool_use")
       allow(prompt_double).to receive(:yes?).with("Would you like to edit the hook file now?").and_return(false)
+      allow(Aircana::CLI::Install).to receive(:run)
     end
 
-    it "creates custom hook with user input" do
+    it "creates custom hook with user input and installs to Claude settings" do
+      expect(Aircana::CLI::Install).to receive(:run)
+
       described_class.create
 
-      expected_hook_file = File.join(test_hooks_dir, "my_custom_hook.sh")
+      # Hook name should include the event type
+      expected_hook_file = File.join(test_hooks_dir, "my_custom_hook_pre_tool_use.sh")
       expect(File).to exist(expected_hook_file)
 
       # Check that file is executable
@@ -179,6 +184,7 @@ RSpec.describe Aircana::CLI::Hooks do
       expect(content).to include("My custom hook")
 
       expect(@log_messages).to include([:success, "Custom hook created at #{expected_hook_file}"])
+      expect(@log_messages).to include([:success, "Hook installed to Claude settings"])
     end
 
     context "when user wants to edit hook file" do
@@ -220,16 +226,24 @@ RSpec.describe Aircana::CLI::Hooks do
     context "when settings file has hooks configured" do
       let(:hooks_config) do
         {
-          "preToolUse" => [
+          "PreToolUse" => [
             {
-              "script" => "/path/to/pre_tool_use.sh",
-              "outputType" => "advanced"
+              "hooks" => [
+                {
+                  "type" => "command",
+                  "command" => "/path/to/pre_tool_use.sh"
+                }
+              ]
             }
           ],
-          "postToolUse" => [
+          "PostToolUse" => [
             {
-              "script" => "/path/to/post_tool_use.sh",
-              "outputType" => "simple"
+              "hooks" => [
+                {
+                  "type" => "command",
+                  "command" => "/path/to/post_tool_use.sh"
+                }
+              ]
             }
           ]
         }
@@ -247,8 +261,8 @@ RSpec.describe Aircana::CLI::Hooks do
         described_class.status
 
         expect(@log_messages).to include([:info, "Configured hooks in Claude settings:"])
-        expect(@log_messages).to include([:info, "  preToolUse: pre_tool_use (advanced)"])
-        expect(@log_messages).to include([:info, "  postToolUse: post_tool_use (simple)"])
+        expect(@log_messages).to include([:info, "  PreToolUse: pre_tool_use"])
+        expect(@log_messages).to include([:info, "  PostToolUse: post_tool_use"])
       end
     end
 

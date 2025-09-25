@@ -5,7 +5,8 @@ require_relative "base_generator"
 module Aircana
   module Generators
     class HooksGenerator < BaseGenerator
-      HOOK_TYPES = %w[
+      # All available hook types (for manual creation)
+      ALL_HOOK_TYPES = %w[
         pre_tool_use
         post_tool_use
         user_prompt_submit
@@ -15,13 +16,22 @@ module Aircana
         bundle_install
       ].freeze
 
+      # Default hooks that are auto-installed
+      DEFAULT_HOOK_TYPES = %w[
+        session_start
+      ].freeze
+
       class << self
         def available_default_hooks
-          HOOK_TYPES
+          DEFAULT_HOOK_TYPES
+        end
+
+        def all_available_hooks
+          ALL_HOOK_TYPES
         end
 
         def create_default_hook(hook_name)
-          return unless available_default_hooks.include?(hook_name)
+          return unless all_available_hooks.include?(hook_name)
 
           template_path = File.join(File.dirname(__FILE__), "..", "templates", "hooks", "#{hook_name}.erb")
           output_path = File.join(Aircana.configuration.hooks_dir, "#{hook_name}.sh")

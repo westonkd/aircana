@@ -99,8 +99,8 @@ RSpec.describe Aircana::CLI::Install do
         expect(settings).to have_key("hooks")
 
         hooks_config = settings["hooks"]
-        expect(hooks_config).to have_key("preToolUse")
-        expect(hooks_config).to have_key("postToolUse")
+        expect(hooks_config).to have_key("PreToolUse")
+        expect(hooks_config).to have_key("PostToolUse")
 
         expect(@log_messages).to include([:success, "Installed hooks to #{settings_file}"])
       end
@@ -131,8 +131,8 @@ RSpec.describe Aircana::CLI::Install do
         # Hooks should be added
         expect(settings).to have_key("hooks")
         hooks_config = settings["hooks"]
-        expect(hooks_config).to have_key("preToolUse")
-        expect(hooks_config).to have_key("postToolUse")
+        expect(hooks_config).to have_key("PreToolUse")
+        expect(hooks_config).to have_key("PostToolUse")
       end
     end
 
@@ -166,12 +166,12 @@ RSpec.describe Aircana::CLI::Install do
         hooks_config = settings["hooks"]
 
         # Should not contain old hook
-        pre_tool_use_hooks = hooks_config["preToolUse"]
-        old_hook = pre_tool_use_hooks&.find { |hook| hook["script"] == "/old/hook.sh" }
+        pre_tool_use_hooks = hooks_config["PreToolUse"]
+        old_hook = pre_tool_use_hooks&.find { |hook| hook.dig("hooks", 0, "command") == "/old/hook.sh" }
         expect(old_hook).to be_nil
 
         # Should contain new hooks
-        new_hook = pre_tool_use_hooks&.find { |hook| hook["script"]&.include?("pre_tool_use.sh") }
+        new_hook = pre_tool_use_hooks&.find { |hook| hook.dig("hooks", 0, "command")&.include?("pre_tool_use.sh") }
         expect(new_hook).not_to be_nil
       end
     end
@@ -214,44 +214,45 @@ RSpec.describe Aircana::CLI::Install do
     it "builds correct hook configurations for all hook types" do
       config = described_class.send(:build_hook_configs)
 
-      # Check preToolUse hooks
-      expect(config["preToolUse"]).to be_an(Array)
-      pre_tool_hooks = config["preToolUse"]
+      # Check PreToolUse hooks
+      expect(config["PreToolUse"]).to be_an(Array)
+      pre_tool_hooks = config["PreToolUse"]
       expect(pre_tool_hooks.length).to eq(2) # pre_tool_use + rubocop_pre_commit
 
       # Check regular pre_tool_use hook
-      pre_tool_hook = pre_tool_hooks.find { |h| h["script"].include?("pre_tool_use.sh") }
+      pre_tool_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("pre_tool_use.sh") }
       expect(pre_tool_hook).not_to be_nil
-      expect(pre_tool_hook["outputType"]).to eq("advanced")
-      expect(pre_tool_hook["script"]).to eq(".aircana/hooks/pre_tool_use.sh")
+      expect(pre_tool_hook.dig("hooks", 0, "type")).to eq("command")
+      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/pre_tool_use.sh")
+      expect(pre_tool_hook["matcher"]).to be_nil
 
-      # Check rubocop hook has tool filter
-      rubocop_hook = pre_tool_hooks.find { |h| h["script"].include?("rubocop_pre_commit.sh") }
+      # Check rubocop hook has matcher
+      rubocop_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("rubocop_pre_commit.sh") }
       expect(rubocop_hook).not_to be_nil
-      expect(rubocop_hook["toolFilter"]).to eq(["Bash"])
-      expect(rubocop_hook["script"]).to eq(".aircana/hooks/rubocop_pre_commit.sh")
+      expect(rubocop_hook["matcher"]).to eq("Bash")
+      expect(rubocop_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/rubocop_pre_commit.sh")
 
-      # Check postToolUse hooks
-      expect(config["postToolUse"]).to be_an(Array)
-      post_tool_hooks = config["postToolUse"]
+      # Check PostToolUse hooks
+      expect(config["PostToolUse"]).to be_an(Array)
+      post_tool_hooks = config["PostToolUse"]
       expect(post_tool_hooks.length).to eq(3) # post_tool_use, rspec_test, bundle_install
 
       # Check that post_tool_use hook has correct path
-      post_tool_hook = post_tool_hooks.find { |h| h["script"].include?("post_tool_use.sh") }
+      post_tool_hook = post_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("post_tool_use.sh") }
       expect(post_tool_hook).not_to be_nil
-      expect(post_tool_hook["script"]).to eq(".aircana/hooks/post_tool_use.sh")
+      expect(post_tool_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/post_tool_use.sh")
 
-      # Check userPromptSubmit hook
-      expect(config["userPromptSubmit"]).to be_an(Array)
-      expect(config["userPromptSubmit"].length).to eq(1)
-      user_prompt_hook = config["userPromptSubmit"].first
-      expect(user_prompt_hook["outputType"]).to eq("advanced")
+      # Check UserPromptSubmit hook
+      expect(config["UserPromptSubmit"]).to be_an(Array)
+      expect(config["UserPromptSubmit"].length).to eq(1)
+      user_prompt_hook = config["UserPromptSubmit"].first
+      expect(user_prompt_hook.dig("hooks", 0, "type")).to eq("command")
 
-      # Check sessionStart hook
-      expect(config["sessionStart"]).to be_an(Array)
-      expect(config["sessionStart"].length).to eq(1)
-      session_hook = config["sessionStart"].first
-      expect(session_hook["outputType"]).to eq("advanced")
+      # Check SessionStart hook
+      expect(config["SessionStart"]).to be_an(Array)
+      expect(config["SessionStart"].length).to eq(1)
+      session_hook = config["SessionStart"].first
+      expect(session_hook.dig("hooks", 0, "type")).to eq("command")
     end
 
     context "when no hook files exist" do
@@ -281,15 +282,91 @@ RSpec.describe Aircana::CLI::Install do
         FileUtils.rm_rf(isolated_hooks_dir)
       end
 
-      it "only includes known hooks" do
+      it "includes both known and custom hooks" do
         config = described_class.send(:build_hook_configs)
 
-        expect(config).to have_key("postToolUse")
-        expect(config).not_to have_key("unknown")
+        expect(config).to have_key("PostToolUse")
 
-        # Should only have the known post_tool_use hook
-        expect(config["postToolUse"].length).to eq(1)
+        # Should have both hooks (post_tool_use and unknown_hook which defaults to PostToolUse)
+        expect(config["PostToolUse"].length).to eq(2)
       end
+    end
+
+    context "with custom hook files having event types in names" do
+      let(:isolated_hooks_dir) { File.join(Dir.pwd, "spec_isolated_hooks_#{Time.now.to_i}_#{rand(1000)}") }
+
+      before do
+        FileUtils.mkdir_p(isolated_hooks_dir)
+        allow(Aircana.configuration).to receive(:hooks_dir).and_return(isolated_hooks_dir)
+
+        # Create custom hooks with event type in name
+        File.write(File.join(isolated_hooks_dir, "my_validation_pre_tool_use.sh"), "custom pre hook")
+        File.write(File.join(isolated_hooks_dir, "cleanup_after_tool.sh"), "custom post hook")
+        File.write(File.join(isolated_hooks_dir, "enhance_user_prompt.sh"), "custom prompt hook")
+      end
+
+      after do
+        FileUtils.rm_rf(isolated_hooks_dir)
+      end
+
+      it "correctly maps custom hooks to appropriate events" do
+        config = described_class.send(:build_hook_configs)
+
+        # Check PreToolUse has the validation hook
+        expect(config["PreToolUse"]).to be_an(Array)
+        expect(config["PreToolUse"].length).to eq(1)
+        expect(config["PreToolUse"][0].dig("hooks", 0, "command")).to include("my_validation_pre_tool_use.sh")
+
+        # Check PostToolUse has the cleanup hook
+        expect(config["PostToolUse"]).to be_an(Array)
+        expect(config["PostToolUse"].length).to eq(1)
+        expect(config["PostToolUse"][0].dig("hooks", 0, "command")).to include("cleanup_after_tool.sh")
+
+        # Check UserPromptSubmit has the enhance hook
+        expect(config["UserPromptSubmit"]).to be_an(Array)
+        expect(config["UserPromptSubmit"].length).to eq(1)
+        expect(config["UserPromptSubmit"][0].dig("hooks", 0, "command")).to include("enhance_user_prompt.sh")
+      end
+    end
+  end
+
+  describe ".infer_hook_mapping" do
+    it "infers PreToolUse for pre_tool patterns" do
+      mapping = described_class.send(:infer_hook_mapping, "my_pre_tool_hook")
+      expect(mapping[:event]).to eq("PreToolUse")
+      expect(mapping[:matcher]).to be_nil
+
+      mapping = described_class.send(:infer_hook_mapping, "before_tool_validation")
+      expect(mapping[:event]).to eq("PreToolUse")
+    end
+
+    it "defaults to PostToolUse for post_tool patterns" do
+      mapping = described_class.send(:infer_hook_mapping, "my_post_tool_hook")
+      expect(mapping[:event]).to eq("PostToolUse")
+
+      mapping = described_class.send(:infer_hook_mapping, "after_tool_execution")
+      expect(mapping[:event]).to eq("PostToolUse")
+    end
+
+    it "infers UserPromptSubmit for prompt patterns" do
+      mapping = described_class.send(:infer_hook_mapping, "user_prompt_enhancer")
+      expect(mapping[:event]).to eq("UserPromptSubmit")
+
+      mapping = described_class.send(:infer_hook_mapping, "before_prompt")
+      expect(mapping[:event]).to eq("UserPromptSubmit")
+    end
+
+    it "infers SessionStart for session patterns" do
+      mapping = described_class.send(:infer_hook_mapping, "session_init")
+      expect(mapping[:event]).to eq("SessionStart")
+
+      mapping = described_class.send(:infer_hook_mapping, "startup_hook")
+      expect(mapping[:event]).to eq("SessionStart")
+    end
+
+    it "defaults to PostToolUse for unknown patterns" do
+      mapping = described_class.send(:infer_hook_mapping, "some_random_hook")
+      expect(mapping[:event]).to eq("PostToolUse")
     end
   end
 
