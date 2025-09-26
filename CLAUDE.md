@@ -36,7 +36,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana plan` - Launch Claude Code with planner agent (experimental)
 - `aircana work` - Launch Claude Code with worker agent (experimental)
 - `aircana agents create` - Create a new agent interactively
-- `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence
+- `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
+- `aircana agents add-url <agent> <url>` - Add a web URL to an agent's knowledge base
 - `aircana hooks list` - List all available hooks
 - `aircana hooks enable <hook>` - Enable a specific hook
 - `aircana hooks disable <hook>` - Disable a specific hook
@@ -57,6 +58,7 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
   - `relevant_files.rb`: Manages current working file set
   - `confluence.rb`: Handles Confluence page fetching and caching
   - `confluence_content.rb`: Processes Confluence content
+  - `web.rb`: Handles web URL fetching and HTML to Markdown conversion
   - `local.rb`: Local file context management
 - **Generators** (`lib/aircana/generators/`): Template generation system
   - `base_generator.rb`: Base class for all generators
@@ -95,9 +97,21 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
 - Rubocop configured with custom rules in `.rubocop.yml`
 - String style enforced as double quotes
 
-### Confluence Integration
-When configured, agents can sync knowledge from Confluence:
+### Knowledge Sources
+Agents can sync knowledge from multiple sources:
+
+**Confluence Integration:**
 - Set environment variables: `CONFLUENCE_BASE_URL`, `CONFLUENCE_USERNAME`, `CONFLUENCE_API_TOKEN`
 - Pages are fetched based on agent name as label
 - Content cached locally for offline access
-- Refresh with `aircana agents refresh <agent>`
+
+**Web URL Integration:**
+- Add URLs directly to agent knowledge bases
+- HTML content is automatically converted to Markdown
+- Interactive URL collection during agent creation
+- Add individual URLs: `aircana agents add-url <agent> <url>`
+
+**Unified Management:**
+- Both sources tracked in manifest.json for each agent
+- Refresh all sources with `aircana agents refresh <agent>`
+- Content stored as Markdown files in `.aircana/agents/<agent>/knowledge/`

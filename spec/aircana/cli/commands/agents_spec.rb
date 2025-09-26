@@ -87,6 +87,116 @@ RSpec.describe Aircana::CLI::Agents do
     end
   end
 
+  describe ".add_url" do
+    let(:mock_web) { instance_double(Aircana::Contexts::Web) }
+    let(:agent) { "test-agent" }
+    let(:url) { "https://example.com/test" }
+    let(:url_metadata) do
+      {
+        "url" => url,
+        "title" => "Test Page",
+        "last_fetched" => "2024-01-01T00:00:00Z"
+      }
+    end
+
+    before do
+      allow(Aircana::Contexts::Web).to receive(:new).and_return(mock_web)
+      allow(described_class).to receive(:agent_exists?).with(agent).and_return(true)
+    end
+
+    context "when agent exists and URL fetch is successful" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(url_metadata)
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with(agent).and_return([])
+        allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
+      end
+
+      it "adds URL to agent's knowledge base" do
+        described_class.add_url(agent, url)
+
+        expect(mock_web).to have_received(:fetch_url_for).with(agent: agent, url: url)
+        expect(@log_messages).to include([:success, "Successfully added URL to agent '#{agent}'"])
+      end
+
+      it "updates the manifest with the new URL" do
+        described_class.add_url(agent, url)
+
+        expected_sources = [{ "type" => "web", "urls" => [url_metadata] }]
+        expect(Aircana::Contexts::Manifest).to have_received(:update_manifest).with(agent, expected_sources)
+      end
+
+      context "when agent already has web sources" do
+        let(:existing_url_metadata) do
+          {
+            "url" => "https://existing.com",
+            "title" => "Existing Page",
+            "last_fetched" => "2023-12-01T00:00:00Z"
+          }
+        end
+        let(:existing_sources) do
+          [
+            { "type" => "web", "urls" => [existing_url_metadata] },
+            { "type" => "confluence", "label" => "test-agent", "pages" => [] }
+          ]
+        end
+
+        before do
+          allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest)
+            .with(agent).and_return(existing_sources)
+        end
+
+        it "adds to existing web source" do
+          described_class.add_url(agent, url)
+
+          expected_web_urls = [existing_url_metadata, url_metadata]
+          expected_sources = [
+            { "type" => "confluence", "label" => "test-agent", "pages" => [] },
+            { "type" => "web", "urls" => expected_web_urls }
+          ]
+          expect(Aircana::Contexts::Manifest).to have_received(:update_manifest)
+            .with(agent, expected_sources)
+        end
+      end
+    end
+
+    context "when agent does not exist" do
+      before do
+        allow(described_class).to receive(:agent_exists?).with("nonexistent").and_return(false)
+      end
+
+      it "logs error and exits" do
+        expect { described_class.add_url("nonexistent", url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include(
+          [:error, "Agent 'nonexistent' not found. Use 'aircana agents list' to see available agents."]
+        )
+      end
+    end
+
+    context "when URL fetch fails" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(nil)
+      end
+
+      it "logs error and exits" do
+        expect { described_class.add_url(agent, url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include([:error, "Failed to fetch URL: #{url}"])
+      end
+    end
+
+    context "when web context raises an error" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for)
+          .with(agent: agent, url: url)
+          .and_raise(Aircana::Error, "Invalid URL format")
+      end
+
+      it "handles error gracefully" do
+        expect { described_class.add_url(agent, url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include([:error, "Failed to add URL: Invalid URL format"])
+      end
+    end
+  end
+
   describe "normalize_string (private method)" do
     it "normalizes agent names consistently" do
       # Test the same normalization logic used in create and refresh
