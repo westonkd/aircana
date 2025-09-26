@@ -9,7 +9,7 @@ module Aircana
     module Install
       class << self
         def run
-          ensure_output_exists
+          generate_files
           ensure_project_config_exists
           install_commands_to_claude
           install_hooks_to_claude
@@ -17,10 +17,8 @@ module Aircana
 
         private
 
-        def ensure_output_exists
-          return if Dir.exist?(Aircana.configuration.output_dir)
-
-          Aircana.human_logger.warn("No generated output files-auto generating now...")
+        def generate_files
+          Aircana.human_logger.info("Generating files before installation...")
           Generate.run
         end
 

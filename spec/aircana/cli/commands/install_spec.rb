@@ -39,37 +39,28 @@ RSpec.describe Aircana::CLI::Install do
   end
 
   describe ".run" do
-    context "when output directory doesn't exist" do
-      before do
-        FileUtils.rm_rf(test_output_dir)
-        allow(Aircana::CLI::Generate).to receive(:run)
-      end
+    before do
+      # Create a sample command file
+      File.write(File.join(test_commands_dir, "sample-command.md"), "# Sample Command")
 
-      it "runs generate first" do
-        expect(Aircana::CLI::Generate).to receive(:run)
-
-        described_class.run
-
-        expect(@log_messages).to include([:warn, /No generated output files-auto generating now/])
-      end
+      # Mock agents generator for default agents check
+      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
+      allow(File).to receive(:expand_path).and_call_original
+      allow(Aircana::CLI::Generate).to receive(:run)
     end
 
-    context "when output directory exists" do
-      before do
-        # Create a sample command file
-        File.write(File.join(test_commands_dir, "sample-command.md"), "# Sample Command")
+    it "always runs generate first" do
+      expect(Aircana::CLI::Generate).to receive(:run)
 
-        # Mock agents generator for default agents check
-        allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return(%w[planner])
-        allow(File).to receive(:expand_path).and_call_original
-      end
+      described_class.run
 
-      it "installs commands and hooks without generating" do
-        described_class.run
+      expect(@log_messages).to include([:info, "Generating files before installation..."])
+    end
 
-        expect(@log_messages).to include([:success, /Installing.*sample-command.md/])
-        expect(Aircana::CLI::Generate).not_to receive(:run)
-      end
+    it "installs commands and hooks after generating" do
+      described_class.run
+
+      expect(@log_messages).to include([:success, /Installing.*sample-command.md/])
     end
   end
 

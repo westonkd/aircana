@@ -33,8 +33,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana dump-context <agent_name>` - Dump context for specified agent
 - `aircana generate` - Generate all configured files
 - `aircana install` - Install generated files to Claude Code config
-- `aircana plan` - Launch Claude Code with planner agent (experimental)
-- `aircana work` - Launch Claude Code with worker agent (experimental)
 - `aircana agents create` - Create a new agent interactively
 - `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
 - `aircana agents add-url <agent> <url>` - Add a web URL to an agent's knowledge base
