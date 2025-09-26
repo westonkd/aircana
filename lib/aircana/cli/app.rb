@@ -9,8 +9,6 @@ require_relative "commands/doctor"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
 require_relative "commands/install"
-require_relative "commands/plan"
-require_relative "commands/work"
 
 require_relative "subcommand"
 require_relative "help_formatter"

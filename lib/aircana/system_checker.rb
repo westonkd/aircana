@@ -37,6 +37,17 @@ module Aircana
     }.freeze
 
     OPTIONAL_COMMANDS = {
+      "aws" => {
+        purpose: "SQS notifications via AWS CLI",
+        fallback: "SQS notifications will be disabled",
+        install: {
+          "macOS" => "brew install awscli",
+          "Ubuntu/Debian" => "apt install awscli",
+          "Fedora/CentOS" => "dnf install awscli",
+          "Arch" => "pacman -S aws-cli",
+          "Other" => "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+        }
+      },
       "bat" => {
         purpose: "enhanced file previews",
         fallback: "head/cat for basic previews",

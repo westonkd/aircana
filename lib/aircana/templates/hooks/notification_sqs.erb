@@ -1,0 +1,75 @@
+#!/bin/bash
+# Aircana SQS notification hook
+# Sends Claude Code notifications to SQS
+
+# Read JSON input from stdin
+INPUT=$(cat)
+
+# Set up logging
+mkdir -p ~/.aircana
+LOG_FILE="$HOME/.aircana/sqs_notifications.log"
+
+# Log the notification input for debugging
+echo "$(date): Notification Hook Input:" >> $LOG_FILE
+echo "$INPUT" >> $LOG_FILE
+echo "---" >> $LOG_FILE
+
+# Check if jq is available
+if ! command -v jq &> /dev/null; then
+    echo "$(date): Error - jq not found. Cannot parse notification." >> $LOG_FILE
+    exit 0
+fi
+
+# Check if aws CLI is available
+if ! command -v aws &> /dev/null; then
+    echo "$(date): Error - aws CLI not found. Cannot send to SQS." >> $LOG_FILE
+    exit 0
+fi
+
+# Parse the notification message
+MESSAGE=$(echo "$INPUT" | jq -r '.message // empty')
+
+# Skip empty messages
+if [ -z "$MESSAGE" ] || [ "$MESSAGE" = "null" ]; then
+    echo "$(date): No message found in notification" >> $LOG_FILE
+    exit 0
+fi
+
+# Check required environment variables
+if [ -z "$AIRCANA_SQS_QUEUE_URL" ]; then
+    echo "$(date): AIRCANA_SQS_QUEUE_URL not set, skipping SQS notification" >> $LOG_FILE
+    exit 0
+fi
+
+if [ -z "$AIRCANA_SQS_MESSAGE_TEMPLATE" ]; then
+    echo "$(date): AIRCANA_SQS_MESSAGE_TEMPLATE not set, skipping SQS notification" >> $LOG_FILE
+    exit 0
+fi
+
+# Create the message body by substituting {{message}} in the template
+MESSAGE_BODY=$(echo "$AIRCANA_SQS_MESSAGE_TEMPLATE" | sed "s|{{message}}|$MESSAGE|g")
+
+# Log the message being sent
+echo "$(date): Sending SQS message:" >> $LOG_FILE
+echo "Queue URL: $AIRCANA_SQS_QUEUE_URL" >> $LOG_FILE
+echo "Message Body: $MESSAGE_BODY" >> $LOG_FILE
+
+# Send message to SQS using aws CLI
+AWS_REGION=${AWS_REGION:-us-east-1}
+SQS_RESULT=$(aws --region "$AWS_REGION" sqs send-message \
+  --queue-url "$AIRCANA_SQS_QUEUE_URL" \
+  --message-body "$MESSAGE_BODY" 2>&1)
+
+# Log the result
+if [ $? -eq 0 ]; then
+    echo "$(date): Successfully sent SQS message" >> $LOG_FILE
+    echo "Response: $SQS_RESULT" >> $LOG_FILE
+else
+    echo "$(date): Failed to send SQS message" >> $LOG_FILE
+    echo "Error: $SQS_RESULT" >> $LOG_FILE
+fi
+
+echo "---" >> $LOG_FILE
+
+# Return success - don't block Claude Code if SQS fails
+exit 0

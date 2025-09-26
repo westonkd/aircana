@@ -126,6 +126,54 @@ module Aircana
           end
         end
       end
+
+      module SQSIntegration
+        def check_sqs_integration
+          Aircana.human_logger.info "\nSQS Integration:"
+
+          check_sqs_dependencies
+          check_sqs_configuration
+        end
+
+        def check_sqs_dependencies
+          check_command("aws", "SQS operations", required: false)
+          check_command("jq", "JSON processing for notifications", required: false)
+        end
+
+        def check_sqs_configuration
+          sqs_queue_url = ENV.fetch("AIRCANA_SQS_QUEUE_URL", nil)
+          sqs_message_template = ENV.fetch("AIRCANA_SQS_MESSAGE_TEMPLATE", nil)
+          aws_region = ENV.fetch("AWS_REGION", "us-east-1")
+
+          if sqs_configured?(sqs_queue_url, sqs_message_template)
+            log_success("SQS Config", "Environment variables configured")
+            log_sqs_config_details(sqs_queue_url, sqs_message_template, aws_region) if @verbose
+          else
+            log_info("SQS Config", "Not configured")
+            log_sqs_configuration_remedy
+          end
+        end
+
+        def sqs_configured?(queue_url, message_template)
+          !queue_url.nil? && !queue_url.empty? &&
+            !message_template.nil? && !message_template.empty?
+        end
+
+        def log_sqs_config_details(queue_url, message_template, aws_region)
+          log_info("  AIRCANA_SQS_QUEUE_URL", queue_url.length > 50 ? "#{queue_url[0..47]}..." : queue_url)
+          log_info("  AIRCANA_SQS_MESSAGE_TEMPLATE",
+                   message_template.length > 40 ? "#{message_template[0..37]}..." : message_template)
+          log_info("  AWS_REGION", aws_region)
+        end
+
+        def log_sqs_configuration_remedy
+          log_remedy("Set AIRCANA_SQS_QUEUE_URL and AIRCANA_SQS_MESSAGE_TEMPLATE for SQS notifications")
+          log_remedy("Example:")
+          log_remedy('  export AIRCANA_SQS_QUEUE_URL="https://sqs.us-east-1.amazonaws.com/account/queue"')
+          log_remedy('  export AIRCANA_SQS_MESSAGE_TEMPLATE=\'{"text":"{{message}}}\'')
+          log_remedy('  export AWS_REGION="us-east-1"  # Optional, defaults to us-east-1')
+        end
+      end
     end
   end
 end
