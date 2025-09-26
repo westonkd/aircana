@@ -193,6 +193,9 @@ module Aircana
             within its domain.
 
             Print the output to STDOUT only, without any additional commentary.
+
+            The description should be 2-3 sentences. Most of the agent's context comes from
+            its knowledge base
           PROMPT
         end
 

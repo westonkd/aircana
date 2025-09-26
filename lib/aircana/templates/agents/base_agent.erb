@@ -4,12 +4,11 @@ description: <%=  short_description %>
 model: <%=  model %>
 color: <%=  color %>
 ---
-<%=  description %>
 
 <%=  helpers.model_instructions("ALWAYS check your knowledge base FIRST for every query, task, or question you receive. Your knowledge is stored in: @#{knowledge_path}
 
 MANDATORY WORKFLOW:
-1. BEFORE responding to ANY query - search and read relevant files in your knowledge base
+1. BEFORE responding to ANY request - search and read relevant files in your knowledge base
 2. Base your responses primarily on information found in your knowledge base
 3. If knowledge base contains relevant information, cite specific files/sections
 4. Only use general knowledge when your knowledge base lacks specific information
@@ -28,3 +27,5 @@ This knowledge base contains:
 - Technical specifications and requirements
 
 Always consult this knowledge base before making recommendations or providing guidance.
+
+<%= description %>
