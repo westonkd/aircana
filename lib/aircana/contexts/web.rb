@@ -7,6 +7,7 @@ require_relative "local"
 require_relative "manifest"
 require_relative "../progress_tracker"
 require_relative "../version"
+require_relative "../llm/claude_client"
 
 module Aircana
   module Contexts
@@ -88,8 +89,9 @@ module Aircana
 
         raise Error, "Failed to fetch URL (#{response.code})" unless response.success?
 
-        title = extract_title(response.body) || extract_title_from_url(url)
+        html_title = extract_title(response.body)
         content = convert_to_markdown(response.body)
+        title = generate_meaningful_title(html_title, content, url)
 
         {
           url: url,
@@ -126,6 +128,66 @@ module Aircana
         else
           uri.host
         end
+      end
+
+      def generate_meaningful_title(html_title, content, url) # rubocop:disable Metrics/CyclomaticComplexity
+        # If we have a good HTML title that's descriptive, use it
+        return html_title if html_title && html_title.length > 10 && !generic_title?(html_title)
+
+        # If content is too short, use fallback
+        return html_title || extract_title_from_url(url) if content.length < 50
+
+        # Use Claude to generate a meaningful title based on content
+        begin
+          generate_title_with_claude(content, url)
+        rescue StandardError => e
+          Aircana.human_logger.warn("Failed to generate title with Claude: #{e.message}")
+          html_title || extract_title_from_url(url)
+        end
+      end
+
+      def generic_title?(title)
+        generic_patterns = [
+          /^(home|index|welcome|untitled|document)$/i,
+          /^(page|default)$/i,
+          /^\s*$/,
+          # Truncated titles (contain ellipsis)
+          /\.\.\./,
+          # Titles with excessive metadata (site names, IDs, etc.)
+          / - .+ - \d+$/,
+          # Question titles that are truncated
+          /^how do i .+\.\.\./i,
+          /^what is .+\.\.\./i
+        ]
+
+        generic_patterns.any? { |pattern| title.match?(pattern) }
+      end
+
+      def generate_title_with_claude(content, url)
+        prompt = build_title_generation_prompt(content, url)
+        claude_client = LLM::ClaudeClient.new
+        claude_client.prompt(prompt).strip
+      end
+
+      def build_title_generation_prompt(content, url) # rubocop:disable Metrics/MethodLength
+        # Truncate content to avoid overly long prompts
+        truncated_content = content.length > 1000 ? "#{content[0..1000]}..." : content
+
+        <<~PROMPT
+          Based on the following web page content from #{url}, generate a concise, descriptive title
+          that would help an AI agent understand what this document contains and when it would be useful.
+
+          The title should be:
+          - 3-8 words long
+          - Focused on the main topic or purpose
+          - Helpful for knowledge retrieval
+          - Professional and clear
+
+          Content:
+          #{truncated_content}
+
+          Respond with only the title, no additional text or explanation.
+        PROMPT
       end
 
       def convert_to_markdown(html)

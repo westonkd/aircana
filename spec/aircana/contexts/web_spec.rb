@@ -83,6 +83,95 @@ RSpec.describe Aircana::Contexts::Web do
       end
     end
 
+    describe "#generate_meaningful_title" do
+      let(:url) { "https://example.com/test-page" }
+      let(:mock_claude_client) { instance_double(Aircana::LLM::ClaudeClient) }
+
+      before do
+        allow(Aircana::LLM::ClaudeClient).to receive(:new).and_return(mock_claude_client)
+      end
+
+      it "uses HTML title when it's descriptive" do
+        html_title = "Comprehensive Guide to Web Development"
+        content = "Some content about web development..."
+
+        title = web.send(:generate_meaningful_title, html_title, content, url)
+        expect(title).to eq(html_title)
+      end
+
+      it "generates title with Claude when HTML title is generic" do
+        html_title = "Home"
+        content = "This page explains how to configure Docker containers for production deployment. " \
+                  "It covers best practices for setting up production environments with proper logging, " \
+                  "monitoring, and security configurations to ensure reliable deployments."
+        claude_title = "Docker Production Configuration Guide"
+
+        allow(mock_claude_client).to receive(:prompt).and_return(claude_title)
+
+        title = web.send(:generate_meaningful_title, html_title, content, url)
+        expect(title).to eq(claude_title)
+        expect(mock_claude_client).to have_received(:prompt)
+      end
+
+      it "falls back to HTML title when Claude fails" do
+        html_title = "Page Title"
+        content = "Some content here that is long enough to trigger Claude generation. " \
+                  "This content should be substantial enough to pass the minimum length requirement " \
+                  "and attempt to generate a title with Claude, but Claude will fail in this test."
+
+        allow(mock_claude_client).to receive(:prompt).and_raise(StandardError.new("Claude error"))
+
+        title = web.send(:generate_meaningful_title, html_title, content, url)
+        expect(title).to eq(html_title)
+      end
+
+      it "uses URL title when content is too short" do
+        html_title = nil
+        content = "Short"
+
+        title = web.send(:generate_meaningful_title, html_title, content, url)
+        expect(title).to eq("Test Page")
+      end
+
+      it "generates title with Claude when HTML title is nil" do
+        html_title = nil
+        content = "This is a detailed article about machine learning algorithms and their applications. " \
+                  "The article covers supervised and unsupervised learning techniques, neural networks, " \
+                  "and practical examples of implementing these algorithms in real-world scenarios."
+        claude_title = "Machine Learning Algorithms Guide"
+
+        allow(mock_claude_client).to receive(:prompt).and_return(claude_title)
+
+        title = web.send(:generate_meaningful_title, html_title, content, url)
+        expect(title).to eq(claude_title)
+      end
+    end
+
+    describe "#generic_title?" do
+      it "identifies generic titles" do
+        expect(web.send(:generic_title?, "Home")).to be true
+        expect(web.send(:generic_title?, "Index")).to be true
+        expect(web.send(:generic_title?, "Welcome")).to be true
+        expect(web.send(:generic_title?, "Untitled")).to be true
+        expect(web.send(:generic_title?, "Page")).to be true
+        expect(web.send(:generic_title?, "")).to be true
+      end
+
+      it "identifies truncated and metadata-heavy titles" do
+        expect(web.send(:generic_title?, "How do I add a section to...")).to be true
+        expect(web.send(:generic_title?, "Question Title - Site Name - 123")).to be true
+        expect(web.send(:generic_title?, "What is the best way to...")).to be true
+        expect(web.send(:generic_title?, "Article Title - Community - 688")).to be true
+      end
+
+      it "identifies descriptive titles" do
+        expect(web.send(:generic_title?, "User Guide")).to be false
+        expect(web.send(:generic_title?, "API Documentation")).to be false
+        expect(web.send(:generic_title?, "Getting Started with React")).to be false
+        expect(web.send(:generic_title?, "Docker Container Setup")).to be false
+      end
+    end
+
     describe "#convert_to_markdown" do
       it "converts HTML to markdown" do
         markdown = web.send(:convert_to_markdown, "<h1>Title</h1><p>Content</p>")
