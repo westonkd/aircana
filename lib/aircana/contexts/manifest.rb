@@ -128,6 +128,8 @@ module Aircana
           case source["type"]
           when "confluence"
             validate_confluence_source(source)
+          when "web"
+            validate_web_source(source)
           else
             raise ManifestError, "Unknown source type: #{source["type"]}"
           end
@@ -139,6 +141,24 @@ module Aircana
           return unless source.key?("pages") && !source["pages"].is_a?(Array)
 
           raise ManifestError, "Confluence pages must be an array"
+        end
+
+        def validate_web_source(source)
+          raise ManifestError, "Web source missing required field: urls" unless source.key?("urls")
+
+          raise ManifestError, "Web urls must be an array" unless source["urls"].is_a?(Array)
+
+          source["urls"].each do |url_entry|
+            validate_web_url_entry(url_entry)
+          end
+        end
+
+        def validate_web_url_entry(url_entry)
+          raise ManifestError, "Each URL entry must be a hash" unless url_entry.is_a?(Hash)
+
+          raise ManifestError, "URL entry missing required field: url" unless url_entry.key?("url")
+
+          raise ManifestError, "URL entry missing required field: title" unless url_entry.key?("title")
         end
       end
     end

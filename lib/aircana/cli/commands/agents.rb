@@ -4,6 +4,7 @@ require "json"
 require "tty-prompt"
 require_relative "../../generators/agents_generator"
 require_relative "../../contexts/manifest"
+require_relative "../../contexts/web"
 
 module Aircana
   module CLI
@@ -43,6 +44,9 @@ module Aircana
           # Prompt for knowledge fetching
           prompt_for_knowledge_fetch(prompt, normalized_agent_name)
 
+          # Prompt for web URL fetching
+          prompt_for_url_fetch(prompt, normalized_agent_name)
+
           # Prompt for agent file review
           prompt_for_agent_review(prompt, file)
 
@@ -57,6 +61,44 @@ module Aircana
           return print_no_agents_message if agent_folders.empty?
 
           print_agents_list(agent_folders)
+        end
+
+        def add_url(agent, url) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
+          normalized_agent = normalize_string(agent)
+
+          unless agent_exists?(normalized_agent)
+            Aircana.human_logger.error "Agent '#{agent}' not found. Use 'aircana agents list' to see available agents."
+            exit 1
+          end
+
+          web = Aircana::Contexts::Web.new
+          result = web.fetch_url_for(agent: normalized_agent, url: url)
+
+          if result
+            # Update manifest with the new URL
+            existing_sources = Aircana::Contexts::Manifest.sources_from_manifest(normalized_agent)
+            web_sources = existing_sources.select { |s| s["type"] == "web" }
+            other_sources = existing_sources.reject { |s| s["type"] == "web" }
+
+            if web_sources.any?
+              # Add to existing web source
+              web_sources.first["urls"] << result
+            else
+              # Create new web source
+              web_sources = [{ "type" => "web", "urls" => [result] }]
+            end
+
+            all_sources = other_sources + web_sources
+            Aircana::Contexts::Manifest.update_manifest(normalized_agent, all_sources)
+
+            Aircana.human_logger.success "Successfully added URL to agent '#{agent}'"
+          else
+            Aircana.human_logger.error "Failed to fetch URL: #{url}"
+            exit 1
+          end
+        rescue Aircana::Error => e
+          Aircana.human_logger.error "Failed to add URL: #{e.message}"
+          exit 1
         end
 
         private
@@ -77,20 +119,38 @@ module Aircana
           end
         end
 
-        def perform_manifest_aware_refresh(normalized_agent)
-          confluence = Aircana::Contexts::Confluence.new
+        def perform_manifest_aware_refresh(normalized_agent) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          total_pages = 0
+          all_sources = []
 
           # Try manifest-based refresh first
           if Aircana::Contexts::Manifest.manifest_exists?(normalized_agent)
             Aircana.human_logger.info "Refreshing from knowledge manifest..."
-            result = confluence.refresh_from_manifest(agent: normalized_agent)
+
+            # Refresh Confluence sources
+            confluence = Aircana::Contexts::Confluence.new
+            confluence_result = confluence.refresh_from_manifest(agent: normalized_agent)
+            total_pages += confluence_result[:pages_count]
+            all_sources.concat(confluence_result[:sources])
+
+            # Refresh web sources
+            web = Aircana::Contexts::Web.new
+            web_result = web.refresh_web_sources(agent: normalized_agent)
+            total_pages += web_result[:pages_count]
+            all_sources.concat(web_result[:sources])
           else
             Aircana.human_logger.info "No manifest found, falling back to label-based search..."
-            result = confluence.fetch_pages_for(agent: normalized_agent)
+            confluence = Aircana::Contexts::Confluence.new
+            confluence_result = confluence.fetch_pages_for(agent: normalized_agent)
+            total_pages += confluence_result[:pages_count]
+            all_sources.concat(confluence_result[:sources])
           end
 
-          log_refresh_result(normalized_agent, result[:pages_count])
-          result
+          # Update manifest with all sources combined
+          Aircana::Contexts::Manifest.update_manifest(normalized_agent, all_sources) if all_sources.any?
+
+          log_refresh_result(normalized_agent, total_pages)
+          { pages_count: total_pages, sources: all_sources }
         end
 
         def show_gitignore_recommendation
@@ -153,6 +213,43 @@ module Aircana
           Aircana.human_logger.info "You can try again later with 'aircana agents refresh #{normalized_agent_name}'"
         end
 
+        def prompt_for_url_fetch(prompt, normalized_agent_name) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+          return unless prompt.yes?("Would you like to add web URLs for this agent's knowledge base?")
+
+          urls = []
+          loop do
+            url = prompt.ask("Enter URL (or press Enter to finish):")
+            break if url.nil? || url.strip.empty?
+
+            url = url.strip
+            if valid_url?(url)
+              urls << url
+            else
+              Aircana.human_logger.warn "Invalid URL format: #{url}. Please enter a valid HTTP or HTTPS URL."
+            end
+          end
+
+          return if urls.empty?
+
+          begin
+            Aircana.human_logger.info "Fetching #{urls.size} URL(s)..."
+            web = Aircana::Contexts::Web.new
+            result = web.fetch_urls_for(agent: normalized_agent_name, urls: urls)
+
+            if result[:pages_count].positive?
+              Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
+              show_gitignore_recommendation
+            else
+              Aircana.human_logger.warn "No URLs were successfully fetched"
+            end
+          rescue Aircana::Error => e
+            Aircana.human_logger.warn "Failed to fetch URLs: #{e.message}"
+            Aircana.human_logger.info(
+              "You can add URLs later with 'aircana agents add-url #{normalized_agent_name} <URL>'"
+            )
+          end
+        end
+
         def prompt_for_agent_review(prompt, file_path)
           Aircana.human_logger.info "Agent file created at: #{file_path}"
 
@@ -212,6 +309,18 @@ module Aircana
 
           config = JSON.parse(File.read(agent_config_path))
           config["description"] || "No description available"
+        end
+
+        def agent_exists?(agent_name)
+          agent_dir = File.join(Aircana.configuration.agent_knowledge_dir, agent_name)
+          Dir.exist?(agent_dir)
+        end
+
+        def valid_url?(url)
+          uri = URI.parse(url)
+          %w[http https].include?(uri.scheme) && !uri.host.nil?
+        rescue URI::InvalidURIError
+          false
         end
 
         def find_available_editor

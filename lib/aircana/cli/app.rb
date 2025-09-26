@@ -88,6 +88,11 @@ module Aircana
         def list
           Agents.list
         end
+
+        desc "add-url AGENT URL", "Add a web URL to an agent's knowledge base"
+        def add_url(agent, url)
+          Agents.add_url(agent, url)
+        end
       end
 
       class HooksSubcommand < Subcommand

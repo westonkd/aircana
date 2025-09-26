@@ -56,7 +56,6 @@ module Aircana
         return { pages_count: 0, sources: [] } if all_pages.empty?
 
         updated_sources = process_pages_with_manifest(all_pages, agent)
-        Manifest.update_manifest(agent, updated_sources)
 
         { pages_count: all_pages.size, sources: updated_sources }
       end

@@ -225,5 +225,60 @@ RSpec.describe Aircana::Contexts::Manifest do
         described_class.create_manifest(agent, sources)
       end.to raise_error(Aircana::Contexts::ManifestError, /pages must be an array/)
     end
+
+    it "validates web sources require urls" do
+      sources = [{ "type" => "web" }]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.to raise_error(Aircana::Contexts::ManifestError, /urls/)
+    end
+
+    it "validates web urls must be array" do
+      sources = [{ "type" => "web", "urls" => "not-array" }]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.to raise_error(Aircana::Contexts::ManifestError, /urls must be an array/)
+    end
+
+    it "validates web url entries must be hashes" do
+      sources = [{ "type" => "web", "urls" => ["not-a-hash"] }]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.to raise_error(Aircana::Contexts::ManifestError, /URL entry must be a hash/)
+    end
+
+    it "validates web url entries require url field" do
+      sources = [{ "type" => "web", "urls" => [{ "title" => "Test" }] }]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.to raise_error(Aircana::Contexts::ManifestError, /URL entry missing required field: url/)
+    end
+
+    it "validates web url entries require title field" do
+      sources = [{ "type" => "web", "urls" => [{ "url" => "https://example.com" }] }]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.to raise_error(Aircana::Contexts::ManifestError, /URL entry missing required field: title/)
+    end
+
+    it "accepts valid web sources" do
+      sources = [
+        {
+          "type" => "web",
+          "urls" => [
+            { "url" => "https://example.com", "title" => "Example", "last_fetched" => "2024-01-01T00:00:00Z" }
+          ]
+        }
+      ]
+
+      expect do
+        described_class.create_manifest(agent, sources)
+      end.not_to raise_error
+    end
   end
 end

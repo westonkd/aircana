@@ -87,6 +87,209 @@ RSpec.describe Aircana::CLI::Agents do
     end
   end
 
+  describe ".add_url" do
+    let(:mock_web) { instance_double(Aircana::Contexts::Web) }
+    let(:agent) { "test-agent" }
+    let(:url) { "https://example.com/test" }
+    let(:url_metadata) do
+      {
+        "url" => url,
+        "title" => "Test Page",
+        "last_fetched" => "2024-01-01T00:00:00Z"
+      }
+    end
+
+    before do
+      allow(Aircana::Contexts::Web).to receive(:new).and_return(mock_web)
+      allow(described_class).to receive(:agent_exists?).with(agent).and_return(true)
+    end
+
+    context "when agent exists and URL fetch is successful" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(url_metadata)
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with(agent).and_return([])
+        allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
+      end
+
+      it "adds URL to agent's knowledge base" do
+        described_class.add_url(agent, url)
+
+        expect(mock_web).to have_received(:fetch_url_for).with(agent: agent, url: url)
+        expect(@log_messages).to include([:success, "Successfully added URL to agent '#{agent}'"])
+      end
+
+      it "updates the manifest with the new URL" do
+        described_class.add_url(agent, url)
+
+        expected_sources = [{ "type" => "web", "urls" => [url_metadata] }]
+        expect(Aircana::Contexts::Manifest).to have_received(:update_manifest).with(agent, expected_sources)
+      end
+
+      context "when agent already has web sources" do
+        let(:existing_url_metadata) do
+          {
+            "url" => "https://existing.com",
+            "title" => "Existing Page",
+            "last_fetched" => "2023-12-01T00:00:00Z"
+          }
+        end
+        let(:existing_sources) do
+          [
+            { "type" => "web", "urls" => [existing_url_metadata] },
+            { "type" => "confluence", "label" => "test-agent", "pages" => [] }
+          ]
+        end
+
+        before do
+          allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest)
+            .with(agent).and_return(existing_sources)
+        end
+
+        it "adds to existing web source" do
+          described_class.add_url(agent, url)
+
+          expected_web_urls = [existing_url_metadata, url_metadata]
+          expected_sources = [
+            { "type" => "confluence", "label" => "test-agent", "pages" => [] },
+            { "type" => "web", "urls" => expected_web_urls }
+          ]
+          expect(Aircana::Contexts::Manifest).to have_received(:update_manifest)
+            .with(agent, expected_sources)
+        end
+      end
+    end
+
+    context "when agent does not exist" do
+      before do
+        allow(described_class).to receive(:agent_exists?).with("nonexistent").and_return(false)
+      end
+
+      it "logs error and exits" do
+        expect { described_class.add_url("nonexistent", url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include(
+          [:error, "Agent 'nonexistent' not found. Use 'aircana agents list' to see available agents."]
+        )
+      end
+    end
+
+    context "when URL fetch fails" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(nil)
+      end
+
+      it "logs error and exits" do
+        expect { described_class.add_url(agent, url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include([:error, "Failed to fetch URL: #{url}"])
+      end
+    end
+
+    context "when web context raises an error" do
+      before do
+        allow(mock_web).to receive(:fetch_url_for)
+          .with(agent: agent, url: url)
+          .and_raise(Aircana::Error, "Invalid URL format")
+      end
+
+      it "handles error gracefully" do
+        expect { described_class.add_url(agent, url) }.to raise_error(SystemExit)
+        expect(@log_messages).to include([:error, "Failed to add URL: Invalid URL format"])
+      end
+    end
+  end
+
+  describe ".refresh with mixed sources" do
+    let(:mock_web) { instance_double(Aircana::Contexts::Web) }
+    let(:agent) { "test-agent" }
+    let(:confluence_sources) do
+      [
+        {
+          "type" => "confluence",
+          "label" => agent,
+          "pages" => [
+            { "id" => "123", "title" => "Confluence Page" }
+          ]
+        }
+      ]
+    end
+    let(:web_sources) do
+      [
+        {
+          "type" => "web",
+          "urls" => [
+            {
+              "url" => "https://example.com/test",
+              "title" => "Web Page",
+              "last_fetched" => "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    end
+
+    before do
+      allow(Aircana::Contexts::Web).to receive(:new).and_return(mock_web)
+      allow(Aircana::Contexts::Manifest).to receive(:manifest_exists?).with(agent).and_return(true)
+    end
+
+    it "preserves both Confluence and Web sources during refresh" do
+      # Mock confluence refresh to return confluence sources
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 1,
+                                                                             sources: confluence_sources })
+
+      # Mock web refresh to return web sources
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 1, sources: web_sources })
+
+      # Mock manifest update to capture the combined sources
+      combined_sources = confluence_sources + web_sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, combined_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(2)
+      expect(result[:sources]).to eq(combined_sources)
+      expect(@log_messages).to include([:success, "Successfully refreshed 2 pages for agent '#{agent}'"])
+    end
+
+    it "handles case where only web sources exist" do
+      # Mock confluence refresh to return empty result
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 0, sources: [] })
+
+      # Mock web refresh to return web sources
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 1, sources: web_sources })
+
+      # Should still update manifest with just web sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, web_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(1)
+      expect(result[:sources]).to eq(web_sources)
+    end
+
+    it "handles case where only confluence sources exist" do
+      # Mock confluence refresh to return confluence sources
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 1,
+                                                                             sources: confluence_sources })
+
+      # Mock web refresh to return empty result
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 0, sources: [] })
+
+      # Should update manifest with just confluence sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, confluence_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(1)
+      expect(result[:sources]).to eq(confluence_sources)
+    end
+  end
+
   describe "normalize_string (private method)" do
     it "normalizes agent names consistently" do
       # Test the same normalization logic used in create and refresh
