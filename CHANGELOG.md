@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-09-03
 
 ### Added
+- SQS notification integration (re-run `aircana install` to enable and see readme)
+- Better, more concise agent markdown files produced by `aircana agents create`
+- Added uniform naming to default slash commands shipped in aircana. All commands are now prefixed with `air`.
+
+## [0.1.0] - 2025-09-03
+
+### Added
 - Initial release
 - Context management for AI agents
 - File organization utilities
