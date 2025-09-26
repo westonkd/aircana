@@ -15,6 +15,7 @@ module Aircana
         include DoctorChecks::ClaudeIntegration
         include DoctorChecks::AircanaConfiguration
         include DoctorChecks::OptionalIntegrations
+        include DoctorChecks::SQSIntegration
 
         def run(verbose: false)
           @verbose = verbose
@@ -22,17 +23,22 @@ module Aircana
 
           Aircana.human_logger.info "🔍 Checking Aircana system health...\n"
 
-          check_required_dependencies
-          check_claude_integration
-          check_optional_dependencies
-          check_aircana_configuration
-          check_optional_integrations
+          run_all_checks
 
           display_summary
           @issues_found ? 1 : 0
         end
 
         private
+
+        def run_all_checks
+          check_required_dependencies
+          check_claude_integration
+          check_optional_dependencies
+          check_aircana_configuration
+          check_optional_integrations
+          check_sqs_integration
+        end
 
         def check_required_dependencies
           Aircana.human_logger.info "Required Dependencies:"

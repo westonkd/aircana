@@ -113,11 +113,13 @@ Create Claude Code agents with:
    aircana agents list    # See all configured agents
    ```
 
-## Confluence Setup (Optional)
+## Configuration (Optional)
+
+### Confluence Setup (Optional)
 
 To use agent knowledge sync features, you'll need to configure Confluence integration:
 
-### 1. Generate Confluence API Token
+#### 1. Generate Confluence API Token
 
 1. Go to your Confluence instance
 2. Click your profile picture → **Account Settings**
@@ -126,7 +128,7 @@ To use agent knowledge sync features, you'll need to configure Confluence integr
 5. Give it a descriptive name (e.g., "Aircana Integration")
 6. Copy the generated token
 
-### 2. Set Environment Variables
+#### 2. Set Environment Variables
 
 Add these to your shell profile (`.bashrc`, `.zshrc`, etc.):
 
@@ -136,15 +138,54 @@ export CONFLUENCE_USERNAME="your.email@company.com"
 export CONFLUENCE_API_TOKEN="your-generated-token"
 ```
 
+### SQS Notifications Setup (Optional)
+
+To enable SQS notifications for Claude Code events (useful for Slack/Teams integration):
+
+#### 1. Install AWS CLI
+
+Make sure you have the AWS CLI installed:
+
+```bash
+# macOS
+brew install awscli
+
+# Ubuntu/Debian
+apt install awscli
+
+# Configure AWS credentials
+aws configure
+```
+
+#### 2. Set Environment Variables
+
+Add these to your shell profile (`.bashrc`, `.zshrc`, etc.):
+
+```bash
+export AIRCANA_SQS_QUEUE_URL="https://sqs.us-east-1.amazonaws.com/your-account/your-queue"
+export AIRCANA_SQS_MESSAGE_TEMPLATE='{"channel":"changelog","username":"Aircana","text":"{{message}}"}'
+export AWS_REGION="us-east-1"
+```
+
+The message template supports `{{message}}` placeholder which gets replaced with the Claude Code notification text.
+
+#### 3. Install and Enable Hook
+
+```bash
+aircana generate
+aircana install
+aircana hooks enable notification_sqs
+```
+
 Reload your shell or run `source ~/.zshrc` (or your shell config file).
 
-### 3. Verify Configuration
+### Verify Configuration
 
 ```bash
 aircana doctor
 ```
 
-This will check if Confluence is properly configured.
+This will check if Confluence and other integrations are properly configured.
 
 ## Agent Workflow Tutorial
 
