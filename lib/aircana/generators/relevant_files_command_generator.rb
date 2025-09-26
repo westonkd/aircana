@@ -25,7 +25,7 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "ac-add-relevant-files.md")
+        File.join(Aircana.configuration.output_dir, "commands", "air-add-relevant-files.md")
       end
 
       def relevant_project_files_path

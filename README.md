@@ -99,7 +99,7 @@ Create Claude Code agents with:
 
    Then in Claude Code, include them with whenever you want to reload the files into the current context:
    ```
-   /ac-add-relevant-files
+   /air-add-relevant-files
    ```
 
 4. **Create an agent** (optional, but powerful with Confluence):
