@@ -146,6 +146,9 @@ module Aircana
             all_sources.concat(confluence_result[:sources])
           end
 
+          # Update manifest with all sources combined
+          Aircana::Contexts::Manifest.update_manifest(normalized_agent, all_sources) if all_sources.any?
+
           log_refresh_result(normalized_agent, total_pages)
           { pages_count: total_pages, sources: all_sources }
         end

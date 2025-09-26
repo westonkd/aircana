@@ -197,6 +197,99 @@ RSpec.describe Aircana::CLI::Agents do
     end
   end
 
+  describe ".refresh with mixed sources" do
+    let(:mock_web) { instance_double(Aircana::Contexts::Web) }
+    let(:agent) { "test-agent" }
+    let(:confluence_sources) do
+      [
+        {
+          "type" => "confluence",
+          "label" => agent,
+          "pages" => [
+            { "id" => "123", "title" => "Confluence Page" }
+          ]
+        }
+      ]
+    end
+    let(:web_sources) do
+      [
+        {
+          "type" => "web",
+          "urls" => [
+            {
+              "url" => "https://example.com/test",
+              "title" => "Web Page",
+              "last_fetched" => "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    end
+
+    before do
+      allow(Aircana::Contexts::Web).to receive(:new).and_return(mock_web)
+      allow(Aircana::Contexts::Manifest).to receive(:manifest_exists?).with(agent).and_return(true)
+    end
+
+    it "preserves both Confluence and Web sources during refresh" do
+      # Mock confluence refresh to return confluence sources
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 1,
+                                                                             sources: confluence_sources })
+
+      # Mock web refresh to return web sources
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 1, sources: web_sources })
+
+      # Mock manifest update to capture the combined sources
+      combined_sources = confluence_sources + web_sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, combined_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(2)
+      expect(result[:sources]).to eq(combined_sources)
+      expect(@log_messages).to include([:success, "Successfully refreshed 2 pages for agent '#{agent}'"])
+    end
+
+    it "handles case where only web sources exist" do
+      # Mock confluence refresh to return empty result
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 0, sources: [] })
+
+      # Mock web refresh to return web sources
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 1, sources: web_sources })
+
+      # Should still update manifest with just web sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, web_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(1)
+      expect(result[:sources]).to eq(web_sources)
+    end
+
+    it "handles case where only confluence sources exist" do
+      # Mock confluence refresh to return confluence sources
+      allow(mock_confluence).to receive(:refresh_from_manifest).with(agent: agent)
+                                                               .and_return({ pages_count: 1,
+                                                                             sources: confluence_sources })
+
+      # Mock web refresh to return empty result
+      allow(mock_web).to receive(:refresh_web_sources).with(agent: agent)
+                                                      .and_return({ pages_count: 0, sources: [] })
+
+      # Should update manifest with just confluence sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(agent, confluence_sources)
+
+      result = described_class.send(:perform_manifest_aware_refresh, agent)
+
+      expect(result[:pages_count]).to eq(1)
+      expect(result[:sources]).to eq(confluence_sources)
+    end
+  end
+
   describe "normalize_string (private method)" do
     it "normalizes agent names consistently" do
       # Test the same normalization logic used in create and refresh

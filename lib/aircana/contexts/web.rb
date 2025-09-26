@@ -57,7 +57,7 @@ module Aircana
         end
       end
 
-      def refresh_web_sources(agent:) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      def refresh_web_sources(agent:) # rubocop:disable Metrics/CyclomaticComplexity
         sources = Manifest.sources_from_manifest(agent)
         web_sources = sources.select { |s| s["type"] == "web" }
 
@@ -66,10 +66,7 @@ module Aircana
         all_urls = web_sources.flat_map { |source| source["urls"]&.map { |u| u["url"] } || [] }
         return { pages_count: 0, sources: [] } if all_urls.empty?
 
-        result = fetch_urls_for(agent: agent, urls: all_urls)
-        Manifest.update_manifest(agent, result[:sources]) if result[:sources].any?
-
-        result
+        fetch_urls_for(agent: agent, urls: all_urls)
       end
 
       private
