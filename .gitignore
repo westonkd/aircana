@@ -1,6 +1,7 @@
 # Ruby
 *.gem
 *.rbc
+spec_output*/
 /.config
 /coverage/
 /InstalledFiles
