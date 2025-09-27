@@ -1,0 +1,3 @@
+<%= helpers.model_instructions(
+    "Use the Task tool with subagent_type 'planner' to invoke the planner agent. #{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user to provide a Jira ticket or create a comprehensive implementation plan.' : "Plan for Jira ticket: $ARGUMENTS"}"
+) %>
