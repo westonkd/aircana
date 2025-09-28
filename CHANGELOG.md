@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-09-27
+
+### Added
+- New planner agent: Strategic project planning agent that integrates with Jira and collaborates with other sub-agents
+- New plan command: `aircana generate` now creates an `air-plan.md` command for Claude Code
+- Planner agent template with comprehensive workflow for ticket verification, requirements gathering, and sub-agent consultation
+
+### Changed
+- Improved knowledge base usage phrasing in agent templates
+- Updated agent knowledge base instructions to use more efficient file listing approach
+- Added planner to available default agents list
+
 ## [0.1.0] - 2025-09-03
 
 ### Added
