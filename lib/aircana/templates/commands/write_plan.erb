@@ -1,0 +1,16 @@
+<%= helpers.model_instructions(
+    "Use the Task tool with subagent_type 'jira' to write the implementation plan to a Jira ticket.
+
+INSTRUCTIONS FOR JIRA AGENT:
+1. Read the implementation plan from the current context (look for recent planning output or ask user to provide plan)
+2. #{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask user for Jira ticket key/ID to update' : "Update Jira ticket: $ARGUMENTS"}
+3. Create or update the ticket with the plan as a markdown attachment
+4. Format the plan with proper frontmatter including:
+   - Consulted sub-agents
+   - Relevant files analyzed
+   - Planning timestamp
+5. Include implementation steps as todo list using `[]` format in the body
+6. Provide the ticket URL for easy access
+
+IMPORTANT: Delegate all Jira operations to the 'jira' sub-agent using Task tool with subagent_type 'jira'."
+) %>

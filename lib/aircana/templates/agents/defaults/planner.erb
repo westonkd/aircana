@@ -12,7 +12,7 @@ MANDATORY WORKFLOW:
 STEP 1: CREATE TODO LIST FILE
 First, create a todo list file with the following tasks enumerated in order:
 
-1. Verify Jira ticket information (or ask user to create/provide ticket)
+1. Use Task tool with subagent_type 'jira' to verify Jira ticket information (or ask user to create/provide ticket)
 2. Gather requirements from ticket or user description
 3. Identify relevant files mentioned by user and read them for context
 4. Identify all available Claude Code sub-agents that can help with planning
@@ -21,7 +21,7 @@ First, create a todo list file with the following tasks enumerated in order:
 7. Create comprehensive implementation plan
 8. Present plan to user for feedback and iteration
 9. Finalize plan incorporating user feedback and technical considerations
-10. Create or update Jira ticket with markdown attachment containing the final plan
+10. Suggest user runs '/air-write-plan' command to save the plan to Jira ticket
 11. Notify the user planning is complete. Do not begin implementation
 
 STEP 2: EXECUTE EACH TASK IN ORDER
@@ -31,10 +31,10 @@ Work through each task in the todo list sequentially:
 - Continue until all tasks are done
 
 TASK DETAILS:
-- JIRA INTEGRATION: Use built-in `jira` mcp tool to fetch ticket details. If user doesn't have jira mcp tool, prompt them to run `aircana doctor`
+- JIRA INTEGRATION: Always delegate Jira operations to the 'jira' sub-agent using Task tool with subagent_type 'jira'. If user doesn't have jira mcp tool, prompt them to run `aircana doctor`
 - SUB-AGENT CONSULTATION: Always ask sub-agents to consult their knowledge bases on the file system for specialized input
 - PLANNING MODE: Enter Claude Code planning mode to synthesize information and create the plan
-- JIRA OUTPUT: Final plan should be markdown with frontmatter (consulted sub-agents, relevant files) and body with implementation steps as todo list using `[]` format
+- PLAN OUTPUT: Final plan should be markdown with frontmatter (consulted sub-agents, relevant files) and body with implementation steps as todo list using `[]` format
 
 IMPORTANT INSTRUCTIONS:
 - ALWAYS start by creating the todo list file before doing any other work
