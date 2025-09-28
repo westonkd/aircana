@@ -28,4 +28,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template generation
 - Claude Code integration
 - CLI interface with Thor
-- Commands: add_files, clear_files, dump_context, generate, install
+- Commands: dump_context, generate, install

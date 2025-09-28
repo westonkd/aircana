@@ -1,21 +1,16 @@
 # frozen_string_literal: true
 
 require_relative "../shell_command"
-require_relative "../../contexts/relevant_files"
 
 module Aircana
   module CLI
     module DumpContext
       class << self
-        def run(_agent_name:, verbose: true)
+        def run(agent_name:, verbose: true) # rubocop:disable Lint/UnusedMethodArgument
           Aircana.logger.level = Logger::ERROR
-          Contexts::RelevantFiles.print(verbose:)
-        end
-
-        private
-
-        def print(context)
-          Aircana.configuration.stream.puts context
+          Aircana.human_logger.info("Agent: #{agent_name}")
+          Aircana.human_logger.info("Context dumping functionality has been removed.")
+          Aircana.human_logger.info("This command previously dumped relevant files context.")
         end
       end
     end

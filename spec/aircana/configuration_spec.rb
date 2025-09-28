@@ -17,13 +17,6 @@ RSpec.describe Aircana::Configuration do
     end
   end
 
-  describe "#relevant_project_files_dir" do
-    it "returns the .aircana/relevant_files directory within project_dir" do
-      expected_path = File.join(config.project_dir, ".aircana", "relevant_files")
-      expect(config.relevant_project_files_dir).to eq(expected_path)
-    end
-  end
-
   describe "#agent_knowledge_dir" do
     it "returns the .aircana/agents directory within project_dir" do
       expected_path = File.join(config.project_dir, ".aircana", "agents")

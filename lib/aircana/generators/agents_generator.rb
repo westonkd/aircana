@@ -64,7 +64,7 @@ module Aircana
       end
 
       def relevant_project_files_path
-        File.join(Aircana.configuration.relevant_project_files_dir, "relevant_files.md")
+        "" # Removed relevant files functionality
       end
 
       def knowledge_path

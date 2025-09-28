@@ -17,9 +17,9 @@ ADDITIONAL_CONTEXT=""
 # Handle specific tools
 case "$TOOL_NAME" in
   "Edit"|"Write")
-    # Auto-update relevant files context if code files were modified
+    # Log successful file modifications
     if echo "$TOOL_PARAMS" | grep -E "\.(rb|js|py|ts)$" && [ "$EXIT_CODE" -eq 0 ]; then
-      ADDITIONAL_CONTEXT="Code file modified - consider updating relevant files context."
+      ADDITIONAL_CONTEXT="Code file modified successfully."
     fi
     ;;
   "Bash")

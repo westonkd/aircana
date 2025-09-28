@@ -1,6 +1,6 @@
 # Aircana
 
-A Ruby CLI utility for context management and Claude Code integration. Aircana helps manage relevant files for development sessions, create specialized Claude Code agents, and optionally sync knowledge from Confluence.
+A Ruby CLI utility for Claude Code agent management and knowledge syncing. Aircana helps create specialized Claude Code agents and optionally sync knowledge from Confluence and web sources.
 
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/aircana.svg)](https://badge.fury.io/rb/aircana)
@@ -51,28 +51,20 @@ aircana doctor
 
 Aircana provides two main independent features:
 
-### 1. Relevant Files Management
-Track and manage a curated set of "relevant files" - the current working set of important files for your development session. This context is automatically available to Claude Code sessions.
-
-**This works completely independently from agents** - you can use relevant files without creating any agents.
-
-### 2. Specialized Agents (Optional)
+### Specialized Agents
 Create Claude Code agents with:
 - **Domain Knowledge**: Focused expertise in specific areas
 - **Confluence Integration**: Knowledge sync from labeled pages (requires Confluence setup)
 - **Customizable Models**: Choose from different Claude models and interface colors
 
-**Agents work independently from relevant files** - you can create agents without managing relevant files.
 
 ### Knowledge Sources
-- **Relevant Files**: Current working set managed by Aircana (independent feature)
-- **Confluence Pages**: Fetched based on agent labels (agent feature, requires setup)
+- **Confluence Pages**: Fetched based on agent labels (requires setup)
 - **Web URLs**: Any web content added to agent knowledge bases (HTML converted to Markdown)
 - **Local Context**: Project-specific files and configurations
 
 ## What Aircana Does
 
-- **File Context Management**: Track and manage relevant files for Claude Code sessions
 - **Agent Configuration**: Create and configure specialized Claude Code agents
 - **Confluence Integration**: Sync knowledge from Confluence pages to agents (optional)
 - **Claude Code Shortcuts**: Quick-launch Claude Code with pre-configured agents
@@ -93,9 +85,9 @@ Create Claude Code agents with:
    aircana install    # Set up Aircana integration in this project
    ```
 
-3. **Add files to context**:
+3. **Create an agent**:
    ```bash
-   aircana files add    # Interactive selection
+   aircana agents create    # Interactive agent creation
    ```
 
    Then in Claude Code, include them whenever you want to reload the files into the current context:
@@ -256,14 +248,6 @@ This refreshes both Confluence pages and web URLs associated with the agent.
 
 
 ## All Commands
-
-### File Management
-```bash
-aircana files add         # Interactively select files to add to context
-aircana files add-dir [PATH] # Add all files from directory to context
-aircana files clear       # Clear current file context
-aircana files list        # Show current relevant files
-```
 
 ### Agent Management
 ```bash
