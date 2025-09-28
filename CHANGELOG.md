@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-09-28
+
+### Added
+- New Jira agent: Specialized agent for Jira MCP tool interactions, handles reading and writing tickets efficiently
+- New `air-write-plan` command: Generates command for writing structured plans to files
+- Write plan command generator for creating plan documentation templates
+
+### Changed
+- Enhanced planner agent with improved workflow split into smaller, focused chunks
+- Updated planner agent to utilize todo list file management for better task tracking
+- Improved planner instructions with clearer guidance for each planning phase
+- Updated README with additional documentation
+
+### Fixed
+- Fixed test spec that previously required running locally for proper execution
+
 ## [1.4.0] - 2025-09-27
 
 ### Added
