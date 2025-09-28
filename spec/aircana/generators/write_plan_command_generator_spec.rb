@@ -29,8 +29,8 @@ RSpec.describe Aircana::Generators::WritePlanCommandGenerator do
     end
 
     it "sets correct default template path" do
-      expected_path = "/Users/wdransfield/GitHub/aircana/lib/aircana/generators/../templates/commands/write_plan.erb"
-      expect(generator.send(:default_template_path)).to eq(expected_path)
+      template_path = generator.send(:default_template_path)
+      expect(template_path).to end_with("lib/aircana/generators/../templates/commands/write_plan.erb")
     end
 
     it "sets correct default output path" do
