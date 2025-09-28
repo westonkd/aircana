@@ -67,6 +67,7 @@ Create Claude Code agents with:
 ### Knowledge Sources
 - **Relevant Files**: Current working set managed by Aircana (independent feature)
 - **Confluence Pages**: Fetched based on agent labels (agent feature, requires setup)
+- **Web URLs**: Any web content added to agent knowledge bases (HTML converted to Markdown)
 - **Local Context**: Project-specific files and configurations
 
 ## What Aircana Does
@@ -97,9 +98,9 @@ Create Claude Code agents with:
    aircana files add    # Interactive selection
    ```
 
-   Then in Claude Code, include them with whenever you want to reload the files into the current context:
+   Then in Claude Code, include them whenever you want to reload the files into the current context:
    ```
-   /air-add-relevant-files
+   /add-relevant-files
    ```
 
 4. **Create an agent** (optional, but powerful with Confluence):
@@ -214,13 +215,22 @@ In Confluence, add the label `backend-api` (matching your agent name) to relevan
 
 Repeat for all pages you want the agent to know about.
 
-### 3. Sync Knowledge
+### 3. Add Knowledge Sources
 
+**From Confluence:**
 ```bash
 aircana agents refresh backend-api
 ```
 
 This downloads all Confluence pages labeled `backend-api` and makes them available to your agent.
+
+**From Web URLs:**
+```bash
+aircana agents add-url backend-api https://docs.example.com/api-guide
+aircana agents add-url backend-api https://blog.example.com/best-practices
+```
+
+This fetches web content and converts it to Markdown for your agent's knowledge base.
 
 ### 4. Use the Agent
 
@@ -236,11 +246,13 @@ The agent will have access to all the Confluence knowledge you synced.
 
 ### 5. Update Knowledge
 
-Whenever you update Confluence pages or add new ones with the agent label:
+Whenever you update Confluence pages, add new ones with the agent label, or want to refresh web content:
 
 ```bash
 aircana agents refresh backend-api
 ```
+
+This refreshes both Confluence pages and web URLs associated with the agent.
 
 
 ## All Commands
@@ -256,7 +268,8 @@ aircana files list        # Show current relevant files
 ### Agent Management
 ```bash
 aircana agents create     # Create new agent interactively
-aircana agents refresh [AGENT] # Sync agent knowledge from Confluence
+aircana agents refresh [AGENT] # Sync agent knowledge from Confluence and web sources
+aircana agents add-url [AGENT] [URL] # Add a web URL to an agent's knowledge base
 aircana agents list       # List all configured agents
 ```
 
