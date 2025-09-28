@@ -51,18 +51,11 @@ aircana doctor
 
 Aircana provides two main independent features:
 
-### 1. Relevant Files Management
-Track and manage a curated set of "relevant files" - the current working set of important files for your development session. This context is automatically available to Claude Code sessions.
-
-**This works completely independently from agents** - you can use relevant files without creating any agents.
-
-### 2. Specialized Agents (Optional)
+### Specialized Agents
 Create Claude Code agents with:
 - **Domain Knowledge**: Focused expertise in specific areas
 - **Confluence Integration**: Knowledge sync from labeled pages (requires Confluence setup)
 - **Customizable Models**: Choose from different Claude models and interface colors
-
-**Agents work independently from relevant files** - you can create agents without managing relevant files.
 
 ### Knowledge Sources
 - **Relevant Files**: Current working set managed by Aircana (independent feature)
@@ -70,12 +63,20 @@ Create Claude Code agents with:
 - **Web URLs**: Any web content added to agent knowledge bases (HTML converted to Markdown)
 - **Local Context**: Project-specific files and configurations
 
+### Knowledge manifest files
+Each specialized agent receives a manifest file to track knowledge sources.
+
+This allows adding proprietary information to an agent's knowledge base without placeing the
+actual proprietary details under version control.
+
+Agent knowledge bases can be synced to pull the latest information from each source.
+
 ## What Aircana Does
 
-- **File Context Management**: Track and manage relevant files for Claude Code sessions
 - **Agent Configuration**: Create and configure specialized Claude Code agents
-- **Confluence Integration**: Sync knowledge from Confluence pages to agents (optional)
-- **Claude Code Shortcuts**: Quick-launch Claude Code with pre-configured agents
+- **Confluence & Webiste Integration**: Sync knowledge from Confluence and other pages to agents knowledge sources
+- **Knowledge manifest files**: Include proprietary details in sub-agents without placing that knowledge under version control
+- **Tempatized artififact generation:** Generate and update agent, hook, and slash commands with consistency
 - **System Health Checks**: Validate dependencies and configuration
 
 ## Quick Start
@@ -89,26 +90,15 @@ Create Claude Code agents with:
 2. **Set up your project**:
    ```bash
    cd your-project
-   aircana generate
    aircana install    # Set up Aircana integration in this project
    ```
 
-3. **Add files to context**:
-   ```bash
-   aircana files add    # Interactive selection
-   ```
-
-   Then in Claude Code, include them whenever you want to reload the files into the current context:
-   ```
-   /add-relevant-files
-   ```
-
-4. **Create an agent** (optional, but powerful with Confluence):
+3. **Create an agent** (optional, but powerful with Confluence):
    ```bash
    aircana agents create    # Tag Confluence pages with the agent's name before or after creation to pull that knowledge into the agent's knowledge base. 
    ```
 
-5. **View your current context**:
+4. **View your current context**:
    ```bash
    aircana files list     # See all tracked files
    aircana agents list    # See all configured agents
