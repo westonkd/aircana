@@ -300,4 +300,110 @@ RSpec.describe Aircana::CLI::Agents do
       expect(described_class.send(:normalize_string, "already-normalized")).to eq("already-normalized")
     end
   end
+
+  describe ".sync_all" do
+    let(:agent_knowledge_dir) { "/path/to/agents" }
+    let(:configuration) { instance_double("Configuration", agent_knowledge_dir: agent_knowledge_dir) }
+
+    before do
+      allow(Aircana).to receive(:configuration).and_return(configuration)
+    end
+
+    context "when no agents exist" do
+      it "logs appropriate message and returns" do
+        allow(Dir).to receive(:exist?).with(agent_knowledge_dir).and_return(false)
+
+        described_class.sync_all
+
+        expect(@log_messages).to include([:info, "No agents found to sync."])
+      end
+    end
+
+    context "when agents directory is empty" do
+      it "logs appropriate message and returns" do
+        allow(Dir).to receive(:exist?).with(agent_knowledge_dir).and_return(true)
+        allow(Dir).to receive(:entries).with(agent_knowledge_dir).and_return(["..", "."])
+
+        described_class.sync_all
+
+        expect(@log_messages).to include([:info, "No agents found to sync."])
+      end
+    end
+
+    context "when agents exist" do
+      let(:agent_folders) { %w[agent1 agent2 agent3] }
+
+      before do
+        allow(Dir).to receive(:exist?).with(agent_knowledge_dir).and_return(true)
+        allow(Dir).to receive(:entries).with(agent_knowledge_dir).and_return(["..", ".", *agent_folders])
+        allow(File).to receive(:directory?).and_return(false)
+        agent_folders.each do |folder|
+          allow(File).to receive(:directory?).with(File.join(agent_knowledge_dir, folder)).and_return(true)
+        end
+      end
+
+      it "syncs all agents successfully" do
+        # Mock successful sync for all agents
+        agent_folders.each do |agent|
+          allow(described_class).to receive(:perform_manifest_aware_refresh).with(agent)
+                                                                            .and_return({ pages_count: 2, sources: [] })
+        end
+
+        described_class.sync_all
+
+        expect(@log_messages).to include([:info, "Starting sync for 3 agent(s)..."])
+        agent_folders.each do |agent|
+          expect(@log_messages).to include([:info, "Syncing agent '#{agent}'..."])
+        end
+        expect(@log_messages).to include([:info, "=== Sync All Summary ==="])
+        expect(@log_messages).to include([:success, "✓ Successful: 3/3 agents"])
+        expect(@log_messages).to include([:success, "✓ Total pages refreshed: 6"])
+      end
+
+      it "handles mixed success and failure scenarios" do
+        # Mock successful sync for first agent
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent1")
+                                                                          .and_return({ pages_count: 3, sources: [] })
+
+        # Mock failure for second agent
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent2")
+                                                                          .and_raise(Aircana::Error, "Network error")
+
+        # Mock successful sync for third agent
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent3")
+                                                                          .and_return({ pages_count: 1, sources: [] })
+
+        described_class.sync_all
+
+        expect(@log_messages).to include([:info, "Starting sync for 3 agent(s)..."])
+        expect(@log_messages).to include([:info, "Syncing agent 'agent1'..."])
+        expect(@log_messages).to include([:info, "Syncing agent 'agent2'..."])
+        expect(@log_messages).to include([:error, "Failed to sync agent 'agent2': Network error"])
+        expect(@log_messages).to include([:info, "Syncing agent 'agent3'..."])
+        expect(@log_messages).to include([:success, "✓ Successful: 2/3 agents"])
+        expect(@log_messages).to include([:success, "✓ Total pages refreshed: 4"])
+        expect(@log_messages).to include([:error, "✗ Failed: 1 agents"])
+        expect(@log_messages).to include([:info, "Failed agents:"])
+        expect(@log_messages).to include([:error, "  - agent2: Network error"])
+      end
+
+      it "continues syncing remaining agents when some fail" do
+        # Mock failure for all agents with different errors
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent1")
+                                                                          .and_raise(Aircana::Error, "Config error")
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent2")
+                                                                          .and_raise(Aircana::Error, "Network error")
+        allow(described_class).to receive(:perform_manifest_aware_refresh).with("agent3")
+                                                                          .and_raise(Aircana::Error, "Auth error")
+
+        described_class.sync_all
+
+        expect(@log_messages).to include([:success, "✓ Successful: 0/3 agents"])
+        expect(@log_messages).to include([:error, "✗ Failed: 3 agents"])
+        expect(@log_messages).to include([:error, "  - agent1: Config error"])
+        expect(@log_messages).to include([:error, "  - agent2: Network error"])
+        expect(@log_messages).to include([:error, "  - agent3: Auth error"])
+      end
+    end
+  end
 end

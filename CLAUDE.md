@@ -35,6 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana install` - Install generated files to Claude Code config
 - `aircana agents create` - Create a new agent interactively
 - `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
+- `aircana agents sync-all` - Refresh knowledge for all configured agents
 - `aircana agents add-url <agent> <url>` - Add a web URL to an agent's knowledge base
 - `aircana hooks list` - List all available hooks
 - `aircana hooks enable <hook>` - Enable a specific hook
