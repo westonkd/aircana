@@ -27,10 +27,7 @@ module Aircana
 
           if File.exist?(manifest_path)
             existing_data = JSON.parse(File.read(manifest_path))
-            manifest_data = existing_data.merge({
-                                                  "last_updated" => Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                                  "sources" => sources
-                                                })
+            manifest_data = existing_data.merge({ "sources" => sources })
           else
             manifest_data = build_manifest_data(agent, sources)
           end
@@ -87,13 +84,9 @@ module Aircana
         end
 
         def build_manifest_data(agent, sources)
-          timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-
           {
             "version" => "1.0",
             "agent" => agent,
-            "created" => timestamp,
-            "last_updated" => timestamp,
             "sources" => sources
           }
         end
@@ -157,8 +150,6 @@ module Aircana
           raise ManifestError, "Each URL entry must be a hash" unless url_entry.is_a?(Hash)
 
           raise ManifestError, "URL entry missing required field: url" unless url_entry.key?("url")
-
-          raise ManifestError, "URL entry missing required field: title" unless url_entry.key?("title")
         end
       end
     end

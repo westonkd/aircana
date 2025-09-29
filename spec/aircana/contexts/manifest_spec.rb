@@ -27,7 +27,7 @@ RSpec.describe Aircana::Contexts::Manifest do
           "type" => "confluence",
           "label" => "test-agent",
           "pages" => [
-            { "id" => "123", "title" => "Test Page", "last_updated" => "2024-01-01T00:00:00Z" }
+            { "id" => "123" }
           ]
         }
       ]
@@ -42,8 +42,6 @@ RSpec.describe Aircana::Contexts::Manifest do
       expect(manifest["version"]).to eq("1.0")
       expect(manifest["agent"]).to eq(agent)
       expect(manifest["sources"]).to eq(sources)
-      expect(manifest["created"]).to be_a(String)
-      expect(manifest["last_updated"]).to be_a(String)
     end
 
     it "creates the manifest directory if it doesn't exist" do
@@ -63,7 +61,7 @@ RSpec.describe Aircana::Contexts::Manifest do
           "type" => "confluence",
           "label" => "test-agent",
           "pages" => [
-            { "id" => "123", "title" => "Original Page", "last_updated" => "2024-01-01T00:00:00Z" }
+            { "id" => "123" }
           ]
         }
       ]
@@ -74,7 +72,7 @@ RSpec.describe Aircana::Contexts::Manifest do
           "type" => "confluence",
           "label" => "test-agent",
           "pages" => [
-            { "id" => "123", "title" => "Updated Page", "last_updated" => "2024-02-01T00:00:00Z" }
+            { "id" => "123" }
           ]
         }
       ]
@@ -83,17 +81,13 @@ RSpec.describe Aircana::Contexts::Manifest do
     it "updates an existing manifest" do
       # Create initial manifest
       manifest_path = described_class.create_manifest(agent, original_sources)
-      original_data = JSON.parse(File.read(manifest_path))
 
       # Update manifest
-      sleep 1 # Ensure timestamp changes
       described_class.update_manifest(agent, updated_sources)
 
       # Verify update
       updated_data = JSON.parse(File.read(manifest_path))
       expect(updated_data["sources"]).to eq(updated_sources)
-      expect(updated_data["created"]).to eq(original_data["created"])
-      expect(updated_data["last_updated"]).not_to eq(original_data["last_updated"])
     end
 
     it "creates a new manifest if none exists" do
@@ -113,7 +107,7 @@ RSpec.describe Aircana::Contexts::Manifest do
           "type" => "confluence",
           "label" => "test-agent",
           "pages" => [
-            { "id" => "123", "title" => "Test Page", "last_updated" => "2024-01-01T00:00:00Z" }
+            { "id" => "123" }
           ]
         }
       ]
@@ -164,7 +158,7 @@ RSpec.describe Aircana::Contexts::Manifest do
           "type" => "confluence",
           "label" => "test-agent",
           "pages" => [
-            { "id" => "123", "title" => "Test Page", "last_updated" => "2024-01-01T00:00:00Z" }
+            { "id" => "123" }
           ]
         }
       ]
@@ -258,15 +252,22 @@ RSpec.describe Aircana::Contexts::Manifest do
       end.to raise_error(Aircana::Contexts::ManifestError, /URL entry missing required field: url/)
     end
 
-    it "validates web url entries require title field" do
-      sources = [{ "type" => "web", "urls" => [{ "url" => "https://example.com" }] }]
+    it "accepts valid web sources" do
+      sources = [
+        {
+          "type" => "web",
+          "urls" => [
+            { "url" => "https://example.com" }
+          ]
+        }
+      ]
 
       expect do
         described_class.create_manifest(agent, sources)
-      end.to raise_error(Aircana::Contexts::ManifestError, /URL entry missing required field: title/)
+      end.not_to raise_error
     end
 
-    it "accepts valid web sources" do
+    it "accepts web sources with legacy fields (backwards compatibility)" do
       sources = [
         {
           "type" => "web",
@@ -279,6 +280,25 @@ RSpec.describe Aircana::Contexts::Manifest do
       expect do
         described_class.create_manifest(agent, sources)
       end.not_to raise_error
+    end
+
+    it "accepts manifests with legacy created and last_updated fields (backwards compatibility)" do
+      agent_dir = File.join(Aircana.configuration.agent_knowledge_dir, agent)
+      FileUtils.mkdir_p(agent_dir)
+      legacy_manifest = {
+        "version" => "1.0",
+        "agent" => agent,
+        "created" => "2024-01-01T00:00:00Z",
+        "last_updated" => "2024-01-01T00:00:00Z",
+        "sources" => []
+      }
+      File.write(File.join(agent_dir, "manifest.json"), JSON.generate(legacy_manifest))
+
+      result = described_class.read_manifest(agent)
+
+      expect(result).not_to be_nil
+      expect(result["version"]).to eq("1.0")
+      expect(result["agent"]).to eq(agent)
     end
   end
 end

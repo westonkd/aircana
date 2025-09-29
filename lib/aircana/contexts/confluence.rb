@@ -98,9 +98,7 @@ module Aircana
 
       def extract_page_metadata(page)
         {
-          "id" => page["id"],
-          "title" => page["title"],
-          "last_updated" => page.dig("version", "when") || Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+          "id" => page["id"]
         }
       end
 
