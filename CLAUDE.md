@@ -25,9 +25,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bundle exec rake release` - Release new version (updates version, creates git tag, pushes to rubygems)
 
 ### Aircana CLI Commands
-- `aircana add-files` - Interactively add files to current context (uses fzf)
-- `aircana add-dir [DIRECTORY_PATH]` - Add all files from directory to context
-- `aircana clear-files` - Remove all files from relevant files
 - `aircana doctor` - Check system health and dependencies
 - `aircana doctor --verbose` - Show detailed dependency information
 - `aircana dump-context <agent_name>` - Dump context for specified agent
@@ -54,7 +51,6 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
   - `shell_command.rb`: Shell command execution utilities
   - `commands/`: Individual command implementations
 - **Contexts** (`lib/aircana/contexts/`): Manages different types of context
-  - `relevant_files.rb`: Manages current working file set
   - `confluence.rb`: Handles Confluence page fetching and caching
   - `confluence_content.rb`: Processes Confluence content
   - `web.rb`: Handles web URL fetching and HTML to Markdown conversion
@@ -63,7 +59,6 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
   - `base_generator.rb`: Base class for all generators
   - `agents_generator.rb`: Generates agent configurations
   - `hooks_generator.rb`: Generates hook configurations
-  - `relevant_files_command_generator.rb`: Generates file commands
 - **Configuration** (`lib/aircana/configuration.rb`): Centralized configuration management
 - **Support Classes**:
   - `human_logger.rb`: User-friendly logging output
@@ -71,7 +66,6 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
   - `agent.rb`: Agent model and persistence
 
 ### Key Concepts
-- **Relevant Files**: Current working set of important files stored in `.aircana/relevant_files/`
 - **Agents**: Knowledge encapsulation with domain expertise, Confluence sync, and model customization
 - **Hooks**: Claude Code integration points for automated workflows
 - **Context Management**: Integration with Claude Code through generated templates and configurations
@@ -82,7 +76,6 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
 - Generated output goes to `~/.aircana/aircana.out` by default
 - Agent knowledge cached in `.aircana/agents/<agent_name>/`
 - Hooks stored in `.aircana/hooks/`
-- Relevant files tracked in `.aircana/relevant_files/`
 
 ### Dependencies
 - Thor (~> 0.19.1) for CLI framework

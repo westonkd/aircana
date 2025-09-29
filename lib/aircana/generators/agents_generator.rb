@@ -44,7 +44,7 @@ module Aircana
 
       def locals
         super.merge({
-                      relevant_project_files_path:, agent_name:, short_description:, description:,
+                      agent_name:, short_description:, description:,
                       model:, color:, knowledge_path:
                     })
       end
@@ -61,10 +61,6 @@ module Aircana
 
       def default_output_path
         File.join(Aircana.configuration.claude_code_project_config_path, "agents", "#{agent_name}.md")
-      end
-
-      def relevant_project_files_path
-        File.join(Aircana.configuration.relevant_project_files_dir, "relevant_files.md")
       end
 
       def knowledge_path

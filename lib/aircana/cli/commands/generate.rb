@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../generators/relevant_files_command_generator"
-require_relative "../../generators/relevant_files_verbose_results_generator"
 require_relative "../../generators/plan_command_generator"
 require_relative "../../generators/write_plan_command_generator"
 require_relative "../../generators/ask_expert_command_generator"
@@ -15,8 +13,6 @@ module Aircana
       class << self
         def generators
           @generators ||= [
-            Aircana::Generators::RelevantFilesVerboseResultsGenerator.new,
-            Aircana::Generators::RelevantFilesCommandGenerator.new,
             Aircana::Generators::PlanCommandGenerator.new,
             Aircana::Generators::WritePlanCommandGenerator.new,
             Aircana::Generators::AskExpertCommandGenerator.new

@@ -2,9 +2,6 @@
 
 require "thor"
 
-require_relative "commands/add_files"
-require_relative "commands/add_directory"
-require_relative "commands/clear_files"
 require_relative "commands/doctor"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
@@ -15,7 +12,6 @@ require_relative "help_formatter"
 require_relative "commands/agents"
 require_relative "commands/hooks"
 require_relative "commands/project"
-require_relative "commands/files"
 
 module Aircana
   module CLI
@@ -47,28 +43,6 @@ module Aircana
       desc "install", "Copies the generated files from `generate` to the proper directories in Claude Code config."
       def install
         Install.run
-      end
-
-      class FilesSubcommand < Subcommand
-        desc "add", "Interactively add files to current context"
-        def add
-          Files.add
-        end
-
-        desc "add-dir [DIRECTORY_PATH]", "Add all files from directory to context"
-        def add_dir(directory_path)
-          Files.add_dir(directory_path)
-        end
-
-        desc "clear", "Remove all files from current context"
-        def clear
-          Files.clear
-        end
-
-        desc "list", "Show current relevant files"
-        def list
-          Files.list
-        end
       end
 
       class AgentsSubcommand < Subcommand
@@ -151,9 +125,6 @@ module Aircana
           Project.sync
         end
       end
-
-      desc "files", "Manage relevant files for context"
-      subcommand "files", FilesSubcommand
 
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand

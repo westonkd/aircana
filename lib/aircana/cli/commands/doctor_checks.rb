@@ -59,7 +59,6 @@ module Aircana
           check_directory("~/.aircana", "Global Aircana directory")
           check_directory(".aircana", "Project Aircana directory")
           check_agents_status
-          check_relevant_files_status
         end
 
         def check_agents_status
@@ -72,17 +71,6 @@ module Aircana
           else
             log_info("agents", "No agents configured yet")
             log_remedy("Create agents with: aircana agents create")
-          end
-        end
-
-        def check_relevant_files_status
-          relevant_files_dir = File.join(Dir.pwd, ".aircana", "relevant_files")
-          if Dir.exist?(relevant_files_dir) && !Dir.empty?(relevant_files_dir)
-            file_count = Dir.glob(File.join(relevant_files_dir, "*")).size
-            log_success("relevant_files", "#{file_count} file(s) in context")
-          else
-            log_info("relevant_files", "No relevant files added yet")
-            log_remedy("Add files with: aircana add-files")
           end
         end
       end
