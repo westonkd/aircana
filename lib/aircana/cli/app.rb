@@ -91,6 +91,11 @@ module Aircana
         def add_url(agent, url)
           Agents.add_url(agent, url)
         end
+
+        desc "sync-all", "Refresh knowledge for all configured agents"
+        def sync_all
+          Agents.sync_all
+        end
       end
 
       class HooksSubcommand < Subcommand

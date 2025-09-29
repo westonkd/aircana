@@ -101,6 +101,38 @@ module Aircana
           exit 1
         end
 
+        def sync_all # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          agent_names = all_agents
+
+          if agent_names.empty?
+            Aircana.human_logger.info "No agents found to sync."
+            return
+          end
+
+          Aircana.human_logger.info "Starting sync for #{agent_names.size} agent(s)..."
+
+          results = {
+            total: agent_names.size,
+            successful: 0,
+            failed: 0,
+            total_pages: 0,
+            failed_agents: []
+          }
+
+          agent_names.each do |agent_name|
+            result = sync_single_agent(agent_name)
+            if result[:success]
+              results[:successful] += 1
+              results[:total_pages] += result[:pages_count]
+            else
+              results[:failed] += 1
+              results[:failed_agents] << { name: agent_name, error: result[:error] }
+            end
+          end
+
+          print_sync_all_summary(results)
+        end
+
         private
 
         def perform_refresh(normalized_agent)
@@ -328,6 +360,52 @@ module Aircana
 
         def find_available_editor
           %w[code subl atom nano vim vi].find { |cmd| system("which #{cmd} > /dev/null 2>&1") }
+        end
+
+        def all_agents
+          agent_dir = Aircana.configuration.agent_knowledge_dir
+          return [] unless Dir.exist?(agent_dir)
+
+          find_agent_folders(agent_dir)
+        end
+
+        def sync_single_agent(agent_name) # rubocop:disable Metrics/MethodLength
+          Aircana.human_logger.info "Syncing agent '#{agent_name}'..."
+
+          begin
+            result = perform_manifest_aware_refresh(agent_name)
+            {
+              success: true,
+              pages_count: result[:pages_count],
+              sources: result[:sources]
+            }
+          rescue Aircana::Error => e
+            Aircana.human_logger.error "Failed to sync agent '#{agent_name}': #{e.message}"
+            {
+              success: false,
+              pages_count: 0,
+              sources: [],
+              error: e.message
+            }
+          end
+        end
+
+        def print_sync_all_summary(results) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          Aircana.human_logger.info ""
+          Aircana.human_logger.info "=== Sync All Summary ==="
+          Aircana.human_logger.success "✓ Successful: #{results[:successful]}/#{results[:total]} agents"
+          Aircana.human_logger.success "✓ Total pages refreshed: #{results[:total_pages]}"
+
+          if results[:failed].positive?
+            Aircana.human_logger.error "✗ Failed: #{results[:failed]} agents"
+            Aircana.human_logger.info ""
+            Aircana.human_logger.info "Failed agents:"
+            results[:failed_agents].each do |failed_agent|
+              Aircana.human_logger.error "  - #{failed_agent[:name]}: #{failed_agent[:error]}"
+            end
+          end
+
+          Aircana.human_logger.info ""
         end
       end
     end
