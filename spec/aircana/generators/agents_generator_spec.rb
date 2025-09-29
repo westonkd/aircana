@@ -6,7 +6,7 @@ require "aircana/generators/agents_generator"
 RSpec.describe Aircana::Generators::AgentsGenerator do
   describe ".available_default_agents" do
     it "returns list of available default agents" do
-      expect(described_class.available_default_agents).to eq(%w[planner jira])
+      expect(described_class.available_default_agents).to eq(%w[planner jira sub-agent-coordinator])
     end
   end
 

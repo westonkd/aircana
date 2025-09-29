@@ -7,7 +7,7 @@ module Aircana
     class AgentsGenerator < BaseGenerator
       attr_reader :agent_name, :short_description, :description, :model, :color, :default_agent
 
-      AVAILABLE_DEFAULT_AGENTS = %w[planner jira].freeze
+      AVAILABLE_DEFAULT_AGENTS = %w[planner jira sub-agent-coordinator].freeze
 
       class << self
         def create_default_agent(agent_name)
