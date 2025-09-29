@@ -30,7 +30,6 @@ RSpec.describe Aircana::CLI::Install do
     allow(human_logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
     allow(human_logger_double).to receive(:success) { |msg| @log_messages << [:success, msg] }
     allow(Aircana).to receive(:human_logger).and_return(human_logger_double)
-    allow(Aircana).to receive(:create_dir_if_needed)
   end
 
   after do
@@ -377,7 +376,8 @@ RSpec.describe Aircana::CLI::Install do
 
     context "when file doesn't exist" do
       it "returns empty hash" do
-        result = described_class.send(:load_settings, "/nonexistent/file.json")
+        nonexistent_file = File.join(test_claude_dir, "nonexistent", "file.json")
+        result = described_class.send(:load_settings, nonexistent_file)
         expect(result).to eq({})
       end
     end
