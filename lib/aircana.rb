@@ -37,8 +37,6 @@ module Aircana
     def initialize!
       return if @initialized
 
-      create_dir_if_needed(configuration.relevant_project_files_dir)
-
       @initialized = true
     end
 

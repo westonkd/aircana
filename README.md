@@ -275,14 +275,6 @@ This refreshes both Confluence pages and web URLs associated with the agent.
 
 ## All Commands
 
-### File Management
-```bash
-aircana files add         # Interactively select files to add to context
-aircana files add-dir [PATH] # Add all files from directory to context
-aircana files clear       # Clear current file context
-aircana files list        # Show current relevant files
-```
-
 ### Agent Management
 ```bash
 aircana agents create     # Create new agent interactively

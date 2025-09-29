@@ -210,9 +210,7 @@ module Aircana
 
       def build_url_metadata(page_data)
         {
-          "url" => page_data[:url],
-          "title" => page_data[:title],
-          "last_fetched" => page_data[:last_fetched]
+          "url" => page_data[:url]
         }
       end
 

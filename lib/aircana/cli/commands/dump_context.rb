@@ -1,15 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "../shell_command"
-require_relative "../../contexts/relevant_files"
 
 module Aircana
   module CLI
     module DumpContext
       class << self
-        def run(_agent_name:, verbose: true)
+        def run(_agent_name:, _verbose: true)
           Aircana.logger.level = Logger::ERROR
-          Contexts::RelevantFiles.print(verbose:)
+          Aircana.human_logger.info("Context dumping functionality has been removed.")
         end
 
         private
