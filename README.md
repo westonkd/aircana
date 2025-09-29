@@ -1,11 +1,27 @@
 # Aircana
 
-A Ruby CLI utility for context management and Claude Code integration. Aircana helps manage relevant files for development sessions, create specialized Claude Code agents, and optionally sync knowledge from Confluence.
-
 [![Ruby](https://github.com/westonkd/aircana/actions/workflows/main.yml/badge.svg)](https://github.com/westonkd/aircana/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/aircana.svg)](https://badge.fury.io/rb/aircana)
 
-## Installation
+## Intro
+
+Aircana aims to be a "batteries-included" CLI for common needs of Instructure Engineering teams using agents in development. It provides:
+
+Consistent artifact generation and updating of agent, slash command, and hook ERB templates.
+
+Subagent generation for improved context window management.
+
+Agent-accessible knowledge bases sourced from Confluence or public websites, backed by manifest files.
+
+Development workflow with plan, record, and execute phases (record and execute phases are in progress).
+
+SQS integration for features like Slack notifications and messages.
+
+While Aircana includes features beneficial in many agentic contexts (like knowledge base syncing), its primary tools are built on "human-in-the-loop" principles.
+
+## How can I try it?
+
+### Installation
 
 Install the gem:
 
@@ -13,96 +29,108 @@ Install the gem:
 gem install aircana
 ```
 
-Or add to your Gemfile:
-
-```ruby
-gem 'aircana'
-```
-
-Then run:
-
-```bash
-bundle install
-```
-
-Verify installation and check dependencies:
+Verify installation and dependency setup:
 
 ```bash
 aircana doctor
 ```
 
-## Prerequisites
+Install Aircana files into your repo:
 
-### Required Dependencies
-- Ruby >= 3.3.0
-- `git` (version control operations)
-- `fzf` (interactive file selection)
+```bash
+cd ~/my/repo
+aircana install # This is a no-op if the repo already uses .aircana
+```
 
-### Optional Dependencies
-- `bat` (enhanced file previews, falls back to `cat`)
-- `fd` (faster file searching, falls back to `find`)
+### Take it for a spin
 
-### For Confluence Integration (Optional)
-- Access to a Confluence instance
-- Confluence API token
-- Appropriate permissions to read pages and labels
+If your project previously had Aircana agents set up, run the following to populate each defined agent's knowledge base:
 
-## Core Concepts
+```bash
+aircana agents refresh-all
+```
 
-Aircana provides two main independent features:
+To start using your agents with domain-specific knowledge, follow the agent workflow tutorial.
 
-### Specialized Agents
-Create Claude Code agents with:
-- **Domain Knowledge**: Focused expertise in specific areas
-- **Confluence Integration**: Knowledge sync from labeled pages (requires Confluence setup)
-- **Customizable Models**: Choose from different Claude models and interface colors
+### Things to try
 
-### Knowledge Sources
-- **Relevant Files**: Current working set managed by Aircana (independent feature)
-- **Confluence Pages**: Fetched based on agent labels (agent feature, requires setup)
-- **Web URLs**: Any web content added to agent knowledge bases (HTML converted to Markdown)
-- **Local Context**: Project-specific files and configurations
+- Configure the Confluence integration and create your own domain-specific subagent
 
-### Knowledge manifest files
-Each specialized agent receives a manifest file to track knowledge sources.
+- Launch Claude Code and view the hooks installed by Aircana (prefixed with air). The /air-ask-expert command is pretty handy once you set up some agents with knowledbases.
 
-This allows adding proprietary information to an agent's knowledge base without placeing the
-actual proprietary details under version control.
+- Set up the SQS integration to receive Slack messages when Claude Code needs your attention (documentation coming soon).
 
-Agent knowledge bases can be synced to pull the latest information from each source.
+- Explore other tools by running `aircana --help`
 
-## What Aircana Does
+## Key Concepts
 
-- **Agent Configuration**: Create and configure specialized Claude Code agents
-- **Confluence & Webiste Integration**: Sync knowledge from Confluence and other pages to agents knowledge sources
-- **Knowledge manifest files**: Include proprietary details in sub-agents without placing that knowledge under version control
-- **Tempatized artififact generation:** Generate and update agent, hook, and slash commands with consistency
-- **System Health Checks**: Validate dependencies and configuration
+### Subagents
 
-## Quick Start
+Subagents are domain-specific agents to whom the primary Claude Code agent can delegate tasks and questions.
 
-1. **Install and verify**:
-   ```bash
-   gem install aircana
-   aircana doctor
-   ```
+Each subagent has its own context window. Effectively using subagents can keep the main context window and per-agent context windows smaller for longer, leading to much more usable results and reducing the need to remind agents of core principles and tasks.
 
-2. **Set up your project**:
-   ```bash
-   cd your-project
-   aircana install    # Set up Aircana integration in this project
-   ```
+Claude Code can also run subagents in parallel. A "swarm" of appropriately designed subagents can expedite planning and execution tasks while considering a broader context.
 
-3. **Create an agent** (optional, but powerful with Confluence):
-   ```bash
-   aircana agents create    # Tag Confluence pages with the agent's name before or after creation to pull that knowledge into the agent's knowledge base. 
-   ```
+Aircana allows easy generation of subagents and binds each to an agent-specific knowledge base with documents from Confluence or websites.
 
-4. **View your current context**:
-   ```bash
-   aircana files list     # See all tracked files
-   aircana agents list    # See all configured agents
-   ```
+### Knowledge Bases
+
+Aircana provides each subagent access to a human-curated knowledge base. This access enables Aircana-managed subagents to yield more relevant results, minimizing back-and-forth between the human operator and the agent.
+
+After initial agent creation, Aircana supports refreshing agents' knowledge bases with the latest versions of each source.
+
+#### Confluence
+
+To add a Confluence page to an agent's knowledge base, label the desired page in Confluence, then run `aircana agent refresh <AGENT>`.
+
+Aircana will also pull any Confluence pages labeled with a matching agent name during initial agent creation (`aircana agent create`).
+
+See the Confluence setup guide or run `aircana doctor` for instructions on setting up Confluence integration.
+
+#### Websites
+
+In addition to Confluence sources, Aircana allows adding arbitrary public websites to a knowledge base.
+
+Websites are also refreshed when `aircana agent refresh <AGENT>` is used.
+
+#### Structure
+
+Knowledge bases are stored in the .aircana directory of each project. For example:
+
+```
+.aircana
+├── agents
+│   ├── canvas-backend-account-expert
+│   │   ├── knowledge
+│   │   │   ├── Accounts.md
+│   │   │   └── Subdomains-&-Request-Routing.md
+│   │   └── manifest.json
+```
+
+Agent files in the .claude/agents directory reference these files.
+
+In many cases, adding the actual knowledge base to version control is undesirable because:
+
+There may be numerous files in the knowledge base, bloating repository size.
+
+Knowledge bases may contain sensitive information that should not be public in an open-source project.
+
+Aircana manages a per-agent manifest.json file to address these concerns.
+
+### Consistent Artifacts
+
+Aircana maintains a set of ERB templates for generating Claude Code agents, hooks, and slash commands consistently.
+
+These templates promote best practices and help new users quickly create effective artifacts without extensive trial and error.
+
+### SQS Integration (Slack Integration at Instructure)
+
+Aircana uses the "Notification" Claude Code hook to send messages to SQS.
+
+At Instructure this means you can easily configure Claude Code to send you slack messages when it needs your attention via Aircana
+
+(Instructions coming soon, send a message if you want help with this)
 
 ## Configuration (Optional)
 
