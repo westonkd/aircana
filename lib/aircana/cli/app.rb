@@ -92,9 +92,9 @@ module Aircana
           Agents.add_url(agent, url)
         end
 
-        desc "sync-all", "Refresh knowledge for all configured agents"
-        def sync_all
-          Agents.sync_all
+        desc "refresh-all", "Refresh knowledge for all configured agents"
+        def refresh_all
+          Agents.refresh_all
         end
       end
 
