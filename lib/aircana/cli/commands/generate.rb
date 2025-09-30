@@ -2,6 +2,7 @@
 
 require_relative "../../generators/plan_command_generator"
 require_relative "../../generators/record_command_generator"
+require_relative "../../generators/execute_command_generator"
 require_relative "../../generators/ask_expert_command_generator"
 require_relative "../../generators/agents_generator"
 require_relative "../../generators/hooks_generator"
@@ -15,6 +16,7 @@ module Aircana
           @generators ||= [
             Aircana::Generators::PlanCommandGenerator.new,
             Aircana::Generators::RecordCommandGenerator.new,
+            Aircana::Generators::ExecuteCommandGenerator.new,
             Aircana::Generators::AskExpertCommandGenerator.new
           ]
         end
