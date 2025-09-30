@@ -13,7 +13,7 @@ Subagent generation for improved context window management.
 
 Agent-accessible knowledge bases sourced from Confluence or public websites, backed by manifest files.
 
-Development workflow with plan, record, and execute phases (record and execute phases are in progress).
+Complete development workflow with five phases: plan, record, execute, review, and apply-feedback.
 
 SQS integration for features like Slack notifications and messages.
 
@@ -61,6 +61,108 @@ To start using your agents with domain-specific knowledge, follow the agent work
 - Set up the SQS integration to receive Slack messages when Claude Code needs your attention (documentation coming soon).
 
 - Explore other tools by running `aircana --help`
+
+## Development Workflow
+
+Aircana provides a complete development lifecycle through five integrated slash commands:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Plan: /air-plan
+    Plan --> Record: /air-record
+    Record --> Execute: /air-execute
+    Execute --> Review: /air-review
+    Review --> ApplyFeedback: /air-apply-feedback
+    ApplyFeedback --> Review: More issues found
+    ApplyFeedback --> [*]: Satisfied
+```
+
+### Quick Overview
+
+1. **`/air-plan`** - Create strategic implementation plan
+2. **`/air-record`** - Save plan to Jira ticket
+3. **`/air-execute`** - Implement plan and create commit
+4. **`/air-review`** - Adversarial code review with expert feedback
+5. **`/air-apply-feedback`** - Apply review changes and amend commit
+
+### Command Details
+
+#### 1. `/air-plan` - Strategic Planning
+
+Creates a high-level implementation plan by:
+- Asking you to specify relevant files and directories
+- Consulting specialized sub-agents for domain expertise
+- Sharing research context to avoid duplicate work
+- Generating a focused strategic plan (what to do, not how)
+- Creating actionable todo checklist
+
+The planner focuses on architecture decisions and approach, avoiding exhaustive code implementations.
+
+#### 2. `/air-record` - Save to Jira
+
+Records your approved plan to a Jira ticket by:
+- Taking the ticket key/ID as input
+- Delegating to the `jira` sub-agent for MCP operations
+- Storing the plan in the ticket description or comments
+
+This creates a traceable link between planning and execution.
+
+#### 3. `/air-execute` - Implementation
+
+Executes the strategic plan by:
+- Reading the plan from the Jira ticket
+- Creating detailed implementation todo list
+- Presenting plan for your approval
+- Implementing changes sequentially
+- Writing unit tests (delegates to test-writing sub-agent if available)
+- Running tests to verify implementation
+- Creating git commit (delegates to git-ops sub-agent if available)
+
+After commit creation, suggests running `/air-review`.
+
+#### 4. `/air-review` - Adversarial Review
+
+Conducts comprehensive code review of HEAD commit by:
+- Analyzing changed files to identify technical domains
+- Using sub-agent-coordinator to select relevant expert agents
+- Presenting changes to experts in parallel
+- Synthesizing feedback organized by severity (Critical/Important/Suggestions)
+- Storing review output for next step
+
+Explicitly states "Reviewing: <commit message>" and ends with "Run /air-apply-feedback".
+
+#### 5. `/air-apply-feedback` - Apply Changes
+
+Applies code review feedback by:
+- Reading review output from conversation context
+- Creating prioritized change plan (critical issues first)
+- Presenting plan for your approval
+- Applying approved changes
+- Re-running unit tests
+- Fixing any test failures
+- **Amending HEAD commit** with improvements using `git commit --amend --no-edit`
+
+This preserves the original commit message while incorporating review improvements in a single commit.
+
+### Usage Example
+
+```bash
+# 1. Start planning
+/air-plan
+> Specify relevant files: src/api/, spec/api/
+
+# 2. Save plan to ticket
+/air-record PROJ-123
+
+# 3. Execute implementation
+/air-execute PROJ-123
+
+# 4. Review the commit
+/air-review
+
+# 5. Apply feedback
+/air-apply-feedback
+```
 
 ## Key Concepts
 
