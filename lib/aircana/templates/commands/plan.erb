@@ -1,20 +1,18 @@
 <%= helpers.model_instructions(
-    "Use the Task tool with subagent_type 'planner' to invoke the planner agent with the following explicit instructions:
+    "First, ask the user to specify relevant files, directories, or areas of the codebase to examine for this planning task.
+
+Then use the Task tool with subagent_type 'planner' to invoke the planner agent with the following explicit instructions:
 
 STEP 1: CREATE TODO LIST FILE
 First, create a todo list file with the following tasks enumerated in order:
 
-1. Use Task tool with subagent_type 'jira' to verify Jira ticket information (or ask user to create/provide ticket)
-2. Gather requirements from ticket or user description
-3. Identify relevant files mentioned by user and read them for context
-4. Identify all available Claude Code sub-agents that can help with planning
-5. Consult each relevant sub-agent for specialized input (run in parallel when possible)
-6. Enter Claude Code planning mode and synthesize all gathered information
-7. Create comprehensive implementation plan
-8. Present plan to user for feedback and iteration
-9. Finalize plan incorporating user feedback and technical considerations
-10. Suggest user runs '/air-write-plan' command to save the plan to Jira ticket
-11. Notify the user planning is complete. Do not begin implementation
+1. Ask user for relevant files and context (if not already provided)
+2. Use Task tool with subagent_type 'jira' to verify Jira ticket information (or ask user to create/provide ticket)
+3. Perform targeted initial research on user-specified files
+4. Consult relevant sub-agents with research context (run in parallel when possible)
+5. Create high-level strategic implementation plan
+6. Iterate with user feedback
+7. Suggest user runs '/air-record' command to save the plan to Jira ticket
 
 STEP 2: EXECUTE EACH TASK IN ORDER
 Work through each task in the todo list sequentially:
@@ -22,7 +20,16 @@ Work through each task in the todo list sequentially:
 - Mark each task as 'completed' when finished
 - Continue until all tasks are done
 
-IMPORTANT: Always delegate Jira operations to the 'jira' sub-agent using Task tool with subagent_type 'jira'.
+IMPORTANT CONTEXT-SHARING PROTOCOL:
+- When consulting sub-agents, explicitly provide: files already searched, files already read, key findings, and specific focus area
+- This prevents sub-agents from duplicating research work
 
-#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user to provide a Jira ticket or create a comprehensive implementation plan.' : "Plan for Jira ticket: $ARGUMENTS"}"
+IMPORTANT PLAN CONSTRAINTS:
+- Focus on strategic, high-level implementation guidance
+- NO rollout plans, effort estimates, or exhaustive code implementations
+- Small code examples (5-10 lines) are OK to illustrate concepts
+
+User specified relevant files/areas: #{$USER_FILES || '[User will specify]'}
+
+#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user to provide a Jira ticket or task description.' : "Plan for Jira ticket: $ARGUMENTS"}"
 ) %>

@@ -1,0 +1,15 @@
+<%= helpers.model_instructions(
+    "Use the Task tool with subagent_type 'executor' to execute the implementation plan from a Jira ticket.
+
+INSTRUCTIONS FOR EXECUTOR AGENT:
+#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user to provide a Jira ticket key/ID to execute.' : "Execute implementation plan from Jira ticket: $ARGUMENTS"}
+
+The executor agent will:
+1. Read the plan from the Jira ticket via the 'jira' sub-agent
+2. Review and validate the plan structure
+3. Create a detailed execution todo list in Claude Code planning mode
+4. Present the plan for your approval
+5. Execute the approved implementation tasks
+
+IMPORTANT: All Jira operations are delegated to the 'jira' sub-agent using Task tool with subagent_type 'jira'."
+) %>
