@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "aircana/generators/write_plan_command_generator"
+require "aircana/generators/record_command_generator"
 
-RSpec.describe Aircana::Generators::WritePlanCommandGenerator do
+RSpec.describe Aircana::Generators::RecordCommandGenerator do
   describe "#generate" do
     let(:generator) { described_class.new(file_in: template_path, file_out: output_path) }
     let(:template_path) { "/tmp/test_template.erb" }
@@ -30,11 +30,11 @@ RSpec.describe Aircana::Generators::WritePlanCommandGenerator do
 
     it "sets correct default template path" do
       template_path = generator.send(:default_template_path)
-      expect(template_path).to end_with("lib/aircana/generators/../templates/commands/write_plan.erb")
+      expect(template_path).to end_with("lib/aircana/generators/../templates/commands/record.erb")
     end
 
     it "sets correct default output path" do
-      expect(generator.send(:default_output_path)).to eq("/tmp/output/commands/air-write-plan.md")
+      expect(generator.send(:default_output_path)).to eq("/tmp/output/commands/air-record.md")
     end
   end
 end

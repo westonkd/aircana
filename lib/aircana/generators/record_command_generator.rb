@@ -4,7 +4,7 @@ require_relative "../generators"
 
 module Aircana
   module Generators
-    class WritePlanCommandGenerator < BaseGenerator
+    class RecordCommandGenerator < BaseGenerator
       def initialize(file_in: nil, file_out: nil)
         super(
           file_in: file_in || default_template_path,
@@ -15,11 +15,11 @@ module Aircana
       private
 
       def default_template_path
-        File.join(File.dirname(__FILE__), "..", "templates", "commands", "write_plan.erb")
+        File.join(File.dirname(__FILE__), "..", "templates", "commands", "record.erb")
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "air-write-plan.md")
+        File.join(Aircana.configuration.output_dir, "commands", "air-record.md")
       end
     end
   end
