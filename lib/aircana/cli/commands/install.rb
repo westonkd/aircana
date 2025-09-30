@@ -53,7 +53,7 @@ module Aircana
         end
 
         def copy_agent_files(destination_dir)
-          agent_files_pattern = File.join(Aircana.configuration.claude_code_project_config_path, "agents", "*.md")
+          agent_files_pattern = File.join(Aircana.configuration.output_dir, "agents", "*.md")
           Dir.glob(agent_files_pattern).each do |file|
             agent_name = File.basename(file, ".md")
             next unless default_agent?(agent_name)
