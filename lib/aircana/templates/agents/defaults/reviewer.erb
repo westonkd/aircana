@@ -19,8 +19,9 @@ First, create a todo list file with the following tasks enumerated in order:
 5. Use Task tool with subagent_type 'sub-agent-coordinator' to identify relevant expert agents
 6. Present changes to each expert agent in parallel for review
 7. Synthesize feedback organized by severity
-8. Present comprehensive review report
-9. Suggest running '/air-apply-feedback' command
+8. Save review feedback to file
+9. Present comprehensive review report
+10. Suggest running '/air-apply-feedback' command
 
 STEP 2: EXECUTE EACH TASK IN ORDER
 Work through each task in the todo list sequentially:
@@ -63,6 +64,7 @@ TASK DETAILS:
      * Request feedback on: bugs, security issues, performance, best practices, edge cases
    - Execute all expert consultations in parallel for efficiency
    - Gather all expert responses
+   - ANNOUNCEMENT: Clearly state what expert subagents were consulted
 
 7. FEEDBACK SYNTHESIS: Organize all feedback by severity:
    - Critical: Security issues, bugs that could cause failures, data loss risks
@@ -72,15 +74,24 @@ TASK DETAILS:
    - Remove duplicate feedback from multiple experts
    - Prioritize actionable feedback
 
-8. REVIEW REPORT: Present comprehensive review results:
+8. SAVE REVIEW FEEDBACK: Write feedback to standardized location:
+   - Create directory if needed: .aircana/reviews/
+   - Get commit SHA: git rev-parse --short HEAD
+   - Get timestamp: current time in YYYYMMDD-HHMMSS format
+   - Save to: .aircana/reviews/review-<sha>-<timestamp>.md
+   - Also create symlink: .aircana/reviews/latest.md -> review-<sha>-<timestamp>.md
+   - File should contain: commit info, overall assessment, all feedback organized by severity
+   - Use Write tool to create the review file
+
+9. REVIEW REPORT: Present comprehensive review results to user:
    - Start with overall assessment (approve with changes / needs revision / critical issues)
    - List feedback organized by severity
    - Provide clear, actionable recommendations
-   - Store this output in conversation context for apply-feedback agent
+   - Mention where feedback was saved
 
-9. NEXT STEPS: End with clear instruction:
-   - Output: \"Run /air-apply-feedback to apply recommended changes\"
-   - This guides user to next step in workflow
+10. NEXT STEPS: End with clear instruction:
+    - Output: \"To apply the recommended changes, run: /air-apply-feedback\"
+    - This guides user to next step in workflow
 
 IMPORTANT INSTRUCTIONS:
 - ALWAYS start by creating the todo list file before doing any other work

@@ -12,6 +12,7 @@ require_relative "help_formatter"
 require_relative "commands/agents"
 require_relative "commands/hooks"
 require_relative "commands/project"
+require_relative "commands/reviews"
 
 module Aircana
   module CLI
@@ -126,6 +127,18 @@ module Aircana
         end
       end
 
+      class ReviewsSubcommand < Subcommand
+        desc "show [COMMIT_SHA]", "Show the latest review or a specific review by commit SHA"
+        def show(commit_sha = nil)
+          Reviews.show(commit_sha)
+        end
+
+        desc "list", "List all available reviews"
+        def list
+          Reviews.list
+        end
+      end
+
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand
 
@@ -134,6 +147,9 @@ module Aircana
 
       desc "project", "Manage multi-root project configuration"
       subcommand "project", ProjectSubcommand
+
+      desc "reviews", "View code review history"
+      subcommand "reviews", ReviewsSubcommand
     end
   end
 end

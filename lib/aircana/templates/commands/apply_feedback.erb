@@ -1,17 +1,13 @@
 <%= helpers.model_instructions(
-    "Use the Task tool with subagent_type 'apply-feedback' to apply code review feedback from the previous /air-review command.
-
-Pass the review feedback from the conversation context to the apply-feedback agent.
+    "Use the Task tool with subagent_type 'apply-feedback' to apply code review feedback from the most recent review.
 
 The apply-feedback agent will:
-1. Parse review feedback from the previous review
-2. Create todo list of changes prioritized by severity
-3. Present plan to user for approval
-4. Apply approved changes
-5. Re-run unit tests to verify changes
-6. Fix any test failures
-7. Amend the HEAD commit with improvements using 'git commit --amend --no-edit'
-8. Summarize changes made
+1. Read the latest review feedback from .aircana/reviews/latest.md
+2. Parse and categorize feedback items by severity
+3. Confirm changes with you before proceeding
+4. Apply fixes in order: Critical, Important, Suggestions
+5. Run tests if available to verify changes
+6. Provide summary of all changes made
 
-IMPORTANT: This command reads the review output from the conversation context, so it must be run in the same conversation as /air-review."
+IMPORTANT: The agent will ask for your confirmation before making changes. You can choose to exclude specific items or skip suggestions entirely."
 ) %>

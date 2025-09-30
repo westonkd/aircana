@@ -10,6 +10,11 @@ The executor agent will:
 3. Create a detailed execution todo list in Claude Code planning mode
 4. Present the plan for your approval
 5. Execute the approved implementation tasks
+6. Write unit tests (delegate to test-writing sub-agent if available)
+7. Run unit tests to verify implementation
+8. Create git commit (delegate to git-ops sub-agent if available)
+
+After the commit is created, you will be prompted to run '/air-review' to review the changes.
 
 IMPORTANT: All Jira operations are delegated to the 'jira' sub-agent using Task tool with subagent_type 'jira'."
 ) %>

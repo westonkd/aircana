@@ -39,6 +39,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana hooks disable <hook>` - Disable a specific hook
 - `aircana hooks create` - Create custom hook
 - `aircana hooks status` - Show hook configuration status
+- `aircana reviews show [COMMIT_SHA]` - Show the latest review or a specific review by commit SHA
+- `aircana reviews list` - List all available reviews
 
 ## Architecture
 
@@ -76,6 +78,8 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
 - Generated output goes to `~/.aircana/aircana.out` by default
 - Agent knowledge cached in `.aircana/agents/<agent_name>/`
 - Hooks stored in `.aircana/hooks/`
+- Code review feedback stored in `.aircana/reviews/` with format `review-<sha>-<timestamp>.md`
+  - Latest review accessible via symlink at `.aircana/reviews/latest.md`
 
 ### Dependencies
 - Thor (~> 0.19.1) for CLI framework
