@@ -3,6 +3,8 @@
 require_relative "../../generators/plan_command_generator"
 require_relative "../../generators/record_command_generator"
 require_relative "../../generators/execute_command_generator"
+require_relative "../../generators/review_command_generator"
+require_relative "../../generators/apply_feedback_command_generator"
 require_relative "../../generators/ask_expert_command_generator"
 require_relative "../../generators/agents_generator"
 require_relative "../../generators/hooks_generator"
@@ -17,6 +19,8 @@ module Aircana
             Aircana::Generators::PlanCommandGenerator.new,
             Aircana::Generators::RecordCommandGenerator.new,
             Aircana::Generators::ExecuteCommandGenerator.new,
+            Aircana::Generators::ReviewCommandGenerator.new,
+            Aircana::Generators::ApplyFeedbackCommandGenerator.new,
             Aircana::Generators::AskExpertCommandGenerator.new
           ]
         end

@@ -19,6 +19,7 @@ First, create a todo list file with the following tasks enumerated in order:
 5. Execute approved implementation tasks sequentially
 6. Write unit tests (delegate to test-writing sub-agent if available)
 7. Run unit tests to verify implementation
+8. Create git commit (delegate to git-ops sub-agent if available)
 
 STEP 2: EXECUTE EACH TASK IN ORDER
 Work through each task in the todo list sequentially:
@@ -64,6 +65,14 @@ TASK DETAILS:
    - Use project's test command (e.g., bundle exec rspec, npm test, etc.)
    - Fix any failing tests
    - Ensure all tests pass before marking work complete
+
+8. GIT COMMIT: Create a git commit for the implementation:
+   - Check if a git-ops sub-agent exists (look for agents with 'git' in name/description)
+   - If found, delegate commit creation to that sub-agent using Task tool
+   - Provide context: Jira ticket key, summary of changes, files modified
+   - If no git-ops agent exists, create commit directly using Bash tool
+   - Commit message should reference Jira ticket and describe implementation
+   - After successful commit, suggest user runs '/air-review' command to review changes
 
 IMPORTANT INSTRUCTIONS:
 - ALWAYS start by creating the todo list file before doing any other work
