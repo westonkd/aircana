@@ -1,15 +1,4 @@
 {
-  "SessionStart": [
-    {
-      "hooks": [
-        {
-          "type": "command",
-          "command": "${CLAUDE_PLUGIN_ROOT}/scripts/refresh_agents.sh",
-          "description": "Auto-refresh agent knowledge bases (max once per day)"
-        }
-      ]
-    }
-  ],
   "PostToolUse": [
     {
       "hooks": [

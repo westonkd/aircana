@@ -201,6 +201,7 @@ module Aircana
             "post_tool_use" => { event: "PostToolUse", matcher: nil },
             "user_prompt_submit" => { event: "UserPromptSubmit", matcher: nil },
             "session_start" => { event: "SessionStart", matcher: nil },
+            "refresh_agents" => { event: "SessionStart", matcher: nil },
             "notification_sqs" => { event: "Notification", matcher: nil },
             "rubocop_pre_commit" => { event: "PreToolUse", matcher: "Bash" },
             "rspec_test" => { event: "PostToolUse", matcher: "Bash" },
