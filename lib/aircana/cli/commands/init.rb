@@ -59,6 +59,7 @@ module Aircana
             Aircana.configuration.instance_variable_set(:@commands_dir, File.join(target_dir, "commands"))
             Aircana.configuration.instance_variable_set(:@agents_dir, File.join(target_dir, "agents"))
             Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(target_dir, "hooks"))
+            Aircana.configuration.instance_variable_set(:@scripts_dir, File.join(target_dir, "scripts"))
             Aircana.configuration.instance_variable_set(:@agent_knowledge_dir, File.join(target_dir, "agents"))
 
             yield
@@ -72,6 +73,7 @@ module Aircana
                                                         File.join(original_plugin_root, "commands"))
             Aircana.configuration.instance_variable_set(:@agents_dir, File.join(original_plugin_root, "agents"))
             Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(original_plugin_root, "hooks"))
+            Aircana.configuration.instance_variable_set(:@scripts_dir, File.join(original_plugin_root, "scripts"))
             Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
                                                         File.join(original_plugin_root, "agents"))
           end
@@ -82,18 +84,32 @@ module Aircana
 
           default_name = plugin_name || PluginManifest.default_plugin_name(target_dir)
 
-          {
+          # Collect basic metadata
+          metadata = {
             name: prompt.ask("Plugin name:", default: default_name),
             version: prompt.ask("Initial version:", default: "0.1.0"),
             description: prompt.ask("Plugin description:", default: "A Claude Code plugin created with Aircana"),
-            author: prompt.ask("Author name:"),
             license: prompt.ask("License:", default: "MIT")
           }
+
+          # Collect author information
+          author_name = prompt.ask("Author name:")
+          author = { "name" => author_name }
+
+          author["email"] = prompt.ask("Author email:") if prompt.yes?("Add author email?", default: false)
+
+          if prompt.yes?("Add author URL (e.g. GitHub profile)?", default: false)
+            author["url"] = prompt.ask("Author URL:")
+          end
+
+          metadata[:author] = author
+
+          metadata
         end
 
         def create_plugin_structure(target_dir)
           # Create plugin directories
-          [".claude-plugin", "commands", "agents", "hooks"].each do |dir|
+          [".claude-plugin", "commands", "agents", "hooks", "scripts"].each do |dir|
             dir_path = File.join(target_dir, dir)
             Aircana.create_dir_if_needed(dir_path)
             Aircana.human_logger.info("Created directory: #{dir}/")
@@ -154,11 +170,11 @@ module Aircana
         end
 
         def install_hooks
-          hooks_dir = Aircana.configuration.hooks_dir
-          return unless Dir.exist?(hooks_dir)
+          scripts_dir = Aircana.configuration.scripts_dir
+          return unless Dir.exist?(scripts_dir)
 
           # Check if any hook scripts exist (they're already generated to the correct location)
-          hook_files = Dir.glob("#{hooks_dir}/*.sh")
+          hook_files = Dir.glob("#{scripts_dir}/*.sh")
           return unless hook_files.any?
 
           # Create hooks manifest
@@ -191,7 +207,7 @@ module Aircana
             "bundle_install" => { event: "PostToolUse", matcher: "Bash" }
           }
 
-          Dir.glob("#{Aircana.configuration.hooks_dir}/*.sh").each do |hook_file|
+          Dir.glob("#{Aircana.configuration.scripts_dir}/*.sh").each do |hook_file|
             hook_name = File.basename(hook_file, ".sh")
 
             # Determine mapping for this hook
@@ -207,7 +223,7 @@ module Aircana
             event_key = mapping[:event]
 
             # Create relative path using ${CLAUDE_PLUGIN_ROOT}
-            relative_path = "${CLAUDE_PLUGIN_ROOT}/hooks/#{hook_name}.sh"
+            relative_path = "${CLAUDE_PLUGIN_ROOT}/scripts/#{hook_name}.sh"
 
             hook_entry = {
               "type" => "command",
@@ -249,7 +265,8 @@ module Aircana
           Aircana.human_logger.info("  .claude-plugin/plugin.json  - Plugin metadata")
           Aircana.human_logger.info("  commands/                   - Slash commands")
           Aircana.human_logger.info("  agents/                     - Specialized agents")
-          Aircana.human_logger.info("  hooks/                      - Event hooks")
+          Aircana.human_logger.info("  hooks/                      - Event hook configurations")
+          Aircana.human_logger.info("  scripts/                    - Hook scripts and utilities")
           Aircana.human_logger.info("\nNext steps:")
           Aircana.human_logger.info("  - Create agents: aircana agents create")
           Aircana.human_logger.info("  - Install plugin in Claude Code")

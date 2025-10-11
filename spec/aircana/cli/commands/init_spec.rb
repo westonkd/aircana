@@ -9,6 +9,7 @@ require_relative "../../../../lib/aircana/cli/commands/init"
 RSpec.describe Aircana::CLI::Init do
   let(:test_output_dir) { File.join(Dir.pwd, "spec_output_#{Time.now.to_i}_#{rand(1000)}") }
   let(:test_target_dir) { File.join(Dir.pwd, "spec_target_#{Time.now.to_i}_#{rand(1000)}") }
+  let(:test_scripts_dir) { File.join(test_target_dir, "scripts") }
   let(:test_hooks_dir) { File.join(test_target_dir, "hooks") }
   let(:test_commands_dir) { File.join(test_output_dir, "commands") }
   let(:settings_file) { File.join(test_target_dir, "settings.local.json") }
@@ -16,10 +17,12 @@ RSpec.describe Aircana::CLI::Init do
   before do
     FileUtils.mkdir_p(test_output_dir)
     FileUtils.mkdir_p(test_target_dir)
+    FileUtils.mkdir_p(test_scripts_dir)
     FileUtils.mkdir_p(test_hooks_dir)
     FileUtils.mkdir_p(test_commands_dir)
 
     allow(Aircana.configuration).to receive(:output_dir).and_return(test_output_dir)
+    allow(Aircana.configuration).to receive(:scripts_dir).and_return(test_scripts_dir)
     allow(Aircana.configuration).to receive(:hooks_dir).and_return(test_hooks_dir)
     allow(Aircana.configuration).to receive(:commands_dir).and_return(File.join(test_target_dir, "commands"))
     allow(Aircana.configuration).to receive(:agents_dir).and_return(File.join(test_target_dir, "agents"))
@@ -40,8 +43,10 @@ RSpec.describe Aircana::CLI::Init do
     allow(prompt_double).to receive(:ask).with("Plugin name:", any_args).and_return("test-plugin")
     allow(prompt_double).to receive(:ask).with("Initial version:", any_args).and_return("0.1.0")
     allow(prompt_double).to receive(:ask).with("Plugin description:", any_args).and_return("Test plugin")
-    allow(prompt_double).to receive(:ask).with("Author name:", any_args).and_return("Test Author")
     allow(prompt_double).to receive(:ask).with("License:", any_args).and_return("MIT")
+    allow(prompt_double).to receive(:ask).with("Author name:", any_args).and_return("Test Author")
+    allow(prompt_double).to receive(:yes?).with("Add author email?", any_args).and_return(false)
+    allow(prompt_double).to receive(:yes?).with("Add author URL (e.g. GitHub profile)?", any_args).and_return(false)
   end
 
   after do
@@ -87,9 +92,9 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     before do
-      # Create hook files in the TARGET hooks directory (where generate puts them during init)
+      # Create hook files in the TARGET scripts directory (where generate puts them during init)
       hook_files.each do |filename, content|
-        File.write(File.join(test_hooks_dir, filename), content)
+        File.write(File.join(test_scripts_dir, filename), content)
       end
 
       allow(Aircana::CLI::Generate).to receive(:run)
@@ -126,7 +131,7 @@ RSpec.describe Aircana::CLI::Init do
 
     before do
       hook_files.each do |filename, content|
-        File.write(File.join(test_hooks_dir, filename), content)
+        File.write(File.join(test_scripts_dir, filename), content)
       end
     end
 
@@ -142,14 +147,14 @@ RSpec.describe Aircana::CLI::Init do
       pre_tool_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("pre_tool_use.sh") }
       expect(pre_tool_hook).not_to be_nil
       expect(pre_tool_hook.dig("hooks", 0, "type")).to eq("command")
-      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/pre_tool_use.sh")
+      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/scripts/pre_tool_use.sh")
       expect(pre_tool_hook["matcher"]).to be_nil
 
       # Check rubocop hook has matcher
       rubocop_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("rubocop_pre_commit.sh") }
       expect(rubocop_hook).not_to be_nil
       expect(rubocop_hook["matcher"]).to eq("Bash")
-      expect(rubocop_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/rubocop_pre_commit.sh")
+      expect(rubocop_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/scripts/rubocop_pre_commit.sh")
 
       # Check PostToolUse hooks
       expect(config["PostToolUse"]).to be_an(Array)
@@ -159,7 +164,7 @@ RSpec.describe Aircana::CLI::Init do
       # Check that post_tool_use hook has correct path
       post_tool_hook = post_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("post_tool_use.sh") }
       expect(post_tool_hook).not_to be_nil
-      expect(post_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/post_tool_use.sh")
+      expect(post_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/scripts/post_tool_use.sh")
 
       # Check UserPromptSubmit hook
       expect(config["UserPromptSubmit"]).to be_an(Array)
@@ -176,8 +181,8 @@ RSpec.describe Aircana::CLI::Init do
 
     context "when no hook files exist" do
       before do
-        FileUtils.rm_rf(test_hooks_dir)
-        FileUtils.mkdir_p(test_hooks_dir)
+        FileUtils.rm_rf(test_scripts_dir)
+        FileUtils.mkdir_p(test_scripts_dir)
       end
 
       it "returns empty configuration" do
@@ -187,18 +192,18 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     context "with unknown hook files" do
-      let(:isolated_hooks_dir) { File.join(Dir.pwd, "spec_isolated_hooks_#{Time.now.to_i}_#{rand(1000)}") }
+      let(:isolated_scripts_dir) { File.join(Dir.pwd, "spec_isolated_scripts_#{Time.now.to_i}_#{rand(1000)}") }
 
       before do
-        FileUtils.mkdir_p(isolated_hooks_dir)
-        allow(Aircana.configuration).to receive(:hooks_dir).and_return(isolated_hooks_dir)
+        FileUtils.mkdir_p(isolated_scripts_dir)
+        allow(Aircana.configuration).to receive(:scripts_dir).and_return(isolated_scripts_dir)
 
-        File.write(File.join(isolated_hooks_dir, "unknown_hook.sh"), "unknown hook content")
-        File.write(File.join(isolated_hooks_dir, "post_tool_use.sh"), "known hook content")
+        File.write(File.join(isolated_scripts_dir, "unknown_hook.sh"), "unknown hook content")
+        File.write(File.join(isolated_scripts_dir, "post_tool_use.sh"), "known hook content")
       end
 
       after do
-        FileUtils.rm_rf(isolated_hooks_dir)
+        FileUtils.rm_rf(isolated_scripts_dir)
       end
 
       it "includes both known and custom hooks" do
@@ -212,20 +217,20 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     context "with custom hook files having event types in names" do
-      let(:isolated_hooks_dir) { File.join(Dir.pwd, "spec_isolated_hooks_#{Time.now.to_i}_#{rand(1000)}") }
+      let(:isolated_scripts_dir) { File.join(Dir.pwd, "spec_isolated_scripts_#{Time.now.to_i}_#{rand(1000)}") }
 
       before do
-        FileUtils.mkdir_p(isolated_hooks_dir)
-        allow(Aircana.configuration).to receive(:hooks_dir).and_return(isolated_hooks_dir)
+        FileUtils.mkdir_p(isolated_scripts_dir)
+        allow(Aircana.configuration).to receive(:scripts_dir).and_return(isolated_scripts_dir)
 
         # Create custom hooks with event type in name
-        File.write(File.join(isolated_hooks_dir, "my_validation_pre_tool_use.sh"), "custom pre hook")
-        File.write(File.join(isolated_hooks_dir, "cleanup_after_tool.sh"), "custom post hook")
-        File.write(File.join(isolated_hooks_dir, "enhance_user_prompt.sh"), "custom prompt hook")
+        File.write(File.join(isolated_scripts_dir, "my_validation_pre_tool_use.sh"), "custom pre hook")
+        File.write(File.join(isolated_scripts_dir, "cleanup_after_tool.sh"), "custom post hook")
+        File.write(File.join(isolated_scripts_dir, "enhance_user_prompt.sh"), "custom prompt hook")
       end
 
       after do
-        FileUtils.rm_rf(isolated_hooks_dir)
+        FileUtils.rm_rf(isolated_scripts_dir)
       end
 
       it "correctly maps custom hooks to appropriate events" do

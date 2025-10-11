@@ -5,7 +5,7 @@ require "aircana/generators/plan_command_generator"
 
 RSpec.describe Aircana::Generators::PlanCommandGenerator do
   describe "#generate" do
-    let(:output_path) { "/tmp/test_output/commands/air-plan.md" }
+    let(:output_path) { "/tmp/test_output/commands/plan.md" }
     let(:generator) { described_class.new(file_out: output_path) }
 
     before do
@@ -46,7 +46,7 @@ RSpec.describe Aircana::Generators::PlanCommandGenerator do
     end
 
     it "uses the correct output path" do
-      expected_path = "/test/output/commands/air-plan.md"
+      expected_path = "/test/output/commands/plan.md"
       expect(generator.send(:file_out)).to eq(expected_path)
     end
   end

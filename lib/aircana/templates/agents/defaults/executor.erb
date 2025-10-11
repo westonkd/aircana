@@ -72,7 +72,7 @@ TASK DETAILS:
    - Provide context: Jira ticket key, summary of changes, files modified
    - If no git-ops agent exists, create commit directly using Bash tool
    - Commit message should reference Jira ticket and describe implementation
-   - After successful commit, suggest user runs '/air-review' command to review changes
+   - After successful commit, suggest user runs '/review' command to review changes
 
 IMPORTANT INSTRUCTIONS:
 - ALWAYS start by creating the todo list file before doing any other work

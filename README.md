@@ -57,7 +57,8 @@ This creates a plugin structure with:
 - `.claude-plugin/plugin.json` - Plugin manifest
 - `agents/` - Specialized agents
 - `commands/` - Slash commands
-- `hooks/` - Event hooks
+- `hooks/` - Hook configurations (hooks.json)
+- `scripts/` - Hook scripts and utilities
 
 ### Next Steps
 
@@ -98,7 +99,7 @@ aircana plugin validate
 
 - Configure the Confluence integration and create domain-specific agents
 
-- Use the `/air-ask-expert` command to consult multiple specialized agents
+- Use the `/ask-expert` command to consult multiple specialized agents
 
 - Set up the development workflow with plan, execute, review, and apply-feedback commands
 
@@ -110,26 +111,26 @@ Aircana provides a complete development lifecycle through five integrated slash 
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Plan: /air-plan
-    Plan --> Record: /air-record
-    Record --> Execute: /air-execute
-    Execute --> Review: /air-review
-    Review --> ApplyFeedback: /air-apply-feedback
+    [*] --> Plan: /plan
+    Plan --> Record: /record
+    Record --> Execute: /execute
+    Execute --> Review: /review
+    Review --> ApplyFeedback: /apply-feedback
     ApplyFeedback --> Review: More issues found
     ApplyFeedback --> [*]: Satisfied
 ```
 
 ### Quick Overview
 
-1. **`/air-plan`** - Create strategic implementation plan
-2. **`/air-record`** - Save plan to Jira ticket
-3. **`/air-execute`** - Implement plan and create commit
-4. **`/air-review`** - Adversarial code review with expert feedback
-5. **`/air-apply-feedback`** - Apply review changes and amend commit
+1. **`/plan`** - Create strategic implementation plan
+2. **`/record`** - Save plan to Jira ticket
+3. **`/execute`** - Implement plan and create commit
+4. **`/review`** - Adversarial code review with expert feedback
+5. **`/apply-feedback`** - Apply review changes and amend commit
 
 ### Command Details
 
-#### 1. `/air-plan` - Strategic Planning
+#### 1. `/plan` - Strategic Planning
 
 Creates a high-level implementation plan by:
 - Asking you to specify relevant files and directories
@@ -140,7 +141,7 @@ Creates a high-level implementation plan by:
 
 The planner focuses on architecture decisions and approach, avoiding exhaustive code implementations.
 
-#### 2. `/air-record` - Save to Jira
+#### 2. `/record` - Save to Jira
 
 Records your approved plan to a Jira ticket by:
 - Taking the ticket key/ID as input
@@ -149,7 +150,7 @@ Records your approved plan to a Jira ticket by:
 
 This creates a traceable link between planning and execution.
 
-#### 3. `/air-execute` - Implementation
+#### 3. `/execute` - Implementation
 
 Executes the strategic plan by:
 - Reading the plan from the Jira ticket
@@ -160,9 +161,9 @@ Executes the strategic plan by:
 - Running tests to verify implementation
 - Creating git commit (delegates to git-ops sub-agent if available)
 
-After commit creation, suggests running `/air-review`.
+After commit creation, suggests running `/review`.
 
-#### 4. `/air-review` - Adversarial Review
+#### 4. `/review` - Adversarial Review
 
 Conducts comprehensive code review of HEAD commit by:
 - Analyzing changed files to identify technical domains
@@ -171,9 +172,9 @@ Conducts comprehensive code review of HEAD commit by:
 - Synthesizing feedback organized by severity (Critical/Important/Suggestions)
 - Storing review output for next step
 
-Explicitly states "Reviewing: <commit message>" and ends with "Run /air-apply-feedback".
+Explicitly states "Reviewing: <commit message>" and ends with "Run /apply-feedback".
 
-#### 5. `/air-apply-feedback` - Apply Changes
+#### 5. `/apply-feedback` - Apply Changes
 
 Applies code review feedback by:
 - Reading review output from conversation context
@@ -190,20 +191,20 @@ This preserves the original commit message while incorporating review improvemen
 
 ```bash
 # 1. Start planning
-/air-plan
+/plan
 > Specify relevant files: src/api/, spec/api/
 
 # 2. Save plan to ticket
-/air-record PROJ-123
+/record PROJ-123
 
 # 3. Execute implementation
-/air-execute PROJ-123
+/execute PROJ-123
 
 # 4. Review the commit
-/air-review
+/review
 
 # 5. Apply feedback
-/air-apply-feedback
+/apply-feedback
 ```
 
 ## Key Concepts
@@ -217,6 +218,37 @@ Aircana creates Claude Code plugins - portable, distributable packages that exte
 - **Hooks**: Event-driven automation
 
 Plugins can be shared with teams or published to plugin marketplaces for broader distribution.
+
+#### Plugin Manifest Structure
+
+The `.claude-plugin/plugin.json` file defines plugin metadata:
+
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "description": "Brief plugin description",
+  "author": {
+    "name": "Author Name",
+    "email": "[email protected]",
+    "url": "https://github.com/author"
+  },
+  "homepage": "https://docs.example.com/plugin",
+  "repository": "https://github.com/author/plugin",
+  "license": "MIT",
+  "keywords": ["keyword1", "keyword2"]
+}
+```
+
+Optional path overrides (for non-standard layouts):
+```json
+{
+  "commands": "./custom/commands/",
+  "agents": "./custom/agents/",
+  "hooks": "./config/hooks.json",
+  "mcpServers": "./mcp-config.json"
+}
+```
 
 ### Specialized Agents
 
@@ -267,9 +299,11 @@ my-plugin/
 │       └── manifest.json
 ├── commands/
 │   └── ask-expert.md
-└── hooks/
-    ├── hooks.json
-    └── pre_tool_use.sh
+├── hooks/
+│   └── hooks.json
+└── scripts/
+    ├── pre_tool_use.sh
+    └── session_start.sh
 ```
 
 Agent files and their knowledge bases are co-located in the plugin's `agents/` directory.

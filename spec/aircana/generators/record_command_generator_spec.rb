@@ -34,7 +34,7 @@ RSpec.describe Aircana::Generators::RecordCommandGenerator do
     end
 
     it "sets correct default output path" do
-      expect(generator.send(:default_output_path)).to eq("/tmp/output/commands/air-record.md")
+      expect(generator.send(:default_output_path)).to eq("/tmp/output/commands/record.md")
     end
   end
 end

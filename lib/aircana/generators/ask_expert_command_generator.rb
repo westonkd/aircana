@@ -19,7 +19,7 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "air-ask-expert.md")
+        File.join(Aircana.configuration.output_dir, "commands", "ask-expert.md")
       end
     end
   end

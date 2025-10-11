@@ -5,10 +5,12 @@ require "fileutils"
 
 module Aircana
   # Manages Claude Code plugin manifest (plugin.json) files
-  class PluginManifest
+  class PluginManifest # rubocop:disable Metrics/ClassLength
     REQUIRED_FIELDS = %w[name version].freeze
-    OPTIONAL_FIELDS = %w[description author homepage repository license keywords].freeze
+    OPTIONAL_FIELDS = %w[description author homepage repository license keywords commands agents hooks
+                         mcpServers].freeze
     ALL_FIELDS = (REQUIRED_FIELDS + OPTIONAL_FIELDS).freeze
+    PATH_OVERRIDE_FIELDS = %w[commands agents hooks mcpServers].freeze
 
     attr_reader :plugin_root
 
@@ -86,7 +88,7 @@ module Aircana
 
     private
 
-    def build_manifest_data(attributes)
+    def build_manifest_data(attributes) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       data = {
         "name" => attributes[:name] || attributes["name"],
         "version" => attributes[:version] || attributes["version"] || "0.1.0"
@@ -95,7 +97,14 @@ module Aircana
       # Add optional fields if provided
       OPTIONAL_FIELDS.each do |field|
         value = attributes[field.to_sym] || attributes[field]
-        data[field] = value if value
+        next unless value
+
+        # Special handling for author - convert to object if it's a string
+        data[field] = if field == "author"
+                        build_author_object(value)
+                      else
+                        value
+                      end
       end
 
       data
@@ -134,6 +143,27 @@ module Aircana
       else
         raise Aircana::Error, "Invalid version bump type: #{type}. Must be major, minor, or patch"
       end
+    end
+
+    def build_author_object(value)
+      # If it's already a hash/object, use it
+      return value if value.is_a?(Hash)
+
+      # If it's a string, convert to object with name only
+      return { "name" => value } if value.is_a?(String)
+
+      # Otherwise return as-is
+      value
+    end
+
+    def validate_path_override(path)
+      return true unless path
+
+      # Path must be a string starting with ./
+      return false unless path.is_a?(String)
+      return false unless path.start_with?("./")
+
+      true
     end
 
     class << self

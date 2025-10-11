@@ -31,6 +31,13 @@ RSpec.describe Aircana::Configuration do
     end
   end
 
+  describe "#scripts_dir" do
+    it "returns the scripts directory within plugin root" do
+      expected_path = File.join(config.plugin_root, "scripts")
+      expect(config.scripts_dir).to eq(expected_path)
+    end
+  end
+
   describe "confluence configuration" do
     it "allows setting confluence_base_url" do
       config.confluence_base_url = "https://company.atlassian.net/wiki"

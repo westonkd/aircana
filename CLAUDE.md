@@ -100,7 +100,8 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins. The main com
   - `.claude-plugin/plugin.json` - Plugin manifest with metadata and versioning
   - `agents/` - Agent markdown files and their knowledge directories
   - `commands/` - Slash command markdown files
-  - `hooks/` - Hook scripts and hooks.json manifest
+  - `hooks/` - hooks.json manifest defining hook configurations
+  - `scripts/` - Hook scripts and utility scripts
 - **Configuration**:
   - `~/.aircana` - Global Aircana configuration
   - `~/.aircana/aircana.out` - Generated templates output directory

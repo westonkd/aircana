@@ -18,7 +18,18 @@ module Aircana
           Aircana.human_logger.info("  Name: #{data["name"]}")
           Aircana.human_logger.info("  Version: #{data["version"]}")
           Aircana.human_logger.info("  Description: #{data["description"]}") if data["description"]
-          Aircana.human_logger.info("  Author: #{data["author"]}") if data["author"]
+
+          # Display author information
+          if data["author"]
+            if data["author"].is_a?(Hash)
+              Aircana.human_logger.info("  Author: #{data["author"]["name"]}")
+              Aircana.human_logger.info("    Email: #{data["author"]["email"]}") if data["author"]["email"]
+              Aircana.human_logger.info("    URL: #{data["author"]["url"]}") if data["author"]["url"]
+            else
+              Aircana.human_logger.info("  Author: #{data["author"]}")
+            end
+          end
+
           Aircana.human_logger.info("  License: #{data["license"]}") if data["license"]
           Aircana.human_logger.info("  Homepage: #{data["homepage"]}") if data["homepage"]
           Aircana.human_logger.info("  Repository: #{data["repository"]}") if data["repository"]
@@ -39,9 +50,9 @@ module Aircana
           # Build update hash with only fields that user wants to change
           updates = {}
 
+          # Handle regular fields
           field_prompts = {
             "description" => "Description",
-            "author" => "Author",
             "homepage" => "Homepage URL",
             "repository" => "Repository URL",
             "license" => "License"
@@ -53,8 +64,26 @@ module Aircana
             updates[field] = value if value != current
           end
 
+          # Handle author separately (object)
+          if prompt.yes?("Update author information?", default: false)
+            current_author = current_data["author"] || {}
+            current_author = {} unless current_author.is_a?(Hash)
+
+            author = {}
+            author_name = prompt.ask("Author name:", default: current_author["name"])
+            author["name"] = author_name if author_name && !author_name.empty?
+
+            author_email = prompt.ask("Author email:", default: current_author["email"])
+            author["email"] = author_email if author_email && !author_email.empty?
+
+            author_url = prompt.ask("Author URL:", default: current_author["url"])
+            author["url"] = author_url if author_url && !author_url.empty?
+
+            updates["author"] = author unless author.empty?
+          end
+
           # Handle keywords separately (array)
-          if prompt.yes?("Update keywords?")
+          if prompt.yes?("Update keywords?", default: false)
             current_keywords = (current_data["keywords"] || []).join(", ")
             keywords_input = prompt.ask("Keywords (comma-separated):", default: current_keywords)
             updates["keywords"] = keywords_input.split(",").map(&:strip) if keywords_input

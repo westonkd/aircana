@@ -19,7 +19,7 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "air-review.md")
+        File.join(Aircana.configuration.output_dir, "commands", "review.md")
       end
     end
   end

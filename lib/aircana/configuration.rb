@@ -4,7 +4,7 @@ module Aircana
   class Configuration
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
                   :claude_code_config_path, :claude_code_project_config_path, :agent_knowledge_dir,
-                  :hooks_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
+                  :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
                   :plugin_root, :plugin_manifest_dir, :commands_dir, :agents_dir
 
     def initialize
@@ -45,6 +45,7 @@ module Aircana
       @commands_dir = File.join(@plugin_root, "commands")
       @agents_dir = File.join(@plugin_root, "agents")
       @hooks_dir = File.join(@plugin_root, "hooks")
+      @scripts_dir = File.join(@plugin_root, "scripts")
       @agent_knowledge_dir = File.join(@plugin_root, "agents")
     end
 

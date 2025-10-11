@@ -19,7 +19,7 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.output_dir, "commands", "air-apply-feedback.md")
+        File.join(Aircana.configuration.output_dir, "commands", "apply-feedback.md")
       end
     end
   end
