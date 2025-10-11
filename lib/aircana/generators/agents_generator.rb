@@ -60,11 +60,12 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.claude_code_project_config_path, "agents", "#{agent_name}.md")
+        File.join(Aircana.configuration.agents_dir, "#{agent_name}.md")
       end
 
       def knowledge_path
-        ".claude/agents/#{agent_name}/knowledge/"
+        # Use plugin-relative path for knowledge base
+        "agents/#{agent_name}/knowledge/"
       end
     end
   end

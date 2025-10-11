@@ -5,17 +5,19 @@
 
 ## Intro
 
-Aircana aims to be a "batteries-included" CLI for common needs of Instructure Engineering teams using agents in development. It provides:
+Aircana is a "batteries-included" CLI for creating and managing Claude Code plugins. It provides:
 
-Consistent artifact generation and updating of agent, slash command, and hook ERB templates.
+**Plugin Development**: Create distributable Claude Code plugins with proper manifests and structure.
 
-Subagent generation for improved context window management.
+**Knowledge Base Management**: Agent-accessible knowledge bases sourced from Confluence or public websites, with automatic syncing and caching.
 
-Agent-accessible knowledge bases sourced from Confluence or public websites, backed by manifest files.
+**Specialized Agents**: Generate domain-specific agents with dedicated knowledge bases for improved context management.
 
-Complete development workflow with five phases: plan, record, execute, review, and apply-feedback.
+**Complete Development Workflow**: Five-phase workflow (plan, record, execute, review, apply-feedback) for systematic feature development.
 
-SQS integration for features like Slack notifications and messages.
+**Hook Management**: Event-driven automation through Claude Code hooks with support for multiple hook types.
+
+**Plugin Distribution**: Create plugins that can be shared via Claude Code plugin marketplaces.
 
 While Aircana includes features beneficial in many agentic contexts (like knowledge base syncing), its primary tools are built on "human-in-the-loop" principles.
 
@@ -35,30 +37,70 @@ Verify installation and dependency setup:
 aircana doctor
 ```
 
-Install Aircana files into your repo:
+### Quick Start
+
+Create a new Claude Code plugin:
 
 ```bash
-cd ~/my/repo
+# Create a new plugin directory
+mkdir my-plugin
+cd my-plugin
+
+# Initialize the plugin
 aircana init
+
+# Or initialize with a custom name
+aircana init --plugin-name my-custom-plugin
 ```
 
-### Take it for a spin
+This creates a plugin structure with:
+- `.claude-plugin/plugin.json` - Plugin manifest
+- `agents/` - Specialized agents
+- `commands/` - Slash commands
+- `hooks/` - Event hooks
 
-If your project previously had Aircana agents set up, run the following to populate each defined agent's knowledge base:
+### Next Steps
 
+**1. Create a specialized agent:**
 ```bash
-aircana agents refresh-all
+aircana agents create
 ```
 
-To start using your agents with domain-specific knowledge, follow the agent workflow tutorial.
+**2. Add knowledge sources:**
+```bash
+# From Confluence (requires configuration)
+aircana agents refresh my-agent
+
+# From web URLs
+aircana agents add-url my-agent https://docs.example.com
+```
+
+**3. Manage your plugin:**
+```bash
+# View plugin information
+aircana plugin info
+
+# Update plugin metadata
+aircana plugin update
+
+# Bump version
+aircana plugin version bump patch
+
+# Validate plugin structure
+aircana plugin validate
+```
+
+**4. Install plugin in Claude Code:**
+- Copy your plugin directory to a location Claude Code can access
+- Use Claude Code's plugin installation commands to enable your plugin
 
 ### Things to try
 
-- Configure the Confluence integration and create your own domain-specific subagent
+- Configure the Confluence integration and create domain-specific agents
 
-- Launch Claude Code and view the hooks installed by Aircana (prefixed with air). The /air-ask-expert command is pretty handy once you set up some agents with knowledbases.
+- Use the `/air-ask-expert` command to consult multiple specialized agents
 
-- Set up the SQS integration to receive Slack messages when Claude Code needs your attention (documentation coming soon).
+- Set up the development workflow with plan, execute, review, and apply-feedback commands
 
 - Explore other tools by running `aircana --help`
 
@@ -166,21 +208,33 @@ This preserves the original commit message while incorporating review improvemen
 
 ## Key Concepts
 
-### Subagents
+### Plugins
 
-Subagents are domain-specific agents to whom the primary Claude Code agent can delegate tasks and questions.
+Aircana creates Claude Code plugins - portable, distributable packages that extend Claude Code with custom functionality. Each plugin includes:
+- **Manifest**: Metadata describing the plugin (name, version, author, etc.)
+- **Agents**: Specialized domain experts
+- **Commands**: Custom slash commands
+- **Hooks**: Event-driven automation
 
-Each subagent has its own context window. Effectively using subagents can keep the main context window and per-agent context windows smaller for longer, leading to much more usable results and reducing the need to remind agents of core principles and tasks.
+Plugins can be shared with teams or published to plugin marketplaces for broader distribution.
 
-Claude Code can also run subagents in parallel. A "swarm" of appropriately designed subagents can expedite planning and execution tasks while considering a broader context.
+### Specialized Agents
 
-Aircana allows easy generation of subagents and binds each to an agent-specific knowledge base with documents from Confluence or websites.
+Agents are domain-specific experts to whom Claude Code can delegate tasks and questions. Each agent has:
+- **Dedicated context window**: Prevents context pollution and maintains focus
+- **Knowledge base**: Access to curated domain-specific documentation
+- **Custom configuration**: Model, color, and behavior settings
+
+Claude Code can run agents in parallel, creating a "swarm" of experts that can expedite planning and execution while considering broader context.
 
 ### Knowledge Bases
 
-Aircana provides each subagent access to a human-curated knowledge base. This access enables Aircana-managed subagents to yield more relevant results, minimizing back-and-forth between the human operator and the agent.
+Aircana provides each agent with a human-curated knowledge base stored within the plugin structure. This enables agents to:
+- Access domain-specific documentation automatically
+- Stay up-to-date with refreshable sources
+- Provide more relevant responses with less back-and-forth
 
-After initial agent creation, Aircana supports refreshing agents' knowledge bases with the latest versions of each source.
+Knowledge bases support multiple source types and can be refreshed to pull the latest content.
 
 #### Confluence
 
@@ -198,34 +252,45 @@ Websites are also refreshed when `aircana agent refresh <AGENT>` is used.
 
 #### Structure
 
-Knowledge bases are stored in the .claude directory of each project. For example:
+Knowledge bases are stored within the plugin's agent directory. For example:
 
 ```
-.claude
-├── agents
-│   ├── canvas-backend-account-expert.md
-│   ├── canvas-backend-account-expert
-│   │   ├── knowledge
-│   │   │   ├── Accounts.md
-│   │   │   └── Subdomains-&-Request-Routing.md
-│   │   └── manifest.json
+my-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── agents/
+│   ├── backend-expert.md
+│   └── backend-expert/
+│       ├── knowledge/
+│       │   ├── API-Design.md
+│       │   └── Authentication.md
+│       └── manifest.json
+├── commands/
+│   └── ask-expert.md
+└── hooks/
+    ├── hooks.json
+    └── pre_tool_use.sh
 ```
 
-Agent files and their knowledge bases are co-located in the .claude/agents directory.
+Agent files and their knowledge bases are co-located in the plugin's `agents/` directory.
+
+**Version Control Considerations:**
 
 In many cases, adding the actual knowledge base to version control is undesirable because:
+- Knowledge bases may contain numerous files, bloating repository size
+- Content may include sensitive information not suitable for public repos
+- Knowledge refreshes would create frequent, large commits
 
-There may be numerous files in the knowledge base, bloating repository size.
+Aircana manages a per-agent `manifest.json` file to track knowledge sources without committing the actual content. Team members can refresh knowledge bases using `aircana agents refresh`.
 
-Knowledge bases may contain sensitive information that should not be public in an open-source project.
+### Plugin Artifacts
 
-Aircana manages a per-agent manifest.json file to address these concerns.
+Aircana uses ERB templates to generate plugin components consistently:
+- **Agents**: Domain experts with knowledge base integration
+- **Commands**: Slash commands with parameter handling
+- **Hooks**: Event handlers for automation
 
-### Consistent Artifacts
-
-Aircana maintains a set of ERB templates for generating Claude Code agents, hooks, and slash commands consistently.
-
-These templates promote best practices and help new users quickly create effective artifacts without extensive trial and error.
+These templates promote best practices and help create effective plugin components without extensive trial and error.
 
 ### SQS Integration (Slack Integration at Instructure)
 
@@ -378,30 +443,42 @@ This refreshes both Confluence pages and web URLs associated with the agent.
 
 ## All Commands
 
+### Plugin Management
+```bash
+aircana init [DIRECTORY]           # Initialize a new plugin (defaults to current directory)
+aircana init --plugin-name NAME    # Initialize with custom plugin name
+aircana plugin info                # Display plugin information
+aircana plugin update              # Update plugin metadata
+aircana plugin version             # Show current version
+aircana plugin version bump [TYPE] # Bump version (major, minor, or patch)
+aircana plugin version set         # Set specific version
+aircana plugin validate            # Validate plugin structure
+```
+
 ### Agent Management
 ```bash
-aircana agents create     # Create new agent interactively
-aircana agents refresh [AGENT] # Sync agent knowledge from Confluence and web sources
+aircana agents create              # Create new agent interactively
+aircana agents refresh [AGENT]     # Sync agent knowledge from Confluence and web sources
+aircana agents refresh-all         # Refresh knowledge for all agents
 aircana agents add-url [AGENT] [URL] # Add a web URL to an agent's knowledge base
-aircana agents list       # List all configured agents
+aircana agents list                # List all configured agents
 ```
 
 ### Hook Management
 ```bash
-aircana hooks list        # List all available and installed hooks
-aircana hooks enable [HOOK] # Enable a specific hook
-aircana hooks disable [HOOK] # Disable a specific hook
-aircana hooks create      # Create custom hook
-aircana hooks status      # Show hook configuration status
+aircana hooks list                 # List all available and installed hooks
+aircana hooks enable [HOOK]        # Enable a specific hook
+aircana hooks disable [HOOK]       # Disable a specific hook
+aircana hooks create               # Create custom hook
+aircana hooks status               # Show hook configuration status
 ```
 
 ### System
 ```bash
-aircana generate         # Generate Claude Code configuration files
-aircana init [DIRECTORY] # Initialize Claude Code configuration in specified directory (defaults to current)
-aircana doctor           # Check system health and dependencies
-aircana doctor --verbose # Show detailed dependency information
-aircana dump-context [AGENT] # View current context for agent
+aircana generate                   # Generate plugin components from templates
+aircana doctor                     # Check system health and dependencies
+aircana doctor --verbose           # Show detailed dependency information
+aircana dump-context [AGENT]       # View current context for agent
 ```
 
 ## Development

@@ -1,19 +1,37 @@
 # frozen_string_literal: true
 
 require "json"
+require "tty-prompt"
 require_relative "generate"
+require_relative "../../plugin_manifest"
+require_relative "../../hooks_manifest"
 
 module Aircana
   module CLI
     module Init # rubocop:disable Metrics/ModuleLength
       class << self # rubocop:disable Metrics/ClassLength
-        def run(directory: nil)
+        def run(directory: nil, plugin_name: nil)
           target_dir = resolve_target_directory(directory)
 
           with_directory_config(target_dir) do
+            # Collect plugin metadata
+            metadata = collect_plugin_metadata(target_dir, plugin_name)
+
+            # Create plugin structure
+            create_plugin_structure(target_dir)
+
+            # Create plugin manifest
+            create_plugin_manifest(target_dir, metadata)
+
+            # Generate and install commands
             generate_files
-            install_commands_to_claude
-            install_hooks_to_claude
+            install_commands
+
+            # Install hooks
+            install_hooks
+
+            # Success message
+            display_success_message(metadata)
           end
         end
 
@@ -28,55 +46,91 @@ module Aircana
           dir
         end
 
-        def with_directory_config(target_dir) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        def with_directory_config(target_dir)
           original_project_dir = Aircana.configuration.project_dir
-          original_claude_config_path = Aircana.configuration.claude_code_project_config_path
+          original_plugin_root = Aircana.configuration.plugin_root
 
           begin
             # Temporarily override configuration to use target directory
             Aircana.configuration.project_dir = target_dir
-            Aircana.configuration.claude_code_project_config_path = File.join(target_dir, ".claude")
-            Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(target_dir, ".claude", "hooks"))
-            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
-                                                        File.join(target_dir, ".claude", "agents"))
+            Aircana.configuration.plugin_root = target_dir
+            Aircana.configuration.instance_variable_set(:@plugin_manifest_dir,
+                                                        File.join(target_dir, ".claude-plugin"))
+            Aircana.configuration.instance_variable_set(:@commands_dir, File.join(target_dir, "commands"))
+            Aircana.configuration.instance_variable_set(:@agents_dir, File.join(target_dir, "agents"))
+            Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(target_dir, "hooks"))
+            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir, File.join(target_dir, "agents"))
 
             yield
           ensure
             # Restore original configuration
             Aircana.configuration.project_dir = original_project_dir
-            Aircana.configuration.claude_code_project_config_path = original_claude_config_path
-            Aircana.configuration.instance_variable_set(:@hooks_dir,
-                                                        File.join(original_project_dir, ".claude", "hooks"))
+            Aircana.configuration.plugin_root = original_plugin_root
+            Aircana.configuration.instance_variable_set(:@plugin_manifest_dir,
+                                                        File.join(original_plugin_root, ".claude-plugin"))
+            Aircana.configuration.instance_variable_set(:@commands_dir,
+                                                        File.join(original_plugin_root, "commands"))
+            Aircana.configuration.instance_variable_set(:@agents_dir, File.join(original_plugin_root, "agents"))
+            Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(original_plugin_root, "hooks"))
             Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
-                                                        File.join(original_project_dir, ".claude", "agents"))
+                                                        File.join(original_plugin_root, "agents"))
           end
         end
 
+        def collect_plugin_metadata(target_dir, plugin_name)
+          prompt = TTY::Prompt.new
+
+          default_name = plugin_name || PluginManifest.default_plugin_name(target_dir)
+
+          {
+            name: prompt.ask("Plugin name:", default: default_name),
+            version: prompt.ask("Initial version:", default: "0.1.0"),
+            description: prompt.ask("Plugin description:", default: "A Claude Code plugin created with Aircana"),
+            author: prompt.ask("Author name:"),
+            license: prompt.ask("License:", default: "MIT")
+          }
+        end
+
+        def create_plugin_structure(target_dir)
+          # Create plugin directories
+          [".claude-plugin", "commands", "agents", "hooks"].each do |dir|
+            dir_path = File.join(target_dir, dir)
+            Aircana.create_dir_if_needed(dir_path)
+            Aircana.human_logger.info("Created directory: #{dir}/")
+          end
+        end
+
+        def create_plugin_manifest(target_dir, metadata)
+          manifest = PluginManifest.new(target_dir)
+          manifest.create(metadata)
+          Aircana.human_logger.success("Created plugin manifest at .claude-plugin/plugin.json")
+        end
+
         def generate_files
-          Aircana.human_logger.info("Generating files before installation...")
+          Aircana.human_logger.info("Generating files...")
           Generate.run
         end
 
-        def install_commands_to_claude
-          claude_commands_dir = File.join(Aircana.configuration.claude_code_project_config_path, "commands")
-          Aircana.create_dir_if_needed(claude_commands_dir)
+        def install_commands
+          commands_dir = Aircana.configuration.commands_dir
+          Aircana.create_dir_if_needed(commands_dir)
 
-          copy_command_files(claude_commands_dir)
-          install_agents_to_claude
+          copy_command_files(commands_dir)
+          install_default_agents
         end
 
         def copy_command_files(destination_dir)
           Dir.glob("#{Aircana.configuration.output_dir}/commands/*").each do |file|
-            Aircana.human_logger.success("Installing #{file} to #{destination_dir}")
+            Aircana.human_logger.success("Installing command: #{File.basename(file)}")
             FileUtils.cp(file, destination_dir)
           end
         end
 
-        def install_agents_to_claude
-          claude_agents_dir = File.join(Aircana.configuration.claude_code_project_config_path, "agents")
-          Aircana.create_dir_if_needed(claude_agents_dir)
+        def install_default_agents
+          agents_dir = Aircana.configuration.agents_dir
+          Aircana.create_dir_if_needed(agents_dir)
 
-          copy_agent_files(claude_agents_dir)
+          copy_agent_files(agents_dir)
         end
 
         def copy_agent_files(destination_dir)
@@ -89,7 +143,7 @@ module Aircana
             # Skip copying if source and destination are the same
             next if File.expand_path(file) == File.expand_path(destination_file)
 
-            Aircana.human_logger.success("Installing default agent #{file} to #{destination_dir}")
+            Aircana.human_logger.success("Installing default agent: #{agent_name}")
             FileUtils.cp(file, destination_dir)
           end
         end
@@ -99,42 +153,35 @@ module Aircana
           Aircana::Generators::AgentsGenerator.available_default_agents.include?(agent_name)
         end
 
-        def install_hooks_to_claude
-          return unless Dir.exist?(Aircana.configuration.hooks_dir)
+        def install_hooks
+          hooks_dir = Aircana.configuration.hooks_dir
+          return unless Dir.exist?(Aircana.configuration.output_dir)
 
-          settings_file = File.join(Aircana.configuration.claude_code_project_config_path, "settings.local.json")
-          install_hooks_to_settings(settings_file)
-        end
+          # Copy hook scripts
+          hook_files = Dir.glob("#{Aircana.configuration.output_dir}/hooks/*.sh")
+          return unless hook_files.any?
 
-        def install_hooks_to_settings(settings_file)
-          settings = load_settings(settings_file)
-          hook_configs = build_hook_configs
-
-          return if hook_configs.empty?
-
-          settings["hooks"] = hook_configs
-          save_settings(settings_file, settings)
-
-          Aircana.human_logger.success("Installed hooks to #{settings_file}")
-        end
-
-        def load_settings(settings_file)
-          if File.exist?(settings_file)
-            JSON.parse(File.read(settings_file))
-          else
-            Aircana.create_dir_if_needed(File.dirname(settings_file))
-            {}
+          hook_files.each do |file|
+            Aircana.human_logger.success("Installing hook: #{File.basename(file)}")
+            FileUtils.cp(file, hooks_dir)
           end
-        rescue JSON::ParserError
-          Aircana.human_logger.warn("Invalid JSON in #{settings_file}, creating new settings")
-          {}
+
+          # Create hooks manifest
+          create_hooks_manifest
         end
 
-        def save_settings(settings_file, settings)
-          File.write(settings_file, JSON.pretty_generate(settings))
+        def create_hooks_manifest
+          hooks_config = build_hooks_config
+
+          return if hooks_config.empty?
+
+          manifest = HooksManifest.new(Aircana.configuration.plugin_root)
+          manifest.create(hooks_config)
+
+          Aircana.human_logger.success("Created hooks manifest at hooks/hooks.json")
         end
 
-        def build_hook_configs # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        def build_hooks_config
           hooks = {}
 
           # Map hook files to Claude Code hook events and their properties
@@ -164,23 +211,23 @@ module Aircana
 
             event_key = mapping[:event]
 
-            # Create relative path from project root
-            relative_path = File.join(".claude", "hooks", "#{hook_name}.sh")
+            # Create relative path using ${CLAUDE_PLUGIN_ROOT}
+            relative_path = "${CLAUDE_PLUGIN_ROOT}/hooks/#{hook_name}.sh"
 
             hook_entry = {
-              "hooks" => [
-                {
-                  "type" => "command",
-                  "command" => relative_path
-                }
-              ]
+              "type" => "command",
+              "command" => relative_path
+            }
+
+            hook_config = {
+              "hooks" => [hook_entry]
             }
 
             # Add matcher if specified
-            hook_entry["matcher"] = mapping[:matcher] if mapping[:matcher]
+            hook_config["matcher"] = mapping[:matcher] if mapping[:matcher]
 
             hooks[event_key] ||= []
-            hooks[event_key] << hook_entry
+            hooks[event_key] << hook_config
           end
 
           hooks
@@ -199,6 +246,19 @@ module Aircana
             # Default to PostToolUse for unknown custom hooks and post_tool patterns
             { event: "PostToolUse", matcher: nil }
           end
+        end
+
+        def display_success_message(metadata)
+          Aircana.human_logger.success("\nPlugin '#{metadata[:name]}' initialized successfully!")
+          Aircana.human_logger.info("\nPlugin structure:")
+          Aircana.human_logger.info("  .claude-plugin/plugin.json  - Plugin metadata")
+          Aircana.human_logger.info("  commands/                   - Slash commands")
+          Aircana.human_logger.info("  agents/                     - Specialized agents")
+          Aircana.human_logger.info("  hooks/                      - Event hooks")
+          Aircana.human_logger.info("\nNext steps:")
+          Aircana.human_logger.info("  - Create agents: aircana agents create")
+          Aircana.human_logger.info("  - Install plugin in Claude Code")
+          Aircana.human_logger.info("  - Run: aircana plugin info")
         end
       end
     end

@@ -11,22 +11,22 @@ RSpec.describe Aircana::Configuration do
       expect(config.project_dir).to eq(Dir.pwd)
       expect(config.stream).to eq($stdout)
       expect(config.output_dir).to eq(File.join(Dir.home, ".aircana", "aircana.out"))
-      expect(config.agent_knowledge_dir).to eq(File.join(Dir.pwd, ".claude", "agents"))
+      expect(config.agent_knowledge_dir).to eq(File.join(Dir.pwd, "agents"))
       expect(config.confluence_base_url).to be_nil
       expect(config.confluence_api_token).to be_nil
     end
   end
 
   describe "#agent_knowledge_dir" do
-    it "returns the .claude/agents directory within project_dir" do
-      expected_path = File.join(config.project_dir, ".claude", "agents")
+    it "returns the agents directory within plugin root" do
+      expected_path = File.join(config.plugin_root, "agents")
       expect(config.agent_knowledge_dir).to eq(expected_path)
     end
   end
 
   describe "#hooks_dir" do
-    it "returns the .claude/hooks directory within project_dir" do
-      expected_path = File.join(config.project_dir, ".claude", "hooks")
+    it "returns the hooks directory within plugin root" do
+      expected_path = File.join(config.plugin_root, "hooks")
       expect(config.hooks_dir).to eq(expected_path)
     end
   end

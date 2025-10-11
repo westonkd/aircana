@@ -29,9 +29,11 @@ Metrics/ClassLength:
     - 'lib/aircana/cli/commands/add_directory.rb'
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
+    - 'lib/aircana/cli/commands/plugin.rb'
     - 'lib/aircana/contexts/confluence.rb'
     - 'lib/aircana/contexts/manifest.rb'
     - 'lib/aircana/symlink_manager.rb'
+    - 'lib/aircana/hooks_manifest.rb'
 
 Metrics/ModuleLength:
   Exclude:
@@ -44,24 +46,34 @@ Metrics/MethodLength:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
     - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/cli/commands/init.rb'
     - 'lib/aircana/generators/project_config_generator.rb'
     - 'lib/aircana/symlink_manager.rb'
     - 'lib/aircana/contexts/confluence.rb'
     - 'lib/aircana/contexts/manifest.rb'
+    - 'lib/aircana/hooks_manifest.rb'
+    - 'lib/aircana/plugin_manifest.rb'
 
 Metrics/AbcSize:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/install.rb'
     - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/cli/commands/init.rb'
     - 'lib/aircana/symlink_manager.rb'
+    - 'lib/aircana/plugin_manifest.rb'
 
 Metrics/CyclomaticComplexity:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/cli/commands/plugin.rb'
 
 Metrics/PerceivedComplexity:
   Exclude:
     - 'lib/aircana/cli/commands/hooks.rb'
     - 'lib/aircana/cli/commands/project.rb'
+    - 'lib/aircana/cli/commands/plugin.rb'
+
+Naming/PredicateMethod:
+  Enabled: false

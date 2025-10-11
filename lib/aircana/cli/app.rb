@@ -11,6 +11,7 @@ require_relative "subcommand"
 require_relative "help_formatter"
 require_relative "commands/agents"
 require_relative "commands/hooks"
+require_relative "commands/plugin"
 
 module Aircana
   module CLI
@@ -40,9 +41,10 @@ module Aircana
       end
 
       desc "init [DIRECTORY]",
-           "Initializes Claude Code configuration in the specified directory (defaults to current directory)"
+           "Initializes a Claude Code plugin in the specified directory (defaults to current directory)"
+      option :plugin_name, type: :string, desc: "Override the default plugin name"
       def init(directory = nil)
-        Init.run(directory: directory)
+        Init.run(directory: directory, plugin_name: options[:plugin_name])
       end
 
       class AgentsSubcommand < Subcommand
@@ -104,6 +106,31 @@ module Aircana
 
       desc "hooks", "Manage Claude Code hooks"
       subcommand "hooks", HooksSubcommand
+
+      class PluginSubcommand < Subcommand
+        desc "info", "Display plugin information"
+        def info
+          Plugin.info
+        end
+
+        desc "update", "Update plugin metadata"
+        def update
+          Plugin.update
+        end
+
+        desc "version [ACTION] [TYPE]", "Manage plugin version (show, bump [major|minor|patch], or set)"
+        def version(action = nil, bump_type = nil)
+          Plugin.version(action, bump_type)
+        end
+
+        desc "validate", "Validate plugin structure and manifests"
+        def validate
+          Plugin.validate
+        end
+      end
+
+      desc "plugin", "Manage plugin metadata and configuration"
+      subcommand "plugin", PluginSubcommand
     end
   end
 end

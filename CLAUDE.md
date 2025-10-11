@@ -25,57 +25,88 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bundle exec rake release` - Release new version (updates version, creates git tag, pushes to rubygems)
 
 ### Aircana CLI Commands
-- `aircana doctor` - Check system health and dependencies
-- `aircana doctor --verbose` - Show detailed dependency information
-- `aircana dump-context <agent_name>` - Dump context for specified agent
-- `aircana generate` - Generate all configured files
-- `aircana init [DIRECTORY]` - Initialize Claude Code configuration in specified directory (defaults to current)
+
+**Plugin Management:**
+- `aircana init [DIRECTORY]` - Initialize a Claude Code plugin in specified directory (defaults to current)
+- `aircana init --plugin-name NAME` - Initialize with custom plugin name
+- `aircana plugin info` - Display plugin information
+- `aircana plugin update` - Update plugin metadata interactively
+- `aircana plugin version` - Show current version
+- `aircana plugin version bump [major|minor|patch]` - Bump semantic version
+- `aircana plugin version set` - Set specific version
+- `aircana plugin validate` - Validate plugin structure and manifests
+
+**Agent Management:**
 - `aircana agents create` - Create a new agent interactively
+- `aircana agents list` - List all configured agents
 - `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
 - `aircana agents refresh-all` - Refresh knowledge for all configured agents
 - `aircana agents add-url <agent> <url>` - Add a web URL to an agent's knowledge base
+
+**Hook Management:**
 - `aircana hooks list` - List all available hooks
 - `aircana hooks enable <hook>` - Enable a specific hook
 - `aircana hooks disable <hook>` - Disable a specific hook
 - `aircana hooks create` - Create custom hook
 - `aircana hooks status` - Show hook configuration status
 
+**System:**
+- `aircana doctor` - Check system health and dependencies
+- `aircana doctor --verbose` - Show detailed dependency information
+- `aircana generate` - Generate plugin components from templates
+- `aircana dump-context <agent_name>` - Dump context for specified agent
+
 ## Architecture
 
 ### Core Structure
-Aircana is a Ruby gem that provides context management and workflow utilities for AI agents, specifically Claude Code. The main components:
+Aircana is a Ruby gem that creates and manages Claude Code plugins. The main components:
 
 - **CLI Layer** (`lib/aircana/cli/`): Thor-based command line interface with subcommands
   - `app.rb`: Main Thor application defining all commands
   - `subcommand.rb`: Base class for subcommands
   - `shell_command.rb`: Shell command execution utilities
   - `commands/`: Individual command implementations
-- **Contexts** (`lib/aircana/contexts/`): Manages different types of context
+    - `init.rb`: Plugin initialization
+    - `plugin.rb`: Plugin metadata management
+    - `agents.rb`: Agent CRUD operations
+    - `hooks.rb`: Hook management
+- **Plugin Management**:
+  - `plugin_manifest.rb`: Manages `.claude-plugin/plugin.json`
+  - `hooks_manifest.rb`: Manages `hooks/hooks.json`
+- **Contexts** (`lib/aircana/contexts/`): Manages knowledge sources
   - `confluence.rb`: Handles Confluence page fetching and caching
   - `confluence_content.rb`: Processes Confluence content
   - `web.rb`: Handles web URL fetching and HTML to Markdown conversion
-  - `local.rb`: Local file context management
+  - `manifest.rb`: Tracks knowledge sources per agent
 - **Generators** (`lib/aircana/generators/`): Template generation system
   - `base_generator.rb`: Base class for all generators
   - `agents_generator.rb`: Generates agent configurations
-  - `hooks_generator.rb`: Generates hook configurations
-- **Configuration** (`lib/aircana/configuration.rb`): Centralized configuration management
+  - Command generators: Generate slash commands from templates
+- **Configuration** (`lib/aircana/configuration.rb`): Centralized configuration management with plugin-aware paths
 - **Support Classes**:
   - `human_logger.rb`: User-friendly logging output
   - `system_checker.rb`: Dependency validation
-  - `agent.rb`: Agent model and persistence
 
 ### Key Concepts
-- **Agents**: Knowledge encapsulation with domain expertise, Confluence sync, and model customization
-- **Hooks**: Claude Code integration points for automated workflows
-- **Context Management**: Integration with Claude Code through generated templates and configurations
+- **Plugins**: Distributable Claude Code extensions with manifests, agents, commands, and hooks
+- **Plugin Manifests**: JSON files defining plugin metadata (`.claude-plugin/plugin.json`)
+- **Agents**: Domain-specific experts with dedicated knowledge bases and context windows
+- **Knowledge Bases**: Curated documentation from Confluence and web sources
+- **Hooks**: Event-driven automation through `hooks/hooks.json`
+- **Commands**: Custom slash commands for workflow automation
 
 ### File Organization
-- Configuration files stored in `~/.aircana` (global)
-- Claude Code integration through `~/.claude` and `./.claude` directories
-- Generated output goes to `~/.aircana/aircana.out` by default
-- Agent knowledge cached in `.claude/agents/<agent_name>/`
-- Hooks stored in `.claude/hooks/`
+- **Plugin Structure**:
+  - `.claude-plugin/plugin.json` - Plugin manifest with metadata and versioning
+  - `agents/` - Agent markdown files and their knowledge directories
+  - `commands/` - Slash command markdown files
+  - `hooks/` - Hook scripts and hooks.json manifest
+- **Configuration**:
+  - `~/.aircana` - Global Aircana configuration
+  - `~/.aircana/aircana.out` - Generated templates output directory
+- **Agent Knowledge**:
+  - `agents/<agent_name>/knowledge/` - Cached knowledge base content
+  - `agents/<agent_name>/manifest.json` - Tracks knowledge sources
 
 ### Dependencies
 - Thor (~> 0.19.1) for CLI framework

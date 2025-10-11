@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "agent": "test-agent",
+  "sources": [
+    {
+      "type": "confluence",
+      "label": "test-agent",
+      "pages": [
+        {
+          "id": "123"
+        }
+      ]
+    }
+  ]
+}

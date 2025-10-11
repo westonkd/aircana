@@ -8,20 +8,23 @@ require_relative "../../../../lib/aircana/cli/commands/init"
 
 RSpec.describe Aircana::CLI::Init do
   let(:test_output_dir) { File.join(Dir.pwd, "spec_output_#{Time.now.to_i}_#{rand(1000)}") }
-  let(:test_claude_dir) { File.join(Dir.pwd, "spec_claude_#{Time.now.to_i}_#{rand(1000)}") }
-  let(:test_hooks_dir) { File.join(test_output_dir, "hooks") }
+  let(:test_target_dir) { File.join(Dir.pwd, "spec_target_#{Time.now.to_i}_#{rand(1000)}") }
+  let(:test_hooks_dir) { File.join(test_target_dir, "hooks") }
   let(:test_commands_dir) { File.join(test_output_dir, "commands") }
-  let(:settings_file) { File.join(test_claude_dir, "settings.local.json") }
+  let(:settings_file) { File.join(test_target_dir, "settings.local.json") }
 
   before do
     FileUtils.mkdir_p(test_output_dir)
-    FileUtils.mkdir_p(test_claude_dir)
+    FileUtils.mkdir_p(test_target_dir)
     FileUtils.mkdir_p(test_hooks_dir)
     FileUtils.mkdir_p(test_commands_dir)
 
     allow(Aircana.configuration).to receive(:output_dir).and_return(test_output_dir)
     allow(Aircana.configuration).to receive(:hooks_dir).and_return(test_hooks_dir)
-    allow(Aircana.configuration).to receive(:claude_code_project_config_path).and_return(test_claude_dir)
+    allow(Aircana.configuration).to receive(:commands_dir).and_return(File.join(test_target_dir, "commands"))
+    allow(Aircana.configuration).to receive(:agents_dir).and_return(File.join(test_target_dir, "agents"))
+    allow(Aircana.configuration).to receive(:plugin_root).and_return(test_target_dir)
+    allow(Aircana.configuration).to receive(:claude_code_project_config_path).and_return(test_target_dir)
 
     @log_messages = []
     human_logger_double = instance_double("HumanLogger")
@@ -30,11 +33,20 @@ RSpec.describe Aircana::CLI::Init do
     allow(human_logger_double).to receive(:error) { |msg| @log_messages << [:error, msg] }
     allow(human_logger_double).to receive(:success) { |msg| @log_messages << [:success, msg] }
     allow(Aircana).to receive(:human_logger).and_return(human_logger_double)
+
+    # Mock TTY::Prompt to avoid stdin blocking
+    prompt_double = instance_double("TTY::Prompt")
+    allow(TTY::Prompt).to receive(:new).and_return(prompt_double)
+    allow(prompt_double).to receive(:ask).with("Plugin name:", any_args).and_return("test-plugin")
+    allow(prompt_double).to receive(:ask).with("Initial version:", any_args).and_return("0.1.0")
+    allow(prompt_double).to receive(:ask).with("Plugin description:", any_args).and_return("Test plugin")
+    allow(prompt_double).to receive(:ask).with("Author name:", any_args).and_return("Test Author")
+    allow(prompt_double).to receive(:ask).with("License:", any_args).and_return("MIT")
   end
 
   after do
     FileUtils.rm_rf(test_output_dir)
-    FileUtils.rm_rf(test_claude_dir)
+    FileUtils.rm_rf(test_target_dir)
   end
 
   describe ".run" do
@@ -53,17 +65,19 @@ RSpec.describe Aircana::CLI::Init do
 
       described_class.run
 
-      expect(@log_messages).to include([:info, "Generating files before installation..."])
+      expect(@log_messages).to include([:info, "Generating files..."])
     end
 
     it "installs commands and hooks after generating" do
       described_class.run
 
-      expect(@log_messages).to include([:success, /Installing.*sample-command.md/])
+      expect(@log_messages).to include([:success, /Installing command:.*sample-command.md/])
     end
   end
 
   describe "hooks installation" do
+    let(:output_hooks_dir) { File.join(test_output_dir, "hooks") }
+    let(:hooks_json_file) { File.join(test_hooks_dir, "hooks.json") }
     let(:hook_files) do
       {
         "pre_tool_use.sh" => "#!/bin/bash\necho 'pre tool use'",
@@ -73,116 +87,34 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     before do
-      # Create hook files
+      # Create output hooks directory
+      FileUtils.mkdir_p(output_hooks_dir)
+
+      # Create hook files in the OUTPUT directory (where generate would put them)
       hook_files.each do |filename, content|
-        File.write(File.join(test_hooks_dir, filename), content)
+        File.write(File.join(output_hooks_dir, filename), content)
       end
+
+      allow(Aircana::CLI::Generate).to receive(:run)
+      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
     end
 
-    context "when settings file doesn't exist" do
-      it "creates new settings file with hooks" do
+    context "when hooks.json doesn't exist" do
+      it "creates new hooks.json with hooks" do
         described_class.run
 
-        expect(File).to exist(settings_file)
+        expect(File).to exist(hooks_json_file)
 
-        settings = JSON.parse(File.read(settings_file))
-        expect(settings).to have_key("hooks")
-
-        hooks_config = settings["hooks"]
+        hooks_config = JSON.parse(File.read(hooks_json_file))
         expect(hooks_config).to have_key("PreToolUse")
         expect(hooks_config).to have_key("PostToolUse")
 
-        expect(@log_messages).to include([:success, "Installed hooks to #{settings_file}"])
-      end
-    end
-
-    context "when settings file exists with existing permissions" do
-      let(:existing_settings) do
-        {
-          "permissions" => {
-            "allow" => ["Bash(echo:*)"],
-            "deny" => []
-          }
-        }
-      end
-
-      before do
-        File.write(settings_file, JSON.pretty_generate(existing_settings))
-      end
-
-      it "preserves existing settings and adds hooks" do
-        described_class.run
-
-        settings = JSON.parse(File.read(settings_file))
-
-        # Existing permissions should be preserved
-        expect(settings["permissions"]["allow"]).to include("Bash(echo:*)")
-
-        # Hooks should be added
-        expect(settings).to have_key("hooks")
-        hooks_config = settings["hooks"]
-        expect(hooks_config).to have_key("PreToolUse")
-        expect(hooks_config).to have_key("PostToolUse")
-      end
-    end
-
-    context "when settings file exists with existing hooks" do
-      let(:existing_hooks) do
-        {
-          "preToolUse" => [
-            {
-              "script" => "/old/hook.sh",
-              "outputType" => "simple"
-            }
-          ]
-        }
-      end
-
-      let(:existing_settings) do
-        {
-          "permissions" => { "allow" => [] },
-          "hooks" => existing_hooks
-        }
-      end
-
-      before do
-        File.write(settings_file, JSON.pretty_generate(existing_settings))
-      end
-
-      it "replaces existing hooks configuration" do
-        described_class.run
-
-        settings = JSON.parse(File.read(settings_file))
-        hooks_config = settings["hooks"]
-
-        # Should not contain old hook
-        pre_tool_use_hooks = hooks_config["PreToolUse"]
-        old_hook = pre_tool_use_hooks&.find { |hook| hook.dig("hooks", 0, "command") == "/old/hook.sh" }
-        expect(old_hook).to be_nil
-
-        # Should contain new hooks
-        new_hook = pre_tool_use_hooks&.find { |hook| hook.dig("hooks", 0, "command")&.include?("pre_tool_use.sh") }
-        expect(new_hook).not_to be_nil
-      end
-    end
-
-    context "when settings file has invalid JSON" do
-      before do
-        File.write(settings_file, "{ invalid json")
-      end
-
-      it "creates new valid settings" do
-        described_class.run
-
-        expect(@log_messages).to include([:warn, /Invalid JSON.*creating new settings/])
-        expect(File).to exist(settings_file)
-        settings = JSON.parse(File.read(settings_file))
-        expect(settings).to have_key("hooks")
+        expect(@log_messages).to include([:success, "Created hooks manifest at hooks/hooks.json"])
       end
     end
   end
 
-  describe ".build_hook_configs" do
+  describe ".build_hooks_config" do
     let(:hook_files) do
       {
         "pre_tool_use.sh" => "pre tool use hook",
@@ -202,7 +134,7 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     it "builds correct hook configurations for all hook types" do
-      config = described_class.send(:build_hook_configs)
+      config = described_class.send(:build_hooks_config)
 
       # Check PreToolUse hooks
       expect(config["PreToolUse"]).to be_an(Array)
@@ -213,14 +145,14 @@ RSpec.describe Aircana::CLI::Init do
       pre_tool_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("pre_tool_use.sh") }
       expect(pre_tool_hook).not_to be_nil
       expect(pre_tool_hook.dig("hooks", 0, "type")).to eq("command")
-      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/pre_tool_use.sh")
+      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/pre_tool_use.sh")
       expect(pre_tool_hook["matcher"]).to be_nil
 
       # Check rubocop hook has matcher
       rubocop_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("rubocop_pre_commit.sh") }
       expect(rubocop_hook).not_to be_nil
       expect(rubocop_hook["matcher"]).to eq("Bash")
-      expect(rubocop_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/rubocop_pre_commit.sh")
+      expect(rubocop_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/rubocop_pre_commit.sh")
 
       # Check PostToolUse hooks
       expect(config["PostToolUse"]).to be_an(Array)
@@ -230,7 +162,7 @@ RSpec.describe Aircana::CLI::Init do
       # Check that post_tool_use hook has correct path
       post_tool_hook = post_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("post_tool_use.sh") }
       expect(post_tool_hook).not_to be_nil
-      expect(post_tool_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/post_tool_use.sh")
+      expect(post_tool_hook.dig("hooks", 0, "command")).to eq("${CLAUDE_PLUGIN_ROOT}/hooks/post_tool_use.sh")
 
       # Check UserPromptSubmit hook
       expect(config["UserPromptSubmit"]).to be_an(Array)
@@ -252,7 +184,7 @@ RSpec.describe Aircana::CLI::Init do
       end
 
       it "returns empty configuration" do
-        config = described_class.send(:build_hook_configs)
+        config = described_class.send(:build_hooks_config)
         expect(config).to be_empty
       end
     end
@@ -273,7 +205,7 @@ RSpec.describe Aircana::CLI::Init do
       end
 
       it "includes both known and custom hooks" do
-        config = described_class.send(:build_hook_configs)
+        config = described_class.send(:build_hooks_config)
 
         expect(config).to have_key("PostToolUse")
 
@@ -300,7 +232,7 @@ RSpec.describe Aircana::CLI::Init do
       end
 
       it "correctly maps custom hooks to appropriate events" do
-        config = described_class.send(:build_hook_configs)
+        config = described_class.send(:build_hooks_config)
 
         # Check PreToolUse has the validation hook
         expect(config["PreToolUse"]).to be_an(Array)
@@ -360,57 +292,8 @@ RSpec.describe Aircana::CLI::Init do
     end
   end
 
-  describe ".load_settings" do
-    context "when file exists with valid JSON" do
-      let(:valid_settings) { { "permissions" => { "allow" => ["test"] } } }
-
-      before do
-        File.write(settings_file, JSON.pretty_generate(valid_settings))
-      end
-
-      it "loads and parses the settings" do
-        result = described_class.send(:load_settings, settings_file)
-        expect(result).to eq(valid_settings)
-      end
-    end
-
-    context "when file doesn't exist" do
-      it "returns empty hash" do
-        nonexistent_file = File.join(test_claude_dir, "nonexistent", "file.json")
-        result = described_class.send(:load_settings, nonexistent_file)
-        expect(result).to eq({})
-      end
-    end
-
-    context "when file has invalid JSON" do
-      before do
-        File.write(settings_file, "{ invalid json")
-      end
-
-      it "returns empty hash and logs warning" do
-        result = described_class.send(:load_settings, settings_file)
-        expect(result).to eq({})
-        expect(@log_messages).to include([:warn, /Invalid JSON.*creating new settings/])
-      end
-    end
-  end
-
-  describe ".save_settings" do
-    let(:settings_data) { { "permissions" => { "allow" => [] }, "hooks" => {} } }
-
-    it "saves settings as formatted JSON" do
-      described_class.send(:save_settings, settings_file, settings_data)
-
-      expect(File).to exist(settings_file)
-      content = File.read(settings_file)
-      parsed = JSON.parse(content)
-      expect(parsed).to eq(settings_data)
-    end
-  end
-
   describe "directory parameter" do
     let(:custom_dir) { File.join(Dir.pwd, "spec_custom_#{Time.now.to_i}_#{rand(1000)}") }
-    let(:custom_claude_dir) { File.join(custom_dir, ".claude") }
 
     before do
       FileUtils.mkdir_p(custom_dir)
@@ -419,9 +302,6 @@ RSpec.describe Aircana::CLI::Init do
 
       allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
       allow(Aircana::CLI::Generate).to receive(:run)
-
-      # For these tests, allow configuration to be actually modified rather than stubbed
-      allow(Aircana.configuration).to receive(:claude_code_project_config_path).and_call_original
     end
 
     after do
@@ -438,10 +318,6 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     it "installs to specified directory" do
-      # Need to ensure hooks directory exists in the custom location
-      custom_hooks_dir = File.join(custom_dir, ".claude", "hooks")
-      FileUtils.mkdir_p(custom_hooks_dir)
-
       # Track what paths create_dir_if_needed is called with
       created_paths = []
       allow(Aircana).to receive(:create_dir_if_needed) do |path|
@@ -451,9 +327,9 @@ RSpec.describe Aircana::CLI::Init do
 
       described_class.run(directory: custom_dir)
 
-      # Verify that a .claude directory path in custom_dir was created
-      claude_paths = created_paths.select { |p| p.include?(custom_dir) && p.include?(".claude") }
-      expect(claude_paths).not_to be_empty
+      # Verify that a .claude-plugin directory path in custom_dir was created
+      plugin_paths = created_paths.select { |p| p.include?(custom_dir) && p.include?(".claude-plugin") }
+      expect(plugin_paths).not_to be_empty
     end
 
     it "creates directory if it does not exist" do
@@ -461,9 +337,6 @@ RSpec.describe Aircana::CLI::Init do
 
       # Ensure directory doesn't exist before test
       expect(Dir.exist?(nonexistent_dir)).to be false
-
-      # Need to ensure hooks directory exists in the new location
-      File.join(nonexistent_dir, ".claude", "hooks")
 
       # Track what paths create_dir_if_needed is called with
       created_paths = []
@@ -483,13 +356,13 @@ RSpec.describe Aircana::CLI::Init do
 
     it "restores original configuration after run" do
       original_project_dir = Aircana.configuration.project_dir
-      original_claude_path = Aircana.configuration.claude_code_project_config_path
+      original_plugin_root = Aircana.configuration.plugin_root
 
       described_class.run(directory: custom_dir)
 
       # Configuration should be restored to original values
       expect(Aircana.configuration.project_dir).to eq(original_project_dir)
-      expect(Aircana.configuration.claude_code_project_config_path).to eq(original_claude_path)
+      expect(Aircana.configuration.plugin_root).to eq(original_plugin_root)
     end
   end
 end
