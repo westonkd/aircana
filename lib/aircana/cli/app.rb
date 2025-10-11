@@ -5,7 +5,7 @@ require "thor"
 require_relative "commands/doctor"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
-require_relative "commands/install"
+require_relative "commands/init"
 
 require_relative "subcommand"
 require_relative "help_formatter"
@@ -39,9 +39,10 @@ module Aircana
         Generate.run
       end
 
-      desc "install", "Copies the generated files from `generate` to the proper directories in Claude Code config."
-      def install
-        Install.run
+      desc "init [DIRECTORY]",
+           "Initializes Claude Code configuration in the specified directory (defaults to current directory)"
+      def init(directory = nil)
+        Init.run(directory: directory)
       end
 
       class AgentsSubcommand < Subcommand

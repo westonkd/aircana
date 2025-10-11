@@ -39,7 +39,7 @@ Install Aircana files into your repo:
 
 ```bash
 cd ~/my/repo
-aircana install # This is a no-op if the repo already uses .aircana
+aircana init # This is a no-op if the repo already uses .aircana
 ```
 
 ### Take it for a spin
@@ -295,7 +295,7 @@ The message template supports `{{message}}` placeholder which gets replaced with
 
 ```bash
 aircana generate
-aircana install
+aircana init
 aircana hooks enable notification_sqs
 ```
 
@@ -398,7 +398,7 @@ aircana hooks status      # Show hook configuration status
 ### System
 ```bash
 aircana generate         # Generate Claude Code configuration files
-aircana install          # Install generated files to Claude Code
+aircana init [DIRECTORY] # Initialize Claude Code configuration in specified directory (defaults to current)
 aircana doctor           # Check system health and dependencies
 aircana doctor --verbose # Show detailed dependency information
 aircana dump-context [AGENT] # View current context for agent

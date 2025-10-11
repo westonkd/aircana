@@ -5,15 +5,52 @@ require_relative "generate"
 
 module Aircana
   module CLI
-    module Install
-      class << self
-        def run
-          generate_files
-          install_commands_to_claude
-          install_hooks_to_claude
+    module Init # rubocop:disable Metrics/ModuleLength
+      class << self # rubocop:disable Metrics/ClassLength
+        def run(directory: nil)
+          target_dir = resolve_target_directory(directory)
+
+          with_directory_config(target_dir) do
+            generate_files
+            install_commands_to_claude
+            install_hooks_to_claude
+          end
         end
 
         private
+
+        def resolve_target_directory(directory)
+          return Dir.pwd if directory.nil? || directory.empty?
+
+          dir = File.expand_path(directory)
+          FileUtils.mkdir_p(dir)
+
+          dir
+        end
+
+        def with_directory_config(target_dir) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+          original_project_dir = Aircana.configuration.project_dir
+          original_claude_config_path = Aircana.configuration.claude_code_project_config_path
+
+          begin
+            # Temporarily override configuration to use target directory
+            Aircana.configuration.project_dir = target_dir
+            Aircana.configuration.claude_code_project_config_path = File.join(target_dir, ".claude")
+            Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(target_dir, ".aircana", "hooks"))
+            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
+                                                        File.join(target_dir, ".claude", "agents"))
+
+            yield
+          ensure
+            # Restore original configuration
+            Aircana.configuration.project_dir = original_project_dir
+            Aircana.configuration.claude_code_project_config_path = original_claude_config_path
+            Aircana.configuration.instance_variable_set(:@hooks_dir,
+                                                        File.join(original_project_dir, ".aircana", "hooks"))
+            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
+                                                        File.join(original_project_dir, ".claude", "agents"))
+          end
+        end
 
         def generate_files
           Aircana.human_logger.info("Generating files before installation...")
@@ -97,7 +134,7 @@ module Aircana
           File.write(settings_file, JSON.pretty_generate(settings))
         end
 
-        def build_hook_configs
+        def build_hook_configs # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           hooks = {}
 
           # Map hook files to Claude Code hook events and their properties

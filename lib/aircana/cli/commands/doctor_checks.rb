@@ -47,7 +47,7 @@ module Aircana
             log_success(".claude", "Project Claude config directory exists")
           else
             log_warning(".claude", "Project Claude config directory not found")
-            log_remedy("Will be created when running 'aircana install'")
+            log_remedy("Will be created when running 'aircana init'")
           end
         end
       end

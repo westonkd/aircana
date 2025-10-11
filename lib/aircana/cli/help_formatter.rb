@@ -26,7 +26,7 @@ module Aircana
           "File Management" => %w[files],
           "Agent Management" => %w[agents],
           "Hook Management" => %w[hooks],
-          "System" => %w[generate install doctor dump-context]
+          "System" => %w[generate init doctor dump-context]
         }
       end
 

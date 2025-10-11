@@ -100,16 +100,16 @@ RSpec.describe Aircana::CLI::Hooks do
     end
 
     context "when hook is available" do
-      let(:install_double) { class_double(Aircana::CLI::Install) }
+      let(:install_double) { class_double(Aircana::CLI::Init) }
 
       before do
         allow(Aircana::Generators::HooksGenerator).to receive(:create_default_hook).and_return("/path/to/hook.sh")
-        allow(Aircana::CLI::Install).to receive(:run)
+        allow(Aircana::CLI::Init).to receive(:run)
       end
 
       it "creates hook and runs install" do
         expect(Aircana::Generators::HooksGenerator).to receive(:create_default_hook).with(hook_name)
-        expect(Aircana::CLI::Install).to receive(:run)
+        expect(Aircana::CLI::Init).to receive(:run)
 
         described_class.enable(hook_name)
 
@@ -133,7 +133,7 @@ RSpec.describe Aircana::CLI::Hooks do
     context "when hook is currently enabled" do
       before do
         File.write(hook_file, "#!/bin/bash\necho 'test hook'")
-        allow(Aircana::CLI::Install).to receive(:run)
+        allow(Aircana::CLI::Init).to receive(:run)
       end
 
       it "deletes hook file and runs install" do
@@ -163,11 +163,11 @@ RSpec.describe Aircana::CLI::Hooks do
                                                       session_start
                                                     ]).and_return("pre_tool_use")
       allow(prompt_double).to receive(:yes?).with("Would you like to edit the hook file now?").and_return(false)
-      allow(Aircana::CLI::Install).to receive(:run)
+      allow(Aircana::CLI::Init).to receive(:run)
     end
 
     it "creates custom hook with user input and installs to Claude settings" do
-      expect(Aircana::CLI::Install).to receive(:run)
+      expect(Aircana::CLI::Init).to receive(:run)
 
       described_class.create
 

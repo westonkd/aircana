@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana doctor --verbose` - Show detailed dependency information
 - `aircana dump-context <agent_name>` - Dump context for specified agent
 - `aircana generate` - Generate all configured files
-- `aircana install` - Install generated files to Claude Code config
+- `aircana init [DIRECTORY]` - Initialize Claude Code configuration in specified directory (defaults to current)
 - `aircana agents create` - Create a new agent interactively
 - `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
 - `aircana agents refresh-all` - Refresh knowledge for all configured agents

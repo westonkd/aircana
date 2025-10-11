@@ -4,9 +4,9 @@ require "spec_helper"
 require "tmpdir"
 require "fileutils"
 require "json"
-require_relative "../../../../lib/aircana/cli/commands/install"
+require_relative "../../../../lib/aircana/cli/commands/init"
 
-RSpec.describe Aircana::CLI::Install do
+RSpec.describe Aircana::CLI::Init do
   let(:test_output_dir) { File.join(Dir.pwd, "spec_output_#{Time.now.to_i}_#{rand(1000)}") }
   let(:test_claude_dir) { File.join(Dir.pwd, "spec_claude_#{Time.now.to_i}_#{rand(1000)}") }
   let(:test_hooks_dir) { File.join(test_output_dir, "hooks") }
@@ -405,6 +405,91 @@ RSpec.describe Aircana::CLI::Install do
       content = File.read(settings_file)
       parsed = JSON.parse(content)
       expect(parsed).to eq(settings_data)
+    end
+  end
+
+  describe "directory parameter" do
+    let(:custom_dir) { File.join(Dir.pwd, "spec_custom_#{Time.now.to_i}_#{rand(1000)}") }
+    let(:custom_claude_dir) { File.join(custom_dir, ".claude") }
+
+    before do
+      FileUtils.mkdir_p(custom_dir)
+      FileUtils.mkdir_p(test_commands_dir)
+      File.write(File.join(test_commands_dir, "sample-command.md"), "# Sample Command")
+
+      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
+      allow(Aircana::CLI::Generate).to receive(:run)
+
+      # For these tests, allow configuration to be actually modified rather than stubbed
+      allow(Aircana.configuration).to receive(:claude_code_project_config_path).and_call_original
+    end
+
+    after do
+      FileUtils.rm_rf(custom_dir)
+    end
+
+    it "uses current directory when no directory is specified" do
+      original_project_dir = Aircana.configuration.project_dir
+
+      described_class.run
+
+      # Verify that configuration was used with default directory
+      expect(Aircana.configuration.project_dir).to eq(original_project_dir)
+    end
+
+    it "installs to specified directory" do
+      # Need to ensure hooks directory exists in the custom location
+      custom_hooks_dir = File.join(custom_dir, ".aircana", "hooks")
+      FileUtils.mkdir_p(custom_hooks_dir)
+
+      # Track what paths create_dir_if_needed is called with
+      created_paths = []
+      allow(Aircana).to receive(:create_dir_if_needed) do |path|
+        created_paths << path
+        FileUtils.mkdir_p(path)
+      end
+
+      described_class.run(directory: custom_dir)
+
+      # Verify that a .claude directory path in custom_dir was created
+      claude_paths = created_paths.select { |p| p.include?(custom_dir) && p.include?(".claude") }
+      expect(claude_paths).not_to be_empty
+    end
+
+    it "creates directory if it does not exist" do
+      nonexistent_dir = File.join(Dir.pwd, "spec_new_#{Time.now.to_i}_#{rand(1000)}")
+
+      # Ensure directory doesn't exist before test
+      expect(Dir.exist?(nonexistent_dir)).to be false
+
+      # Need to ensure hooks directory exists in the new location
+      File.join(nonexistent_dir, ".aircana", "hooks")
+
+      # Track what paths create_dir_if_needed is called with
+      created_paths = []
+      allow(Aircana).to receive(:create_dir_if_needed) do |path|
+        created_paths << path
+        FileUtils.mkdir_p(path)
+      end
+
+      described_class.run(directory: nonexistent_dir)
+
+      # Verify that the directory was created
+      expect(Dir.exist?(nonexistent_dir)).to be true
+
+      # Clean up
+      FileUtils.rm_rf(nonexistent_dir)
+    end
+
+    it "restores original configuration after run" do
+      original_project_dir = Aircana.configuration.project_dir
+      original_claude_path = Aircana.configuration.claude_code_project_config_path
+
+      described_class.run(directory: custom_dir)
+
+      # Configuration should be restored to original values
+      expect(Aircana.configuration.project_dir).to eq(original_project_dir)
+      expect(Aircana.configuration.claude_code_project_config_path).to eq(original_claude_path)
     end
   end
 end
