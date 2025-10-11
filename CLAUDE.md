@@ -74,7 +74,7 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
 - Configuration files stored in `~/.aircana` (global) and `.aircana/` (project-local)
 - Claude Code integration through `~/.claude` and `./.claude` directories
 - Generated output goes to `~/.aircana/aircana.out` by default
-- Agent knowledge cached in `.aircana/agents/<agent_name>/`
+- Agent knowledge cached in `.claude/agents/<agent_name>/`
 - Hooks stored in `.aircana/hooks/`
 
 ### Dependencies
@@ -106,4 +106,4 @@ Agents can sync knowledge from multiple sources:
 **Unified Management:**
 - Both sources tracked in manifest.json for each agent
 - Refresh all sources with `aircana agents refresh <agent>`
-- Content stored as Markdown files in `.aircana/agents/<agent>/knowledge/`
+- Content stored as Markdown files in `.claude/agents/<agent>/knowledge/`

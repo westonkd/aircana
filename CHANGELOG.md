@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Agent knowledge bases and manifests moved from `.aircana/agents/` to `.claude/agents/`
+  - Agent files and their knowledge are now co-located in the `.claude/agents/` directory
+  - This consolidates all Claude Code artifacts in one location
+
+### Migration Guide
+To upgrade from a previous version:
+1. Move existing agent knowledge manually:
+   ```bash
+   mv .aircana/agents/*/* .claude/agents/
+   ```
+2. Or refresh all agent knowledge from sources:
+   ```bash
+   aircana agents refresh-all
+   ```
+
 ## [1.5.0] - 2025-09-28
 
 ### Added

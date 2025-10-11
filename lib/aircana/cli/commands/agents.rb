@@ -188,7 +188,7 @@ module Aircana
         def show_gitignore_recommendation
           Aircana.human_logger.info ""
           Aircana.human_logger.info "💡 Recommendation: Add knowledge directories to .gitignore:"
-          Aircana.human_logger.info "   echo \".aircana/agents/*/knowledge/\" >> .gitignore"
+          Aircana.human_logger.info "   echo \".claude/agents/*/knowledge/\" >> .gitignore"
           Aircana.human_logger.info ""
           Aircana.human_logger.info "   This keeps knowledge sources in version control while excluding"
           Aircana.human_logger.info "   the actual knowledge content from your repository."

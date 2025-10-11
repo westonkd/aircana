@@ -198,11 +198,12 @@ Websites are also refreshed when `aircana agent refresh <AGENT>` is used.
 
 #### Structure
 
-Knowledge bases are stored in the .aircana directory of each project. For example:
+Knowledge bases are stored in the .claude directory of each project. For example:
 
 ```
-.aircana
+.claude
 ├── agents
+│   ├── canvas-backend-account-expert.md
 │   ├── canvas-backend-account-expert
 │   │   ├── knowledge
 │   │   │   ├── Accounts.md
@@ -210,7 +211,7 @@ Knowledge bases are stored in the .aircana directory of each project. For exampl
 │   │   └── manifest.json
 ```
 
-Agent files in the .claude/agents directory reference these files.
+Agent files and their knowledge bases are co-located in the .claude/agents directory.
 
 In many cases, adding the actual knowledge base to version control is undesirable because:
 

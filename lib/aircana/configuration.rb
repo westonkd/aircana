@@ -19,7 +19,7 @@ module Aircana
       @global_dir = File.join(Dir.home, ".aircana")
       @project_dir = Dir.pwd
       @output_dir = File.join(@global_dir, "aircana.out")
-      @agent_knowledge_dir = File.join(@project_dir, ".aircana", "agents")
+      @agent_knowledge_dir = File.join(@project_dir, ".claude", "agents")
       @hooks_dir = File.join(@project_dir, ".aircana", "hooks")
     end
 

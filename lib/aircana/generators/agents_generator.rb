@@ -64,7 +64,7 @@ module Aircana
       end
 
       def knowledge_path
-        ".aircana/agents/#{agent_name}/knowledge/"
+        ".claude/agents/#{agent_name}/knowledge/"
       end
     end
   end
