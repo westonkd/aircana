@@ -49,4 +49,54 @@ RSpec.describe Aircana::Configuration do
       expect(config.confluence_api_token).to eq("test-token-123")
     end
   end
+
+  describe "#plugin_root" do
+    context "when AIRCANA_PLUGIN_ROOT is set" do
+      around do |example|
+        ClimateControl.modify(AIRCANA_PLUGIN_ROOT: "/custom/aircana/path") do
+          example.run
+        end
+      end
+
+      it "uses AIRCANA_PLUGIN_ROOT" do
+        config = described_class.new
+        expect(config.plugin_root).to eq("/custom/aircana/path")
+      end
+    end
+
+    context "when CLAUDE_PLUGIN_ROOT is set" do
+      around do |example|
+        ClimateControl.modify(CLAUDE_PLUGIN_ROOT: "/custom/claude/path") do
+          example.run
+        end
+      end
+
+      it "uses CLAUDE_PLUGIN_ROOT" do
+        config = described_class.new
+        expect(config.plugin_root).to eq("/custom/claude/path")
+      end
+    end
+
+    context "when AIRCANA_PLUGIN_ROOT takes precedence over CLAUDE_PLUGIN_ROOT" do
+      around do |example|
+        ClimateControl.modify(
+          AIRCANA_PLUGIN_ROOT: "/aircana/path",
+          CLAUDE_PLUGIN_ROOT: "/claude/path"
+        ) do
+          example.run
+        end
+      end
+
+      it "uses AIRCANA_PLUGIN_ROOT" do
+        config = described_class.new
+        expect(config.plugin_root).to eq("/aircana/path")
+      end
+    end
+
+    context "when no environment variables are set" do
+      it "defaults to current directory" do
+        expect(config.plugin_root).to eq(Dir.pwd)
+      end
+    end
+  end
 end

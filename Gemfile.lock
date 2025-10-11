@@ -16,6 +16,7 @@ GEM
       public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
     bigdecimal (3.2.3)
+    climate_control (1.2.0)
     crack (1.0.0)
       bigdecimal
       rexml
@@ -113,6 +114,7 @@ PLATFORMS
 
 DEPENDENCIES
   aircana!
+  climate_control (~> 1.2)
   rake (~> 13.0)
   rspec (~> 3.0)
   rubocop (~> 1.21)

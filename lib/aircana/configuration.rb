@@ -39,8 +39,9 @@ module Aircana
     end
 
     def setup_plugin_paths
-      # Plugin root is the project directory by default
-      @plugin_root = @project_dir
+      # Plugin root can be set via AIRCANA_PLUGIN_ROOT (for hooks) or CLAUDE_PLUGIN_ROOT,
+      # otherwise defaults to the current project directory
+      @plugin_root = ENV.fetch("AIRCANA_PLUGIN_ROOT", ENV.fetch("CLAUDE_PLUGIN_ROOT", @project_dir))
       @plugin_manifest_dir = File.join(@plugin_root, ".claude-plugin")
       @commands_dir = File.join(@plugin_root, "commands")
       @agents_dir = File.join(@plugin_root, "agents")
