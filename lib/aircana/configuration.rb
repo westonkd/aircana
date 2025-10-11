@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Aircana
   class Configuration
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
                   :claude_code_config_path, :claude_code_project_config_path, :agent_knowledge_dir,
                   :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
-                  :plugin_root, :plugin_manifest_dir, :commands_dir, :agents_dir
+                  :plugin_root, :plugin_manifest_dir, :commands_dir, :agents_dir, :global_agents_dir
 
     def initialize
       setup_directory_paths
@@ -28,6 +30,28 @@ module Aircana
     # Returns the path to the hooks manifest file
     def hooks_manifest_path
       File.join(@hooks_dir, "hooks.json")
+    end
+
+    # Returns the plugin name from plugin.json, or falls back to directory name
+    def plugin_name
+      return @plugin_name if defined?(@plugin_name)
+
+      @plugin_name = if plugin_mode?
+                       manifest = JSON.parse(File.read(plugin_manifest_path))
+                       manifest["name"]
+                     else
+                       # Fallback to directory name if not in plugin mode
+                       File.basename(@plugin_root).downcase.gsub(/[^a-z0-9]+/, "-")
+                     end
+    rescue StandardError
+      # If anything fails, use directory name as fallback
+      File.basename(@plugin_root).downcase.gsub(/[^a-z0-9]+/, "-")
+    end
+
+    # Returns the global knowledge directory path for an agent
+    # Format: ~/.claude/agents/<plugin-name>-<agent-name>/knowledge/
+    def global_agent_knowledge_path(agent_name)
+      File.join(@global_agents_dir, "#{plugin_name}-#{agent_name}", "knowledge")
     end
 
     private
@@ -54,6 +78,8 @@ module Aircana
       @claude_code_config_path = File.join(Dir.home, ".claude")
       # For backward compatibility, keep this but plugin mode uses plugin_root
       @claude_code_project_config_path = File.join(Dir.pwd, ".claude")
+      # Global agents directory for knowledge bases (not version controlled)
+      @global_agents_dir = File.join(Dir.home, ".claude", "agents")
     end
 
     def setup_stream

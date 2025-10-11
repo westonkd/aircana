@@ -20,7 +20,8 @@ module Aircana
 
       def create_agent_knowledge_dir(agent)
         config = Aircana.configuration
-        agent_dir = File.join(config.agent_knowledge_dir, agent, "knowledge")
+        # Use global agents directory with plugin prefix
+        agent_dir = config.global_agent_knowledge_path(agent)
 
         FileUtils.mkdir_p(agent_dir)
 

@@ -9,14 +9,18 @@ RSpec.describe Aircana::Contexts::Local do
 
   around(:each) do |example|
     Dir.mktmpdir do |temp_dir|
-      # Configure Aircana to use the temp directory
-      original_config = Aircana.configuration.agent_knowledge_dir
-      Aircana.configuration.agent_knowledge_dir = File.join(temp_dir, ".aircana", "agents")
+      # Configure Aircana to use the temp directory for global agents
+      original_global = Aircana.configuration.global_agents_dir
+      original_plugin_root = Aircana.configuration.plugin_root
+
+      Aircana.configuration.global_agents_dir = File.join(temp_dir, ".claude", "agents")
+      Aircana.configuration.plugin_root = temp_dir
 
       example.run
 
       # Restore original configuration
-      Aircana.configuration.agent_knowledge_dir = original_config
+      Aircana.configuration.global_agents_dir = original_global
+      Aircana.configuration.plugin_root = original_plugin_root
     end
   end
 
@@ -28,7 +32,7 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
-      expected_dir = File.join(Aircana.configuration.agent_knowledge_dir, "test-agent", "knowledge")
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
       expected_file = File.join(expected_dir, "Test-Page.md")
 
       expect(Dir.exist?(expected_dir)).to be true
@@ -44,12 +48,8 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        "Test-Page-With-Problematic-Characters.md"
-      )
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
+      expected_file = File.join(expected_dir, "Test-Page-With-Problematic-Characters.md")
 
       expect(File.exist?(expected_file)).to be true
       expect(result).to eq(expected_file)
@@ -62,12 +62,8 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        "untitled.md"
-      )
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
+      expected_file = File.join(expected_dir, "untitled.md")
 
       expect(File.exist?(expected_file)).to be true
       expect(result).to eq(expected_file)
@@ -80,12 +76,8 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        "untitled.md"
-      )
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
+      expected_file = File.join(expected_dir, "untitled.md")
 
       expect(File.exist?(expected_file)).to be true
       expect(result).to eq(expected_file)
@@ -98,12 +90,8 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        "Test-Page-With-Spaces.md"
-      )
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
+      expected_file = File.join(expected_dir, "Test-Page-With-Spaces.md")
 
       expect(File.exist?(expected_file)).to be true
       expect(result).to eq(expected_file)
@@ -117,13 +105,9 @@ RSpec.describe Aircana::Contexts::Local do
         agent: "test-agent"
       )
 
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
       expected_filename = "#{"a" * 200}.md"
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        expected_filename
-      )
+      expected_file = File.join(expected_dir, expected_filename)
 
       expect(File.exist?(expected_file)).to be true
       expect(result).to eq(expected_file)
@@ -133,8 +117,10 @@ RSpec.describe Aircana::Contexts::Local do
       local.store_content(title: "Page 1", content: "Content 1", agent: "agent-1")
       local.store_content(title: "Page 2", content: "Content 2", agent: "agent-2")
 
-      agent1_file = File.join(Aircana.configuration.agent_knowledge_dir, "agent-1", "knowledge", "Page-1.md")
-      agent2_file = File.join(Aircana.configuration.agent_knowledge_dir, "agent-2", "knowledge", "Page-2.md")
+      agent1_dir = Aircana.configuration.global_agent_knowledge_path("agent-1")
+      agent2_dir = Aircana.configuration.global_agent_knowledge_path("agent-2")
+      agent1_file = File.join(agent1_dir, "Page-1.md")
+      agent2_file = File.join(agent2_dir, "Page-2.md")
 
       expect(File.exist?(agent1_file)).to be true
       expect(File.exist?(agent2_file)).to be true
@@ -149,12 +135,8 @@ RSpec.describe Aircana::Contexts::Local do
       # Store updated content with same title
       result = local.store_content(title: "Test Page", content: "Updated content", agent: "test-agent")
 
-      expected_file = File.join(
-        Aircana.configuration.agent_knowledge_dir,
-        "test-agent",
-        "knowledge",
-        "Test-Page.md"
-      )
+      expected_dir = Aircana.configuration.global_agent_knowledge_path("test-agent")
+      expected_file = File.join(expected_dir, "Test-Page.md")
 
       expect(File.read(expected_file)).to eq("Updated content")
       expect(result).to eq(expected_file)

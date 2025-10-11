@@ -45,7 +45,7 @@ module Aircana
       def locals
         super.merge({
                       agent_name:, short_description:, description:,
-                      model:, color:, knowledge_path:
+                      model:, color:, knowledge_path:, plugin_prefix:
                     })
       end
 
@@ -63,9 +63,13 @@ module Aircana
         File.join(Aircana.configuration.agents_dir, "#{agent_name}.md")
       end
 
+      def plugin_prefix
+        Aircana.configuration.plugin_name
+      end
+
       def knowledge_path
-        # Use plugin-relative path for knowledge base
-        "agents/#{agent_name}/knowledge/"
+        # Use global agents directory with plugin prefix
+        "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
       end
     end
   end
