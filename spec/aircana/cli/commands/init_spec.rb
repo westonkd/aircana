@@ -87,12 +87,9 @@ RSpec.describe Aircana::CLI::Init do
     end
 
     before do
-      # Create output hooks directory
-      FileUtils.mkdir_p(output_hooks_dir)
-
-      # Create hook files in the OUTPUT directory (where generate would put them)
+      # Create hook files in the TARGET hooks directory (where generate puts them during init)
       hook_files.each do |filename, content|
-        File.write(File.join(output_hooks_dir, filename), content)
+        File.write(File.join(test_hooks_dir, filename), content)
       end
 
       allow(Aircana::CLI::Generate).to receive(:run)

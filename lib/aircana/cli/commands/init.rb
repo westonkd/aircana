@@ -155,16 +155,11 @@ module Aircana
 
         def install_hooks
           hooks_dir = Aircana.configuration.hooks_dir
-          return unless Dir.exist?(Aircana.configuration.output_dir)
+          return unless Dir.exist?(hooks_dir)
 
-          # Copy hook scripts
-          hook_files = Dir.glob("#{Aircana.configuration.output_dir}/hooks/*.sh")
+          # Check if any hook scripts exist (they're already generated to the correct location)
+          hook_files = Dir.glob("#{hooks_dir}/*.sh")
           return unless hook_files.any?
-
-          hook_files.each do |file|
-            Aircana.human_logger.success("Installing hook: #{File.basename(file)}")
-            FileUtils.cp(file, hooks_dir)
-          end
 
           # Create hooks manifest
           create_hooks_manifest
