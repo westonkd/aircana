@@ -8,7 +8,6 @@ require_relative "../../generators/apply_feedback_command_generator"
 require_relative "../../generators/ask_expert_command_generator"
 require_relative "../../generators/agents_generator"
 require_relative "../../generators/hooks_generator"
-require_relative "../../generators/project_config_generator"
 
 module Aircana
   module CLI
@@ -29,7 +28,6 @@ module Aircana
           generators.each(&:generate)
           generate_default_agents
           generate_default_hooks
-          generate_project_config
           Aircana.human_logger.success("Re-generated #{Aircana.configuration.output_dir} files.")
         end
 
@@ -45,15 +43,6 @@ module Aircana
           Aircana::Generators::HooksGenerator.available_default_hooks.each do |hook_name|
             Aircana::Generators::HooksGenerator.create_default_hook(hook_name)
           end
-        end
-
-        def generate_project_config
-          project_json_path = File.join(Aircana.configuration.project_dir, ".aircana", "project.json")
-
-          # Only generate if it doesn't already exist
-          return if File.exist?(project_json_path)
-
-          Aircana::Generators::ProjectConfigGenerator.new.generate
         end
       end
     end

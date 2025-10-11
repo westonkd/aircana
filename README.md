@@ -394,15 +394,6 @@ aircana hooks create      # Create custom hook
 aircana hooks status      # Show hook configuration status
 ```
 
-### Project Management
-```bash
-aircana project init     # Initialize multi-root project configuration
-aircana project add [PATH] # Add folder to multi-root configuration
-aircana project remove [PATH] # Remove folder from multi-root configuration
-aircana project list     # List all configured folders and agents
-aircana project sync     # Manually sync symlinks for multi-root agents
-```
-
 ### System
 ```bash
 aircana generate         # Generate Claude Code configuration files

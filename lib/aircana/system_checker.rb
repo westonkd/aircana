@@ -23,16 +23,6 @@ module Aircana
           "Arch" => "pacman -S git",
           "Other" => "https://git-scm.com/downloads"
         }
-      },
-      "jq" => {
-        purpose: "JSON parsing for multi-root configuration",
-        install: {
-          "macOS" => "brew install jq",
-          "Ubuntu/Debian" => "apt install jq",
-          "Fedora/CentOS" => "dnf install jq",
-          "Arch" => "pacman -S jq",
-          "Other" => "https://jqlang.github.io/jq/download/"
-        }
       }
     }.freeze
 

@@ -2,7 +2,6 @@
 
 require "json"
 require_relative "generate"
-require_relative "../../generators/project_config_generator"
 
 module Aircana
   module CLI
@@ -10,7 +9,6 @@ module Aircana
       class << self
         def run
           generate_files
-          ensure_project_config_exists
           install_commands_to_claude
           install_hooks_to_claude
         end
@@ -20,14 +18,6 @@ module Aircana
         def generate_files
           Aircana.human_logger.info("Generating files before installation...")
           Generate.run
-        end
-
-        def ensure_project_config_exists
-          project_json_path = File.join(Aircana.configuration.project_dir, ".aircana", "project.json")
-          return if File.exist?(project_json_path)
-
-          Aircana.human_logger.info("Creating project.json for multi-root support...")
-          Aircana::Generators::ProjectConfigGenerator.new.generate
         end
 
         def install_commands_to_claude
