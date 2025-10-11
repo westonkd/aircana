@@ -71,11 +71,11 @@ Aircana is a Ruby gem that provides context management and workflow utilities fo
 - **Context Management**: Integration with Claude Code through generated templates and configurations
 
 ### File Organization
-- Configuration files stored in `~/.aircana` (global) and `.aircana/` (project-local)
+- Configuration files stored in `~/.aircana` (global)
 - Claude Code integration through `~/.claude` and `./.claude` directories
 - Generated output goes to `~/.aircana/aircana.out` by default
 - Agent knowledge cached in `.claude/agents/<agent_name>/`
-- Hooks stored in `.aircana/hooks/`
+- Hooks stored in `.claude/hooks/`
 
 ### Dependencies
 - Thor (~> 0.19.1) for CLI framework

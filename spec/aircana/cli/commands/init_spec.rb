@@ -213,14 +213,14 @@ RSpec.describe Aircana::CLI::Init do
       pre_tool_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("pre_tool_use.sh") }
       expect(pre_tool_hook).not_to be_nil
       expect(pre_tool_hook.dig("hooks", 0, "type")).to eq("command")
-      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/pre_tool_use.sh")
+      expect(pre_tool_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/pre_tool_use.sh")
       expect(pre_tool_hook["matcher"]).to be_nil
 
       # Check rubocop hook has matcher
       rubocop_hook = pre_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("rubocop_pre_commit.sh") }
       expect(rubocop_hook).not_to be_nil
       expect(rubocop_hook["matcher"]).to eq("Bash")
-      expect(rubocop_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/rubocop_pre_commit.sh")
+      expect(rubocop_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/rubocop_pre_commit.sh")
 
       # Check PostToolUse hooks
       expect(config["PostToolUse"]).to be_an(Array)
@@ -230,7 +230,7 @@ RSpec.describe Aircana::CLI::Init do
       # Check that post_tool_use hook has correct path
       post_tool_hook = post_tool_hooks.find { |h| h.dig("hooks", 0, "command").include?("post_tool_use.sh") }
       expect(post_tool_hook).not_to be_nil
-      expect(post_tool_hook.dig("hooks", 0, "command")).to eq(".aircana/hooks/post_tool_use.sh")
+      expect(post_tool_hook.dig("hooks", 0, "command")).to eq(".claude/hooks/post_tool_use.sh")
 
       # Check UserPromptSubmit hook
       expect(config["UserPromptSubmit"]).to be_an(Array)
@@ -439,7 +439,7 @@ RSpec.describe Aircana::CLI::Init do
 
     it "installs to specified directory" do
       # Need to ensure hooks directory exists in the custom location
-      custom_hooks_dir = File.join(custom_dir, ".aircana", "hooks")
+      custom_hooks_dir = File.join(custom_dir, ".claude", "hooks")
       FileUtils.mkdir_p(custom_hooks_dir)
 
       # Track what paths create_dir_if_needed is called with
@@ -463,7 +463,7 @@ RSpec.describe Aircana::CLI::Init do
       expect(Dir.exist?(nonexistent_dir)).to be false
 
       # Need to ensure hooks directory exists in the new location
-      File.join(nonexistent_dir, ".aircana", "hooks")
+      File.join(nonexistent_dir, ".claude", "hooks")
 
       # Track what paths create_dir_if_needed is called with
       created_paths = []

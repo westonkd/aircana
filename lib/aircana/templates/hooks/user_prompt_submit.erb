@@ -22,12 +22,6 @@ if [ -f "Gemfile" ]; then
   fi
 fi
 
-# Check for relevant files context
-if [ -d ".aircana/relevant_files" ] && [ "$(ls -A .aircana/relevant_files 2>/dev/null)" ]; then
-  RELEVANT_COUNT=$(ls .aircana/relevant_files | wc -l)
-  CONTEXT_ADDITIONS="${CONTEXT_ADDITIONS}\n\nRelevant Files: $RELEVANT_COUNT files currently in context."
-fi
-
 # Output JSON response with additional context
 if [ -n "$CONTEXT_ADDITIONS" ]; then
   # Escape context for JSON

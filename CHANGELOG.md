@@ -20,18 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: Agent knowledge bases and manifests moved from `.aircana/agents/` to `.claude/agents/`
   - Agent files and their knowledge are now co-located in the `.claude/agents/` directory
   - This consolidates all Claude Code artifacts in one location
+- **BREAKING**: Hook scripts moved from `.aircana/hooks/` to `.claude/hooks/`
+  - All Claude Code project artifacts now consolidated in `.claude/` directory
+  - Global Aircana configuration remains in `~/.aircana`
+
+### Removed
+- Removed `relevant_files` feature from user_prompt_submit hook template
+  - Feature was not widely used and added unnecessary complexity
 
 ### Migration Guide
 To upgrade from a previous version:
 1. Update any scripts or documentation that reference `aircana install` to use `aircana init` instead
-2. Move existing agent knowledge manually:
+2. Move existing agent knowledge and hooks manually:
    ```bash
+   # Move agent knowledge
    mv .aircana/agents/*/* .claude/agents/
+   # Move hooks
+   mv .aircana/hooks/* .claude/hooks/
    ```
-3. Or refresh all agent knowledge from sources:
+3. Or refresh all agent knowledge from sources and regenerate hooks:
    ```bash
    aircana agents refresh-all
+   aircana init
    ```
+4. Remove the old `.aircana` directory if no longer needed (keeping `~/.aircana` for global config)
 
 ## [1.5.0] - 2025-09-28
 

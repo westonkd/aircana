@@ -98,7 +98,6 @@ module Aircana
       def check_configuration_directories
         {
           global: File.expand_path("~/.aircana"),
-          project: File.join(Dir.pwd, ".aircana"),
           claude_global: File.expand_path("~/.claude"),
           claude_project: File.join(Dir.pwd, ".claude")
         }.transform_values { |path| Dir.exist?(path) }

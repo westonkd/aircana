@@ -25,8 +25,8 @@ RSpec.describe Aircana::Configuration do
   end
 
   describe "#hooks_dir" do
-    it "returns the .aircana/hooks directory within project_dir" do
-      expected_path = File.join(config.project_dir, ".aircana", "hooks")
+    it "returns the .claude/hooks directory within project_dir" do
+      expected_path = File.join(config.project_dir, ".claude", "hooks")
       expect(config.hooks_dir).to eq(expected_path)
     end
   end

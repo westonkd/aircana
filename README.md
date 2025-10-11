@@ -39,7 +39,7 @@ Install Aircana files into your repo:
 
 ```bash
 cd ~/my/repo
-aircana init # This is a no-op if the repo already uses .aircana
+aircana init
 ```
 
 ### Take it for a spin

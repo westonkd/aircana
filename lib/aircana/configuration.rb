@@ -20,7 +20,7 @@ module Aircana
       @project_dir = Dir.pwd
       @output_dir = File.join(@global_dir, "aircana.out")
       @agent_knowledge_dir = File.join(@project_dir, ".claude", "agents")
-      @hooks_dir = File.join(@project_dir, ".aircana", "hooks")
+      @hooks_dir = File.join(@project_dir, ".claude", "hooks")
     end
 
     def setup_claude_code_paths
