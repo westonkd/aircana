@@ -27,7 +27,9 @@ module Aircana
     def read
       return nil unless exists?
 
-      JSON.parse(File.read(manifest_path))
+      data = JSON.parse(File.read(manifest_path))
+      # Unwrap top-level "hooks" key to maintain consistent internal API
+      data["hooks"] || data
     rescue JSON::ParserError => e
       raise Aircana::Error, "Invalid JSON in hooks manifest: #{e.message}"
     end
@@ -125,7 +127,9 @@ module Aircana
 
     def write_manifest(data)
       FileUtils.mkdir_p(hooks_dir)
-      File.write(manifest_path, JSON.pretty_generate(data))
+      # Wrap data in top-level "hooks" key to match Claude Code plugin spec
+      wrapped_data = { "hooks" => data }
+      File.write(manifest_path, JSON.pretty_generate(wrapped_data))
     end
 
     def validate_hooks_config!(config)

@@ -108,8 +108,9 @@ RSpec.describe Aircana::CLI::Init do
         expect(File).to exist(hooks_json_file)
 
         hooks_config = JSON.parse(File.read(hooks_json_file))
-        expect(hooks_config).to have_key("PreToolUse")
-        expect(hooks_config).to have_key("PostToolUse")
+        expect(hooks_config).to have_key("hooks")
+        expect(hooks_config["hooks"]).to have_key("PreToolUse")
+        expect(hooks_config["hooks"]).to have_key("PostToolUse")
 
         expect(@log_messages).to include([:success, "Created hooks manifest at hooks/hooks.json"])
       end
