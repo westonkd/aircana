@@ -5,23 +5,9 @@
 
 ## Intro
 
-Aircana is a CLI for creating **distributable Claude Code plugins** with per-agent knowledge bases. Generate team-shareable plugins where agents have access to curated documentation from Confluence and public websites.
+Aircana is a CLI for generating [Claude Code plugins](https://docs.claude.com/en/docs/claude-code/plugins) with per-agent knowledge bases. Each agent gets a curated knowledge base synced from Confluence (label-based) or web URLs, yielding more relevant, predictable, and project-specific results than general-purpose agents.
 
-**Key Features:**
-
-**Plugin Generation**: Create Claude Code plugins with proper manifests, agents, commands, and hooks using ERB templates.
-
-**Per-Agent Knowledge Bases**: Each agent gets dedicated documentation synced from Confluence (label-based) or web URLs, automatically converted to Markdown.
-
-**Manifest-Based Tracking**: Knowledge sources are tracked in version-controlled manifest.json files. Team members independently refresh content using `aircana agents refresh`, keeping actual knowledge out of git (avoids bloat and sensitivity concerns).
-
-**Team Distribution**: Share plugins via Git repositories or Claude Code plugin marketplaces. Team members can refresh knowledge bases from tracked sources without manual syncing.
-
-**Complete Development Workflow**: Optional five-phase workflow (plan, record, execute, review, apply-feedback) with specialized agents for systematic feature development.
-
-**Hook Management**: Event-driven automation through Claude Code hooks with support for multiple hook types.
-
-Aircana's tools are built on "human-in-the-loop" principles, providing structure and knowledge management for AI-assisted development workflows.
+Knowledge bases automatically refresh once daily on session start, keeping agents up-to-date without manual intervention. Knowledge sources are tracked in version-controlled manifests, so team members can independently refresh content while keeping actual documentation out of git.
 
 ## How can I try it?
 
@@ -98,6 +84,8 @@ aircana plugin validate
 - Use Claude Code's plugin installation commands to enable your plugin
 
 ### Things to try
+
+- Follow the [Getting Started](#getting-started) tutorial to create agents with knowledge bases—Aircana's key differentiator
 
 - Configure the Confluence integration and create domain-specific agents
 
@@ -233,84 +221,11 @@ The agent has access to all Confluence pages and web URLs you've synced to its k
 
 ### Step 7: Share Your Plugin with Your Team
 
-**Option A: Git Repository Distribution**
+For detailed instructions on distributing your plugin via Git repositories or Claude Code plugin marketplaces, see the official [Claude Code Plugin Marketplaces documentation](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces).
 
-1. **Initialize Git repository:**
-```bash
-git init
-git add .
-git commit -m "Initial plugin setup with backend-api agent"
-```
-
-2. **Push to GitHub:**
-```bash
-gh repo create my-company/my-team-plugin --private --source=. --push
-```
-
-3. **Team members install:**
-```bash
-# Team members clone the plugin
-git clone https://github.com/my-company/my-team-plugin.git ~/.claude-plugins/my-team
-
-# Configure Confluence credentials (each team member)
-export CONFLUENCE_BASE_URL="..."
-export CONFLUENCE_USERNAME="..."
-export CONFLUENCE_API_TOKEN="..."
-
-# Refresh knowledge bases (syncs from tracked sources)
-cd ~/.claude-plugins/my-team
-aircana agents refresh-all
-```
-
-**Option B: Add to a Plugin Marketplace**
-
-Create or update a marketplace repository with your plugin:
-
-**Note:** The marketplace.json file lives in a **separate marketplace repository**, not within your plugin directory.
-
-1. **Create a marketplace.json file** (in a separate marketplace repo):
-```json
-{
-  "name": "my-company-marketplace",
-  "owner": {
-    "name": "My Company Engineering",
-    "email": "[email protected]"
-  },
-  "metadata": {
-    "description": "Internal Claude Code plugins for my-company",
-    "version": "1.0.0"
-  },
-  "plugins": [
-    {
-      "name": "my-team",
-      "description": "Backend API development agents and workflows",
-      "source": {
-        "source": "github",
-        "repo": "my-company/my-team-plugin"
-      },
-      "version": "1.0.0",
-      "author": {
-        "name": "My Company Engineering"
-      },
-      "category": "development"
-    }
-  ]
-}
-```
-
-2. **Push marketplace configuration:**
-```bash
-# In your marketplace repository (not plugin directory)
-git add marketplace.json
-git commit -m "Add my-team plugin to marketplace"
-git push
-```
-
-3. **Team members install from marketplace:**
-
-Team members add the marketplace URL to their Claude Code configuration, then install plugins directly from the marketplace UI.
-
-See [Claude Code Plugin Marketplaces](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces) for complete marketplace setup instructions.
+**Quick summary:**
+- Share via Git repository: Team members clone the plugin, configure Confluence credentials, and run `aircana agents refresh-all`
+- Publish to a marketplace: Create a marketplace.json file in a separate repository, add your plugin metadata, and team members install via the marketplace UI
 
 ### Next: Keep Knowledge Up-to-Date
 
@@ -385,7 +300,7 @@ Aircana provides each agent with a human-curated knowledge base stored within th
 - Stay up-to-date with refreshable sources
 - Provide more relevant responses with less back-and-forth
 
-Knowledge bases support multiple source types and can be refreshed to pull the latest content.
+Knowledge bases support multiple source types and can be refreshed to pull the latest content. **Aircana-generated plugins automatically refresh all agent knowledge bases once daily on session start** via the SessionStart hook, keeping agents up-to-date without manual intervention.
 
 #### Confluence
 
@@ -452,6 +367,35 @@ Aircana uses the "Notification" Claude Code hook to send messages to SQS.
 At Instructure this means you can easily configure Claude Code to send you slack messages when it needs your attention via Aircana
 
 (Instructions coming soon, send a message if you want help with this)
+
+## Best Practices
+
+### Designing Effective Agents
+
+**Design agents as narrow domain experts, not generalists.** More granular agents with focused knowledge bases generally perform better than broad, general-purpose agents.
+
+**Examples:**
+
+✅ **Good - Narrow domains:**
+- `database-schema-expert` - Database design, migrations, indexing strategies
+- `api-authentication-expert` - OAuth, JWT, session management
+- `frontend-styling-expert` - CSS, design systems, responsive layouts
+
+❌ **Avoid - Too broad:**
+- `backend-engineer` - Too many domains, knowledge base becomes unfocused
+- `full-stack-developer` - Overlapping responsibilities with unclear boundaries
+
+**Why narrow domains work better:**
+- **Focused knowledge bases**: Each agent gets highly relevant documentation for their specific domain
+- **Better results**: Agents can provide more accurate, detailed answers within their expertise
+- **Less context pollution**: Smaller, focused context windows prevent information overload
+- **Non-overlapping responsibilities**: Clear delegation boundaries reduce confusion
+
+**Tips:**
+- Break large domains into smaller, specialized areas
+- Each agent should have a clear, distinct purpose
+- Knowledge bases should contain 5-20 highly relevant documents, not 100+ loosely related ones
+- Use agent descriptions to clearly define boundaries and expertise areas
 
 ## Development Workflow
 
