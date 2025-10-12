@@ -266,11 +266,20 @@ aircana agents refresh-all
 
 Create or update a marketplace repository with your plugin:
 
+**Note:** The marketplace.json file lives in a **separate marketplace repository**, not within your plugin directory.
+
 1. **Create a marketplace.json file** (in a separate marketplace repo):
 ```json
 {
-  "name": "My Company Plugin Marketplace",
-  "description": "Internal Claude Code plugins for my-company",
+  "name": "my-company-marketplace",
+  "owner": {
+    "name": "My Company Engineering",
+    "email": "[email protected]"
+  },
+  "metadata": {
+    "description": "Internal Claude Code plugins for my-company",
+    "version": "1.0.0"
+  },
   "plugins": [
     {
       "name": "my-team",
@@ -280,7 +289,9 @@ Create or update a marketplace repository with your plugin:
         "repo": "my-company/my-team-plugin"
       },
       "version": "1.0.0",
-      "author": "My Company Engineering",
+      "author": {
+        "name": "My Company Engineering"
+      },
       "category": "development"
     }
   ]
@@ -289,9 +300,9 @@ Create or update a marketplace repository with your plugin:
 
 2. **Push marketplace configuration:**
 ```bash
-# In your marketplace repository
-git add .claude-plugin/marketplace.json
-git commit -m "Add my-team plugin"
+# In your marketplace repository (not plugin directory)
+git add marketplace.json
+git commit -m "Add my-team plugin to marketplace"
 git push
 ```
 
