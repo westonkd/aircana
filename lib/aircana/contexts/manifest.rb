@@ -73,14 +73,7 @@ module Aircana
         end
 
         def resolve_agent_path(agent)
-          base_path = File.join(Aircana.configuration.agent_knowledge_dir, agent)
-
-          # If this is a symlink (multi-root scenario), resolve to original
-          if File.symlink?(base_path)
-            File.readlink(base_path)
-          else
-            base_path
-          end
+          File.join(Aircana.configuration.agent_knowledge_dir, agent)
         end
 
         def build_manifest_data(agent, sources)

@@ -26,8 +26,7 @@ module Aircana
           "File Management" => %w[files],
           "Agent Management" => %w[agents],
           "Hook Management" => %w[hooks],
-          "Project Management" => %w[project],
-          "System" => %w[generate install doctor dump-context]
+          "System" => %w[generate init doctor dump-context]
         }
       end
 
@@ -53,7 +52,7 @@ module Aircana
       end
 
       def subcommand?(cmd_name)
-        %w[files agents hooks project].include?(cmd_name)
+        %w[files agents hooks].include?(cmd_name)
       end
 
       def print_subcommand_group(subcommand_name, cmd)

@@ -8,6 +8,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
     it "returns list of available default hooks" do
       expected_hooks = %w[
         session_start
+        refresh_agents
         notification_sqs
       ]
       expect(described_class.available_default_hooks).to eq(expected_hooks)
@@ -21,6 +22,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
         post_tool_use
         user_prompt_submit
         session_start
+        refresh_agents
         notification_sqs
         rubocop_pre_commit
         rspec_test
@@ -32,15 +34,15 @@ RSpec.describe Aircana::Generators::HooksGenerator do
 
   describe ".create_default_hook" do
     let(:hook_name) { "pre_tool_use" }
-    let(:hooks_dir) { "/tmp/test_hooks" }
+    let(:scripts_dir) { "/tmp/test_hooks" }
     let(:expected_template_path) do
       base_path = File.dirname(described_class.instance_method(:initialize).source_location[0])
       File.join(base_path, "..", "templates", "hooks", "#{hook_name}.erb")
     end
-    let(:expected_output_path) { File.join(hooks_dir, "#{hook_name}.sh") }
+    let(:expected_output_path) { File.join(scripts_dir, "#{hook_name}.sh") }
 
     before do
-      allow(Aircana.configuration).to receive(:hooks_dir).and_return(hooks_dir)
+      allow(Aircana.configuration).to receive(:scripts_dir).and_return(scripts_dir)
       allow(File).to receive(:read).and_return("#!/bin/bash\necho 'test hook'")
       allow(FileUtils).to receive(:mkdir_p)
       allow(File).to receive(:write)
@@ -68,7 +70,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
 
   describe ".create_all_default_hooks" do
     it "creates all default hooks" do
-      expect(described_class).to receive(:create_default_hook).exactly(2).times
+      expect(described_class).to receive(:create_default_hook).exactly(3).times
       described_class.create_all_default_hooks
     end
   end
@@ -76,10 +78,10 @@ RSpec.describe Aircana::Generators::HooksGenerator do
   describe "#initialize" do
     context "with hook_name provided" do
       let(:hook_name) { "pre_tool_use" }
-      let(:hooks_dir) { "/tmp/test_hooks" }
+      let(:scripts_dir) { "/tmp/test_hooks" }
 
       before do
-        allow(Aircana.configuration).to receive(:hooks_dir).and_return(hooks_dir)
+        allow(Aircana.configuration).to receive(:scripts_dir).and_return(scripts_dir)
       end
 
       it "sets up template and output paths correctly" do
@@ -87,7 +89,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
 
         base_path = File.dirname(described_class.instance_method(:initialize).source_location[0])
         expected_template_path = File.join(base_path, "..", "templates", "hooks", "#{hook_name}.erb")
-        expected_output_path = File.join(hooks_dir, "#{hook_name}.sh")
+        expected_output_path = File.join(scripts_dir, "#{hook_name}.sh")
 
         expect(generator.file_in).to eq(expected_template_path)
         expect(generator.file_out).to eq(expected_output_path)
@@ -109,11 +111,11 @@ RSpec.describe Aircana::Generators::HooksGenerator do
 
   describe "#generate" do
     let(:hook_name) { "pre_tool_use" }
-    let(:hooks_dir) { "/tmp/test_hooks" }
-    let(:output_path) { File.join(hooks_dir, "#{hook_name}.sh") }
+    let(:scripts_dir) { "/tmp/test_hooks" }
+    let(:output_path) { File.join(scripts_dir, "#{hook_name}.sh") }
 
     before do
-      allow(Aircana.configuration).to receive(:hooks_dir).and_return(hooks_dir)
+      allow(Aircana.configuration).to receive(:scripts_dir).and_return(scripts_dir)
       allow(File).to receive(:read).and_return("#!/bin/bash\necho '<%= hook_name %>'")
       allow(FileUtils).to receive(:mkdir_p)
       allow(File).to receive(:write)
@@ -137,7 +139,7 @@ RSpec.describe Aircana::Generators::HooksGenerator do
     let(:current_dir) { "/current/project" }
 
     before do
-      allow(Aircana.configuration).to receive(:hooks_dir).and_return("/tmp/hooks")
+      allow(Aircana.configuration).to receive(:scripts_dir).and_return("/tmp/hooks")
       allow(Dir).to receive(:pwd).and_return(current_dir)
     end
 

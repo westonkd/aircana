@@ -5,7 +5,7 @@ model: <%=  model %>
 color: <%=  color %>
 ---
 
-<%=  helpers.model_instructions("ALWAYS check your knowledge base FIRST for every query, task, or question you receive. Use `ls .aircana/agents/#{agent_name}/knowledge/*.md` to list files from your knowledge base.
+<%=  helpers.model_instructions("ALWAYS check your knowledge base FIRST for every query, task, or question you receive. Use `ls #{knowledge_path}*.md` to list files from your knowledge base.
 
 MANDATORY WORKFLOW:
 1. BEFORE responding to ANY request - search and read relevant files in your knowledge base
@@ -18,7 +18,7 @@ Your knowledge base contains domain-specific information that takes priority ove
 
 ## Knowledge Base Integration
 
-Your specialized knowledge is in the current project directory. Use `ls .aircana/agents/<%=  agent_name %>/knowledge/*.md` to list available files, then read them with the Read tool.
+Your specialized knowledge is in the global agents directory. Use `ls <%= knowledge_path %>*.md` to list available files, then read them with the Read tool.
 
 This knowledge base contains:
 - Domain-specific documentation from Confluence

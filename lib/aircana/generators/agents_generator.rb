@@ -45,7 +45,7 @@ module Aircana
       def locals
         super.merge({
                       agent_name:, short_description:, description:,
-                      model:, color:, knowledge_path:
+                      model:, color:, knowledge_path:, plugin_prefix:
                     })
       end
 
@@ -60,11 +60,16 @@ module Aircana
       end
 
       def default_output_path
-        File.join(Aircana.configuration.claude_code_project_config_path, "agents", "#{agent_name}.md")
+        File.join(Aircana.configuration.agents_dir, "#{agent_name}.md")
+      end
+
+      def plugin_prefix
+        Aircana.configuration.plugin_name
       end
 
       def knowledge_path
-        ".aircana/agents/#{agent_name}/knowledge/"
+        # Use global agents directory with plugin prefix
+        "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
       end
     end
   end

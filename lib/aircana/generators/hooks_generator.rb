@@ -11,6 +11,7 @@ module Aircana
         post_tool_use
         user_prompt_submit
         session_start
+        refresh_agents
         notification_sqs
         rubocop_pre_commit
         rspec_test
@@ -20,6 +21,7 @@ module Aircana
       # Default hooks that are auto-installed
       DEFAULT_HOOK_TYPES = %w[
         session_start
+        refresh_agents
         notification_sqs
       ].freeze
 
@@ -36,7 +38,7 @@ module Aircana
           return unless all_available_hooks.include?(hook_name)
 
           template_path = File.join(File.dirname(__FILE__), "..", "templates", "hooks", "#{hook_name}.erb")
-          output_path = File.join(Aircana.configuration.hooks_dir, "#{hook_name}.sh")
+          output_path = File.join(Aircana.configuration.scripts_dir, "#{hook_name}.sh")
 
           generator = new(file_in: template_path, file_out: output_path)
           generator.generate
@@ -52,7 +54,7 @@ module Aircana
 
         if hook_name
           template_path = File.join(File.dirname(__FILE__), "..", "templates", "hooks", "#{hook_name}.erb")
-          output_path = File.join(Aircana.configuration.hooks_dir, "#{hook_name}.sh")
+          output_path = File.join(Aircana.configuration.scripts_dir, "#{hook_name}.sh")
           super(file_in: template_path, file_out: output_path)
         else
           super(**)

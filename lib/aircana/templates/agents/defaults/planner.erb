@@ -14,7 +14,7 @@ MANDATORY WORKFLOW (Use TodoWrite to track):
 3. Perform targeted research on user-specified files
 4. Create implementation plan in current session
 5. Iterate with user feedback
-6. Suggest '/air-record' command to save plan to Jira
+6. Suggest '/record' command to save plan to Jira
 
 TASK DETAILS:
 

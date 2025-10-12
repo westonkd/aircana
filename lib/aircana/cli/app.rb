@@ -5,13 +5,13 @@ require "thor"
 require_relative "commands/doctor"
 require_relative "commands/dump_context"
 require_relative "commands/generate"
-require_relative "commands/install"
+require_relative "commands/init"
 
 require_relative "subcommand"
 require_relative "help_formatter"
 require_relative "commands/agents"
 require_relative "commands/hooks"
-require_relative "commands/project"
+require_relative "commands/plugin"
 
 module Aircana
   module CLI
@@ -40,9 +40,11 @@ module Aircana
         Generate.run
       end
 
-      desc "install", "Copies the generated files from `generate` to the proper directories in Claude Code config."
-      def install
-        Install.run
+      desc "init [DIRECTORY]",
+           "Initializes a Claude Code plugin in the specified directory (defaults to current directory)"
+      option :plugin_name, type: :string, desc: "Override the default plugin name"
+      def init(directory = nil)
+        Init.run(directory: directory, plugin_name: options[:plugin_name])
       end
 
       class AgentsSubcommand < Subcommand
@@ -99,41 +101,36 @@ module Aircana
         end
       end
 
-      class ProjectSubcommand < Subcommand
-        desc "init", "Initialize project.json for multi-root support"
-        def init
-          Project.init
-        end
-
-        desc "add FOLDER_PATH", "Add a folder to multi-root configuration"
-        def add(folder_path)
-          Project.add(folder_path)
-        end
-
-        desc "remove FOLDER_PATH", "Remove a folder from multi-root configuration"
-        def remove(folder_path)
-          Project.remove(folder_path)
-        end
-
-        desc "list", "List all configured folders and their agents"
-        def list
-          Project.list
-        end
-
-        desc "sync", "Manually sync symlinks for multi-root agents"
-        def sync
-          Project.sync
-        end
-      end
-
       desc "agents", "Create and manage agents and their knowledgebases"
       subcommand "agents", AgentsSubcommand
 
       desc "hooks", "Manage Claude Code hooks"
       subcommand "hooks", HooksSubcommand
 
-      desc "project", "Manage multi-root project configuration"
-      subcommand "project", ProjectSubcommand
+      class PluginSubcommand < Subcommand
+        desc "info", "Display plugin information"
+        def info
+          Plugin.info
+        end
+
+        desc "update", "Update plugin metadata"
+        def update
+          Plugin.update
+        end
+
+        desc "version [ACTION] [TYPE]", "Manage plugin version (show, bump [major|minor|patch], or set)"
+        def version(action = nil, bump_type = nil)
+          Plugin.version(action, bump_type)
+        end
+
+        desc "validate", "Validate plugin structure and manifests"
+        def validate
+          Plugin.validate
+        end
+      end
+
+      desc "plugin", "Manage plugin metadata and configuration"
+      subcommand "plugin", PluginSubcommand
     end
   end
 end

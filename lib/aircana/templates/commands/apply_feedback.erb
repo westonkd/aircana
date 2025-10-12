@@ -1,5 +1,5 @@
 <%= helpers.model_instructions(
-    "Use the Task tool with subagent_type 'apply-feedback' to apply code review feedback from the previous /air-review command.
+    "Use the Task tool with subagent_type 'apply-feedback' to apply code review feedback from the previous /review command.
 
 Pass the review feedback from the conversation context to the apply-feedback agent.
 
@@ -13,5 +13,5 @@ The apply-feedback agent will:
 7. Amend the HEAD commit with improvements using 'git commit --amend --no-edit'
 8. Summarize changes made
 
-IMPORTANT: This command reads the review output from the conversation context, so it must be run in the same conversation as /air-review."
+IMPORTANT: This command reads the review output from the conversation context, so it must be run in the same conversation as /review."
 ) %>

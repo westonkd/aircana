@@ -185,13 +185,45 @@ module Aircana
           { pages_count: total_pages, sources: all_sources }
         end
 
-        def show_gitignore_recommendation
-          Aircana.human_logger.info ""
-          Aircana.human_logger.info "💡 Recommendation: Add knowledge directories to .gitignore:"
-          Aircana.human_logger.info "   echo \".aircana/agents/*/knowledge/\" >> .gitignore"
-          Aircana.human_logger.info ""
-          Aircana.human_logger.info "   This keeps knowledge sources in version control while excluding"
-          Aircana.human_logger.info "   the actual knowledge content from your repository."
+        def ensure_gitignore_entry
+          gitignore_path = gitignore_file_path
+          pattern = gitignore_pattern
+
+          return if gitignore_has_pattern?(gitignore_path, pattern)
+
+          append_to_gitignore(gitignore_path, pattern)
+          Aircana.human_logger.success "Added knowledge directories to .gitignore"
+        rescue StandardError => e
+          Aircana.human_logger.warn "Could not update .gitignore: #{e.message}"
+          Aircana.human_logger.info "Manually add: #{pattern}"
+        end
+
+        def gitignore_file_path
+          File.join(Aircana.configuration.project_dir, ".gitignore")
+        end
+
+        def gitignore_pattern
+          ".claude/agents/*/knowledge/"
+        end
+
+        def gitignore_has_pattern?(gitignore_path, pattern)
+          return false unless File.exist?(gitignore_path)
+
+          content = File.read(gitignore_path)
+          if content.lines.any? { |line| line.strip == pattern }
+            Aircana.human_logger.info "Knowledge directories already in .gitignore"
+            true
+          else
+            false
+          end
+        end
+
+        def append_to_gitignore(gitignore_path, pattern)
+          existing_content = File.exist?(gitignore_path) ? File.read(gitignore_path) : ""
+          content_to_append = existing_content.empty? || existing_content.end_with?("\n") ? "" : "\n"
+          content_to_append += "#{pattern}\n"
+
+          File.open(gitignore_path, "a") { |f| f.write(content_to_append) }
         end
 
         def log_no_pages_found(normalized_agent)
@@ -237,7 +269,7 @@ module Aircana
           if prompt.yes?("Would you like to fetch knowledge for this agent from Confluence now?")
             Aircana.human_logger.info "Fetching knowledge from Confluence..."
             result = perform_refresh(normalized_agent_name)
-            show_gitignore_recommendation if result[:pages_count]&.positive?
+            ensure_gitignore_entry if result[:pages_count]&.positive?
           else
             Aircana.human_logger.info(
               "Skipping knowledge fetch. You can run 'aircana agents refresh #{normalized_agent_name}' later."
@@ -273,7 +305,7 @@ module Aircana
 
             if result[:pages_count].positive?
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
-              show_gitignore_recommendation
+              ensure_gitignore_entry
             else
               Aircana.human_logger.warn "No URLs were successfully fetched"
             end

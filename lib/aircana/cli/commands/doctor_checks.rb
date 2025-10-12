@@ -47,7 +47,7 @@ module Aircana
             log_success(".claude", "Project Claude config directory exists")
           else
             log_warning(".claude", "Project Claude config directory not found")
-            log_remedy("Will be created when running 'aircana install'")
+            log_remedy("Will be created when running 'aircana init'")
           end
         end
       end
@@ -57,12 +57,11 @@ module Aircana
           Aircana.human_logger.info "\nAircana Configuration:"
 
           check_directory("~/.aircana", "Global Aircana directory")
-          check_directory(".aircana", "Project Aircana directory")
           check_agents_status
         end
 
         def check_agents_status
-          agents_dir = File.join(Dir.pwd, ".aircana", "agents")
+          agents_dir = File.join(Dir.pwd, ".claude", "agents")
           if Dir.exist?(agents_dir) && !Dir.empty?(agents_dir)
             agent_count = Dir.glob(File.join(agents_dir, "*.md")).size
             log_success("agents", "#{agent_count} agent(s) configured")

@@ -3,7 +3,7 @@
 require "json"
 require "tty-prompt"
 require_relative "../../generators/hooks_generator"
-require_relative "install"
+require_relative "init"
 
 module Aircana
   module CLI
@@ -40,7 +40,7 @@ module Aircana
           Aircana::Generators::HooksGenerator.create_default_hook(hook_name)
 
           # Install hooks to Claude settings
-          Install.run
+          Init.run
 
           Aircana.human_logger.success "Hook '#{hook_name}' has been enabled."
         end
@@ -56,7 +56,7 @@ module Aircana
           File.delete(hook_file)
 
           # Reinstall remaining hooks to update Claude settings
-          Install.run
+          Init.run
 
           Aircana.human_logger.success "Hook '#{hook_name}' has been disabled."
         end
@@ -152,7 +152,7 @@ module Aircana
           Aircana.human_logger.info "You may need to customize the hook script for your specific needs."
 
           # Install hooks to Claude settings
-          Install.run
+          Init.run
           Aircana.human_logger.success "Hook installed to Claude settings"
 
           # Optionally offer to open in editor

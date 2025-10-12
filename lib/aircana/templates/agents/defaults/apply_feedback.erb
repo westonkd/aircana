@@ -30,7 +30,7 @@ Work through each task in the todo list sequentially:
 TASK DETAILS:
 
 1. PARSE FEEDBACK: Extract review feedback from conversation:
-   - Look for review output from previous /air-review command
+   - Look for review output from previous /review command
    - Parse feedback organized by severity (Critical / Important / Suggestions)
    - Extract actionable items with file, line, issue, and recommendation
    - If no review feedback found in context, inform user and exit
