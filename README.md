@@ -5,21 +5,23 @@
 
 ## Intro
 
-Aircana is a "batteries-included" CLI for creating and managing Claude Code plugins. It provides:
+Aircana is a CLI for creating **distributable Claude Code plugins** with per-agent knowledge bases. Generate team-shareable plugins where agents have access to curated documentation from Confluence and public websites.
 
-**Plugin Development**: Create distributable Claude Code plugins with proper manifests and structure.
+**Key Features:**
 
-**Knowledge Base Management**: Agent-accessible knowledge bases sourced from Confluence or public websites, with automatic syncing and caching.
+**Plugin Generation**: Create Claude Code plugins with proper manifests, agents, commands, and hooks using ERB templates.
 
-**Specialized Agents**: Generate domain-specific agents with dedicated knowledge bases for improved context management.
+**Per-Agent Knowledge Bases**: Each agent gets dedicated documentation synced from Confluence (label-based) or web URLs, automatically converted to Markdown.
 
-**Complete Development Workflow**: Five-phase workflow (plan, record, execute, review, apply-feedback) for systematic feature development.
+**Manifest-Based Tracking**: Knowledge sources are tracked in version-controlled manifest.json files. Team members independently refresh content using `aircana agents refresh`, keeping actual knowledge out of git (avoids bloat and sensitivity concerns).
+
+**Team Distribution**: Share plugins via Git repositories or Claude Code plugin marketplaces. Team members can refresh knowledge bases from tracked sources without manual syncing.
+
+**Complete Development Workflow**: Optional five-phase workflow (plan, record, execute, review, apply-feedback) with specialized agents for systematic feature development.
 
 **Hook Management**: Event-driven automation through Claude Code hooks with support for multiple hook types.
 
-**Plugin Distribution**: Create plugins that can be shared via Claude Code plugin marketplaces.
-
-While Aircana includes features beneficial in many agentic contexts (like knowledge base syncing), its primary tools are built on "human-in-the-loop" principles.
+Aircana's tools are built on "human-in-the-loop" principles, providing structure and knowledge management for AI-assisted development workflows.
 
 ## How can I try it?
 
@@ -105,107 +107,213 @@ aircana plugin validate
 
 - Explore other tools by running `aircana --help`
 
-## Development Workflow
+## Getting Started
 
-Aircana provides a complete development lifecycle through five integrated slash commands:
+This tutorial walks through creating a complete Claude Code plugin with agents backed by Confluence knowledge bases, then publishing it to a marketplace for team distribution.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Plan: /plan
-    Plan --> Record: /record
-    Record --> Execute: /execute
-    Execute --> Review: /review
-    Review --> ApplyFeedback: /apply-feedback
-    ApplyFeedback --> Review: More issues found
-    ApplyFeedback --> [*]: Satisfied
+### Prerequisites
+
+1. **Install Aircana:**
+```bash
+gem install aircana
+aircana doctor  # Verify dependencies
 ```
 
-### Quick Overview
+2. **Configure Confluence (optional but recommended):**
 
-1. **`/plan`** - Create strategic implementation plan
-2. **`/record`** - Save plan to Jira ticket
-3. **`/execute`** - Implement plan and create commit
-4. **`/review`** - Adversarial code review with expert feedback
-5. **`/apply-feedback`** - Apply review changes and amend commit
+Add to your shell profile (`.bashrc`, `.zshrc`, etc.):
+```bash
+export CONFLUENCE_BASE_URL="https://your-company.atlassian.net"
+export CONFLUENCE_USERNAME="your.email@company.com"
+export CONFLUENCE_API_TOKEN="your-generated-token"
+```
 
-### Command Details
+To generate a Confluence API token:
+1. Go to your Confluence instance
+2. Click profile picture → **Account Settings** → **Security**
+3. Select **Create and manage API tokens** → **Create API token**
+4. Copy the token and add to your environment variables
 
-#### 1. `/plan` - Strategic Planning
+Reload your shell: `source ~/.zshrc` (or your shell config file)
 
-Creates a high-level implementation plan by:
-- Asking you to specify relevant files and directories
-- Consulting specialized sub-agents for domain expertise
-- Sharing research context to avoid duplicate work
-- Generating a focused strategic plan (what to do, not how)
-- Creating actionable todo checklist
-
-The planner focuses on architecture decisions and approach, avoiding exhaustive code implementations.
-
-#### 2. `/record` - Save to Jira
-
-Records your approved plan to a Jira ticket by:
-- Taking the ticket key/ID as input
-- Delegating to the `jira` sub-agent for MCP operations
-- Storing the plan in the ticket description or comments
-
-This creates a traceable link between planning and execution.
-
-#### 3. `/execute` - Implementation
-
-Executes the strategic plan by:
-- Reading the plan from the Jira ticket
-- Creating detailed implementation todo list
-- Presenting plan for your approval
-- Implementing changes sequentially
-- Writing unit tests (delegates to test-writing sub-agent if available)
-- Running tests to verify implementation
-- Creating git commit (delegates to git-ops sub-agent if available)
-
-After commit creation, suggests running `/review`.
-
-#### 4. `/review` - Adversarial Review
-
-Conducts comprehensive code review of HEAD commit by:
-- Analyzing changed files to identify technical domains
-- Using sub-agent-coordinator to select relevant expert agents
-- Presenting changes to experts in parallel
-- Synthesizing feedback organized by severity (Critical/Important/Suggestions)
-- Storing review output for next step
-
-Explicitly states "Reviewing: <commit message>" and ends with "Run /apply-feedback".
-
-#### 5. `/apply-feedback` - Apply Changes
-
-Applies code review feedback by:
-- Reading review output from conversation context
-- Creating prioritized change plan (critical issues first)
-- Presenting plan for your approval
-- Applying approved changes
-- Re-running unit tests
-- Fixing any test failures
-- **Amending HEAD commit** with improvements using `git commit --amend --no-edit`
-
-This preserves the original commit message while incorporating review improvements in a single commit.
-
-### Usage Example
+### Step 1: Create Your Plugin
 
 ```bash
-# 1. Start planning
-/plan
-> Specify relevant files: src/api/, spec/api/
+# Create a new directory for your plugin
+mkdir my-team-plugin
+cd my-team-plugin
 
-# 2. Save plan to ticket
-/record PROJ-123
+# Initialize the plugin
+aircana init --plugin-name my-team
 
-# 3. Execute implementation
-/execute PROJ-123
-
-# 4. Review the commit
-/review
-
-# 5. Apply feedback
-/apply-feedback
+# Verify the structure was created
+ls -la
 ```
+
+This creates:
+- `.claude-plugin/plugin.json` - Plugin manifest with metadata
+- `agents/` - Directory for specialized agents
+- `commands/` - Custom slash commands
+- `hooks/hooks.json` - Hook configurations
+- `scripts/` - Hook scripts and utilities
+
+### Step 2: Create an Agent Backed by Confluence
+
+```bash
+aircana agents create
+```
+
+You'll be prompted for:
+- **Agent name**: e.g., "backend-api" (use kebab-case)
+- **Description**: e.g., "Expert in backend API development and best practices"
+- **Model**: Choose sonnet (smarter), haiku (faster), or inherit (uses default)
+- **Color**: Pick an interface color for visual identification
+
+The agent file is created at `agents/backend-api.md` with:
+- Agent configuration (name, description, model)
+- Knowledge base path reference
+- Custom instructions
+
+### Step 3: Tag Confluence Pages
+
+In Confluence, label pages you want the agent to access:
+
+1. Open a relevant Confluence page (e.g., "API Design Guidelines")
+2. Click **...** → **Edit labels**
+3. Add label: `backend-api` (must match your agent name)
+4. Click **Save**
+
+Repeat for all documentation pages relevant to this agent. Aircana will discover pages by label during the refresh process.
+
+**Tip:** Use a consistent labeling strategy. For example, label all backend documentation with `backend-api`, all frontend docs with `frontend-expert`, etc.
+
+### Step 4: Refresh Agent Knowledge
+
+```bash
+aircana agents refresh backend-api
+```
+
+This will:
+1. Search Confluence for pages labeled `backend-api`
+2. Download page content via Confluence REST API
+3. Convert HTML to Markdown using ReverseMarkdown
+4. Store content in the knowledge base directory
+5. Update `agents/backend-api/manifest.json` with source metadata
+
+**Output:** Knowledge files are created in `~/.claude/agents/my-team-backend-api/knowledge/`
+
+**Note:** The actual knowledge content is stored globally (not in your plugin directory) to avoid version control bloat and potential sensitive information leaks. Only the manifest (source tracking) is version controlled.
+
+### Step 5: Add Web URLs (Optional)
+
+You can also add public web documentation to your agent's knowledge base:
+
+```bash
+aircana agents add-url backend-api https://docs.example.com/api-guide
+aircana agents add-url backend-api https://restfulapi.net/rest-architectural-constraints/
+```
+
+This downloads the web page, extracts main content (removes nav/ads/scripts), converts to Markdown, and adds it to the knowledge base.
+
+Refresh to sync web URLs:
+```bash
+aircana agents refresh backend-api
+```
+
+### Step 6: Use Your Agent
+
+Your agent is now ready! Claude Code will automatically consult your agent when appropriate based on the agent's description. You can also explicitly request the agent:
+
+```
+Ask backend-api to review this API endpoint design
+Ask backend-api how to implement authentication
+```
+
+The agent has access to all Confluence pages and web URLs you've synced to its knowledge base.
+
+### Step 7: Share Your Plugin with Your Team
+
+**Option A: Git Repository Distribution**
+
+1. **Initialize Git repository:**
+```bash
+git init
+git add .
+git commit -m "Initial plugin setup with backend-api agent"
+```
+
+2. **Push to GitHub:**
+```bash
+gh repo create my-company/my-team-plugin --private --source=. --push
+```
+
+3. **Team members install:**
+```bash
+# Team members clone the plugin
+git clone https://github.com/my-company/my-team-plugin.git ~/.claude-plugins/my-team
+
+# Configure Confluence credentials (each team member)
+export CONFLUENCE_BASE_URL="..."
+export CONFLUENCE_USERNAME="..."
+export CONFLUENCE_API_TOKEN="..."
+
+# Refresh knowledge bases (syncs from tracked sources)
+cd ~/.claude-plugins/my-team
+aircana agents refresh-all
+```
+
+**Option B: Add to a Plugin Marketplace**
+
+Create or update a marketplace repository with your plugin:
+
+1. **Create a marketplace.json file** (in a separate marketplace repo):
+```json
+{
+  "name": "My Company Plugin Marketplace",
+  "description": "Internal Claude Code plugins for my-company",
+  "plugins": [
+    {
+      "name": "my-team",
+      "description": "Backend API development agents and workflows",
+      "source": {
+        "source": "github",
+        "repo": "my-company/my-team-plugin"
+      },
+      "version": "1.0.0",
+      "author": "My Company Engineering",
+      "category": "development"
+    }
+  ]
+}
+```
+
+2. **Push marketplace configuration:**
+```bash
+# In your marketplace repository
+git add .claude-plugin/marketplace.json
+git commit -m "Add my-team plugin"
+git push
+```
+
+3. **Team members install from marketplace:**
+
+Team members add the marketplace URL to their Claude Code configuration, then install plugins directly from the marketplace UI.
+
+See [Claude Code Plugin Marketplaces](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces) for complete marketplace setup instructions.
+
+### Next: Keep Knowledge Up-to-Date
+
+As your Confluence documentation evolves:
+
+```bash
+# Refresh a specific agent's knowledge
+aircana agents refresh backend-api
+
+# Or refresh all agents at once
+aircana agents refresh-all
+```
+
+Knowledge sources are tracked in `agents/<agent-name>/manifest.json`, so team members can independently refresh without manual coordination.
 
 ## Key Concepts
 
@@ -334,6 +442,108 @@ At Instructure this means you can easily configure Claude Code to send you slack
 
 (Instructions coming soon, send a message if you want help with this)
 
+## Development Workflow
+
+Aircana provides a complete development lifecycle through five integrated slash commands:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Plan: /plan
+    Plan --> Record: /record
+    Record --> Execute: /execute
+    Execute --> Review: /review
+    Review --> ApplyFeedback: /apply-feedback
+    ApplyFeedback --> Review: More issues found
+    ApplyFeedback --> [*]: Satisfied
+```
+
+### Quick Overview
+
+1. **`/plan`** - Create strategic implementation plan
+2. **`/record`** - Save plan to Jira ticket
+3. **`/execute`** - Implement plan and create commit
+4. **`/review`** - Adversarial code review with expert feedback
+5. **`/apply-feedback`** - Apply review changes and amend commit
+
+### Command Details
+
+#### 1. `/plan` - Strategic Planning
+
+Creates a high-level implementation plan by:
+- Asking you to specify relevant files and directories
+- Consulting specialized sub-agents for domain expertise
+- Sharing research context to avoid duplicate work
+- Generating a focused strategic plan (what to do, not how)
+- Creating actionable todo checklist
+
+The planner focuses on architecture decisions and approach, avoiding exhaustive code implementations.
+
+#### 2. `/record` - Save to Jira
+
+Records your approved plan to a Jira ticket by:
+- Taking the ticket key/ID as input
+- Delegating to the `jira` sub-agent for MCP operations
+- Storing the plan in the ticket description or comments
+
+This creates a traceable link between planning and execution.
+
+#### 3. `/execute` - Implementation
+
+Executes the strategic plan by:
+- Reading the plan from the Jira ticket
+- Creating detailed implementation todo list
+- Presenting plan for your approval
+- Implementing changes sequentially
+- Writing unit tests (delegates to test-writing sub-agent if available)
+- Running tests to verify implementation
+- Creating git commit (delegates to git-ops sub-agent if available)
+
+After commit creation, suggests running `/review`.
+
+#### 4. `/review` - Adversarial Review
+
+Conducts comprehensive code review of HEAD commit by:
+- Analyzing changed files to identify technical domains
+- Using sub-agent-coordinator to select relevant expert agents
+- Presenting changes to experts in parallel
+- Synthesizing feedback organized by severity (Critical/Important/Suggestions)
+- Storing review output for next step
+
+Explicitly states "Reviewing: <commit message>" and ends with "Run /apply-feedback".
+
+#### 5. `/apply-feedback` - Apply Changes
+
+Applies code review feedback by:
+- Reading review output from conversation context
+- Creating prioritized change plan (critical issues first)
+- Presenting plan for your approval
+- Applying approved changes
+- Re-running unit tests
+- Fixing any test failures
+- **Amending HEAD commit** with improvements using `git commit --amend --no-edit`
+
+This preserves the original commit message while incorporating review improvements in a single commit.
+
+### Usage Example
+
+```bash
+# 1. Start planning
+/plan
+> Specify relevant files: src/api/, spec/api/
+
+# 2. Save plan to ticket
+/record PROJ-123
+
+# 3. Execute implementation
+/execute PROJ-123
+
+# 4. Review the commit
+/review
+
+# 5. Apply feedback
+/apply-feedback
+```
+
 ## Configuration (Optional)
 
 ### Confluence Setup (Optional)
@@ -407,73 +617,6 @@ aircana doctor
 ```
 
 This will check if Confluence and other integrations are properly configured.
-
-## Agent Workflow Tutorial
-
-Here's a complete example of creating an agent and syncing knowledge from Confluence:
-
-### 1. Create an Agent
-
-```bash
-aircana agents create
-```
-
-You'll be prompted for:
-- **Agent name**: e.g., "backend-api"
-- **Description**: e.g., "Helps with backend API development"
-- **Model**: Choose from sonnet, haiku, or inherit
-- **Color**: Choose interface color
-
-### 2. Tag Confluence Pages
-
-In Confluence, add the label `backend-api` (matching your agent name) to relevant pages:
-
-1. Open a Confluence page with relevant documentation
-2. Click **...** → **Edit labels**
-3. Add label: `backend-api`
-4. Save
-
-Repeat for all pages you want the agent to know about.
-
-### 3. Add Knowledge Sources
-
-**From Confluence:**
-```bash
-aircana agents refresh backend-api
-```
-
-This downloads all Confluence pages labeled `backend-api` and makes them available to your agent.
-
-**From Web URLs:**
-```bash
-aircana agents add-url backend-api https://docs.example.com/api-guide
-aircana agents add-url backend-api https://blog.example.com/best-practices
-```
-
-This fetches web content and converts it to Markdown for your agent's knowledge base.
-
-### 4. Use the Agent
-
-Once created with a good description, Claude Code will automatically use your agent when appropriate during conversations. You can also explicitly request a specific agent:
-
-```
-Ask backend-api for a code review of this function
-Ask backend-api to help debug this API endpoint
-Ask rspec-test-writer to write and run tests for @file
-```
-
-The agent will have access to all the Confluence knowledge you synced.
-
-### 5. Update Knowledge
-
-Whenever you update Confluence pages, add new ones with the agent label, or want to refresh web content:
-
-```bash
-aircana agents refresh backend-api
-```
-
-This refreshes both Confluence pages and web URLs associated with the agent.
-
 
 ## All Commands
 
