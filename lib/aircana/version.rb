@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Aircana
-  VERSION = "3.0.0.rc8"
+  VERSION = "3.0.0"
 end
