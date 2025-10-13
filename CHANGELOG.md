@@ -7,43 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-10-12
+
 ### Added
 - Directory parameter support for `init` command
   - Can now specify target directory: `aircana init /path/to/project`
   - Automatically creates directory if it doesn't exist
   - Defaults to current directory when no path specified
+- Plugin manifest system (`.claude-plugin/plugin.json`) for distributable Claude Code plugins
+- Plugin management commands: `plugin info`, `plugin update`, `plugin version`, `plugin validate`
+- Agent manifest system tracking knowledge sources (Confluence, web URLs)
+- Web URL knowledge source support: `agents add-url` command to add public documentation
+- Automatic daily knowledge refresh via SessionStart hook
+- Development workflow commands: `/plan`, `/record`, `/execute`, `/review`, `/apply-feedback`
+- Multiple specialized default agents: planner, executor, reviewer, apply_feedback, jira, sub-agent-coordinator
+- Hook management: `hooks list`, `hooks enable`, `hooks disable`, `hooks create`, `hooks status`
+- SQS notification integration for Slack/Teams alerts
 
 ### Changed
 - **BREAKING**: Renamed `aircana install` command to `aircana init`
   - More intuitive naming aligned with standard CLI conventions
   - All documentation and help text updated
-- **BREAKING**: Agent knowledge bases and manifests moved from `.aircana/agents/` to `.claude/agents/`
-  - Agent files and their knowledge are now co-located in the `.claude/agents/` directory
-  - This consolidates all Claude Code artifacts in one location
-- **BREAKING**: Hook scripts moved from `.aircana/hooks/` to `.claude/hooks/`
-  - All Claude Code project artifacts now consolidated in `.claude/` directory
+- **BREAKING**: Complete architectural shift to Claude Code plugin system
+  - Projects now generate distributable plugins instead of local configurations
+  - Agent knowledge bases stored globally at `~/.claude/agents/<plugin-name>-<agent-name>/knowledge/`
+  - Plugin-local manifests track sources for team collaboration
+- **BREAKING**: Agent knowledge bases moved from `.aircana/agents/` to global `~/.claude/agents/`
+  - Agent files remain in plugin's `agents/` directory
+  - Actual knowledge content stored globally to avoid version control bloat
+  - Per-agent manifests track sources for reproducibility
+- **BREAKING**: Hook scripts moved from `.aircana/hooks/` to plugin `scripts/` directory
+  - Hooks configured via `hooks/hooks.json` manifest
+  - All Claude Code artifacts consolidated in plugin structure
   - Global Aircana configuration remains in `~/.aircana`
+- Enhanced agent templates with improved knowledge base usage instructions
+- Improved CLI help text and command organization
 
 ### Removed
-- Removed `relevant_files` feature from user_prompt_submit hook template
+- Removed `relevant_files` feature entirely
   - Feature was not widely used and added unnecessary complexity
+  - Removed commands: `air-add-relevant-files`
+  - Removed stale references in templates and CLI help text
+- Removed multi-root project support for simplicity
+
+### Fixed
+- Hook installation and generation issues in plugin initialization
+- Agent knowledge refresh script generation
+- Plugin manifest validation and structure
 
 ### Migration Guide
 To upgrade from a previous version:
 1. Update any scripts or documentation that reference `aircana install` to use `aircana init` instead
-2. Move existing agent knowledge and hooks manually:
+2. Projects should be re-initialized as plugins:
    ```bash
-   # Move agent knowledge
-   mv .aircana/agents/*/* .claude/agents/
-   # Move hooks
-   mv .aircana/hooks/* .claude/hooks/
+   aircana init --plugin-name your-plugin-name
    ```
-3. Or refresh all agent knowledge from sources and regenerate hooks:
+3. Recreate agents and refresh knowledge:
    ```bash
+   aircana agents create
    aircana agents refresh-all
-   aircana init
    ```
-4. Remove the old `.aircana` directory if no longer needed (keeping `~/.aircana` for global config)
+4. Old `.aircana` local directories are no longer used (except `~/.aircana` for global config)
 
 ## [1.5.0] - 2025-09-28
 

@@ -29,7 +29,7 @@ module Aircana
       end
 
       desc "dump-context",
-           "dumps relevant files, knowledge, memories, and decisions for the specified agent"
+           "dumps knowledge, memories, and decisions for the specified agent"
       option :verbose, type: :boolean, default: true
       def dump_context(agent_name)
         DumpContext.run(agent_name: agent_name, verbose: options[:verbose])
