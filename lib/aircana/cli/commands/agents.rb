@@ -162,6 +162,50 @@ module Aircana
           print_refresh_all_summary(results)
         end
 
+        def migrate_to_local # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          agent_names = all_agents
+
+          if agent_names.empty?
+            Aircana.human_logger.info "No agents found to migrate."
+            return
+          end
+
+          # Filter to only remote agents
+          remote_agents = agent_names.select do |agent_name|
+            Aircana::Contexts::Manifest.kb_type_from_manifest(agent_name) == "remote"
+          end
+
+          if remote_agents.empty?
+            Aircana.human_logger.info "No remote agents found. All agents are already using local knowledge bases."
+            return
+          end
+
+          Aircana.human_logger.warn "⚠️  This will migrate #{remote_agents.size} agent(s) to local knowledge bases."
+          Aircana.human_logger.warn "Knowledge will be version-controlled and stored in .claude/agents/<agent>/knowledge/"
+          Aircana.human_logger.info ""
+
+          results = {
+            total: remote_agents.size,
+            successful: 0,
+            failed: 0,
+            migrated_agents: [],
+            failed_agents: []
+          }
+
+          remote_agents.each do |agent_name|
+            result = migrate_single_agent(agent_name)
+            if result[:success]
+              results[:successful] += 1
+              results[:migrated_agents] << agent_name
+            else
+              results[:failed] += 1
+              results[:failed_agents] << { name: agent_name, error: result[:error] }
+            end
+          end
+
+          print_migration_summary(results)
+        end
+
         private
 
         def perform_refresh(normalized_agent, kb_type = "remote")
@@ -473,6 +517,121 @@ module Aircana
             results[:failed_agents].each do |failed_agent|
               Aircana.human_logger.error "  - #{failed_agent[:name]}: #{failed_agent[:error]}"
             end
+          end
+
+          Aircana.human_logger.info ""
+        end
+
+        def migrate_single_agent(agent_name) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          Aircana.human_logger.info "Migrating agent '#{agent_name}'..."
+
+          begin
+            # Step 1: Refresh knowledge from sources to ensure we have latest
+            Aircana.human_logger.info "  Refreshing knowledge from sources..."
+            perform_manifest_aware_refresh(agent_name)
+
+            # Step 2: Copy knowledge files from global to local directory
+            Aircana.human_logger.info "  Copying knowledge files to local directory..."
+            copy_knowledge_files(agent_name)
+
+            # Step 3: Update manifest kb_type to "local"
+            Aircana.human_logger.info "  Updating manifest..."
+            sources = Aircana::Contexts::Manifest.sources_from_manifest(agent_name)
+            Aircana::Contexts::Manifest.update_manifest(agent_name, sources, kb_type: "local")
+
+            # Step 4: Regenerate agent file with new kb_type
+            Aircana.human_logger.info "  Regenerating agent file..."
+            regenerate_agent_file(agent_name)
+
+            Aircana.human_logger.success "✓ Successfully migrated '#{agent_name}'"
+            { success: true }
+          rescue StandardError => e
+            Aircana.human_logger.error "✗ Failed to migrate agent '#{agent_name}': #{e.message}"
+            { success: false, error: e.message }
+          end
+        end
+
+        def copy_knowledge_files(agent_name)
+          config = Aircana.configuration
+          source_dir = config.global_agent_knowledge_path(agent_name)
+          dest_dir = config.local_agent_knowledge_path(agent_name)
+
+          unless Dir.exist?(source_dir)
+            Aircana.human_logger.warn "    No knowledge files found at #{source_dir}"
+            return
+          end
+
+          FileUtils.mkdir_p(dest_dir)
+
+          # Copy all markdown files
+          Dir.glob(File.join(source_dir, "*.md")).each do |file|
+            filename = File.basename(file)
+            dest_file = File.join(dest_dir, filename)
+            FileUtils.cp(file, dest_file)
+            Aircana.human_logger.info "    Copied #{filename}"
+          end
+        end
+
+        def regenerate_agent_file(agent_name)
+          # Read existing agent file to get metadata
+          agent_file_path = File.join(Aircana.configuration.agents_dir, "#{agent_name}.md")
+          unless File.exist?(agent_file_path)
+            Aircana.human_logger.warn "    Agent file not found at #{agent_file_path}, skipping regeneration"
+            return
+          end
+
+          # Parse frontmatter to get agent metadata
+          content = File.read(agent_file_path)
+          frontmatter_match = content.match(/^---\n(.*?)\n---\n(.*)$/m)
+          return unless frontmatter_match
+
+          frontmatter = frontmatter_match[1]
+          description = frontmatter_match[2]
+
+          # Parse YAML-like frontmatter
+          metadata = {}
+          frontmatter.lines.each do |line|
+            key, value = line.strip.split(":", 2)
+            metadata[key.strip] = value&.strip
+          end
+
+          # Generate new agent file with kb_type="local"
+          Generators::AgentsGenerator.new(
+            agent_name: agent_name,
+            description: description,
+            short_description: metadata["description"],
+            model: metadata["model"],
+            color: metadata["color"],
+            kb_type: "local"
+          ).generate
+        end
+
+        def print_migration_summary(results) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          Aircana.human_logger.info ""
+          Aircana.human_logger.info "=== Migration Summary ==="
+          Aircana.human_logger.success "✓ Successfully migrated: #{results[:successful]}/#{results[:total]} agents"
+
+          if results[:successful].positive?
+            Aircana.human_logger.info ""
+            Aircana.human_logger.info "Migrated agents:"
+            results[:migrated_agents].each do |agent_name|
+              Aircana.human_logger.success "  ✓ #{agent_name}"
+            end
+          end
+
+          if results[:failed].positive?
+            Aircana.human_logger.error "✗ Failed: #{results[:failed]} agents"
+            Aircana.human_logger.info ""
+            Aircana.human_logger.info "Failed agents:"
+            results[:failed_agents].each do |failed_agent|
+              Aircana.human_logger.error "  - #{failed_agent[:name]}: #{failed_agent[:error]}"
+            end
+          end
+
+          if results[:successful].positive?
+            Aircana.human_logger.info ""
+            Aircana.human_logger.warn "⚠️  Knowledge is now version-controlled in .claude/agents/<agent>/knowledge/"
+            Aircana.human_logger.info "Review and commit these changes to your repository."
           end
 
           Aircana.human_logger.info ""
