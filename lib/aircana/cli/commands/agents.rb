@@ -15,6 +15,14 @@ module Aircana
       class << self # rubocop:disable Metrics/ClassLength
         def refresh(agent)
           normalized_agent = normalize_string(agent)
+
+          # Check if this is a local knowledge base agent
+          kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(normalized_agent)
+          if kb_type == "local"
+            Aircana.human_logger.info "⊘ Skipping #{normalized_agent} (local knowledge base - no refresh needed)"
+            return
+          end
+
           perform_manifest_aware_refresh(normalized_agent)
         rescue Aircana::Error => e
           handle_refresh_error(normalized_agent, e)
@@ -28,6 +36,12 @@ module Aircana
           model = prompt.select("Select a model for your agent:", SUPPORTED_CLAUDE_MODELS)
           color = prompt.select("Select a color for your agent:", SUPPORTED_CLAUDE_COLORS)
 
+          # Prompt for knowledge base type
+          kb_type = prompt.select("Knowledge base type:", [
+            { name: "Remote - Stored in ~/.claude/agents/, not version controlled, requires refresh", value: "remote" },
+            { name: "Local - Stored in agents/<name>/knowledge/, version controlled, no refresh needed", value: "local" }
+          ])
+
           description = description_from_claude(short_description)
           normalized_agent_name = normalize_string(agent_name)
 
@@ -36,16 +50,17 @@ module Aircana
             description:,
             short_description:,
             model: normalize_string(model),
-            color: normalize_string(color)
+            color: normalize_string(color),
+            kb_type:
           ).generate
 
           Aircana.human_logger.success "Agent created at #{file}"
 
           # Prompt for knowledge fetching
-          prompt_for_knowledge_fetch(prompt, normalized_agent_name)
+          prompt_for_knowledge_fetch(prompt, normalized_agent_name, kb_type)
 
           # Prompt for web URL fetching
-          prompt_for_url_fetch(prompt, normalized_agent_name)
+          prompt_for_url_fetch(prompt, normalized_agent_name, kb_type)
 
           # Prompt for agent file review
           prompt_for_agent_review(prompt, file)
@@ -71,8 +86,11 @@ module Aircana
             exit 1
           end
 
+          # Get kb_type from manifest to know where to store
+          kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(normalized_agent)
+
           web = Aircana::Contexts::Web.new
-          result = web.fetch_url_for(agent: normalized_agent, url: url)
+          result = web.fetch_url_for(agent: normalized_agent, url: url, kb_type: kb_type)
 
           if result
             # Update manifest with the new URL
@@ -115,11 +133,22 @@ module Aircana
             total: agent_names.size,
             successful: 0,
             failed: 0,
+            skipped: 0,
             total_pages: 0,
-            failed_agents: []
+            failed_agents: [],
+            skipped_agents: []
           }
 
           agent_names.each do |agent_name|
+            # Check if this is a local knowledge base agent
+            kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(agent_name)
+            if kb_type == "local"
+              Aircana.human_logger.info "⊘ Skipping #{agent_name} (local knowledge base)"
+              results[:skipped] += 1
+              results[:skipped_agents] << agent_name
+              next
+            end
+
             result = refresh_single_agent(agent_name)
             if result[:success]
               results[:successful] += 1
@@ -135,9 +164,9 @@ module Aircana
 
         private
 
-        def perform_refresh(normalized_agent)
+        def perform_refresh(normalized_agent, kb_type = "remote")
           confluence = Aircana::Contexts::Confluence.new
-          result = confluence.fetch_pages_for(agent: normalized_agent)
+          result = confluence.fetch_pages_for(agent: normalized_agent, kb_type: kb_type)
 
           log_refresh_result(normalized_agent, result[:pages_count])
           result
@@ -185,7 +214,10 @@ module Aircana
           { pages_count: total_pages, sources: all_sources }
         end
 
-        def ensure_gitignore_entry
+        def ensure_gitignore_entry(kb_type = "remote")
+          # Only add to gitignore for remote knowledge bases
+          return if kb_type == "local"
+
           gitignore_path = gitignore_file_path
           pattern = gitignore_pattern
 
@@ -263,24 +295,26 @@ module Aircana
           PROMPT
         end
 
-        def prompt_for_knowledge_fetch(prompt, normalized_agent_name) # rubocop:disable Metrics/MethodLength
+        def prompt_for_knowledge_fetch(prompt, normalized_agent_name, kb_type) # rubocop:disable Metrics/MethodLength
           return unless confluence_configured?
 
           if prompt.yes?("Would you like to fetch knowledge for this agent from Confluence now?")
             Aircana.human_logger.info "Fetching knowledge from Confluence..."
-            result = perform_refresh(normalized_agent_name)
-            ensure_gitignore_entry if result[:pages_count]&.positive?
+            result = perform_refresh(normalized_agent_name, kb_type)
+            ensure_gitignore_entry(kb_type) if result[:pages_count]&.positive?
           else
+            refresh_message = kb_type == "local" ? "fetch knowledge" : "run 'aircana agents refresh #{normalized_agent_name}'"
             Aircana.human_logger.info(
-              "Skipping knowledge fetch. You can run 'aircana agents refresh #{normalized_agent_name}' later."
+              "Skipping knowledge fetch. You can #{refresh_message} later."
             )
           end
         rescue Aircana::Error => e
           Aircana.human_logger.warn "Failed to fetch knowledge: #{e.message}"
-          Aircana.human_logger.info "You can try again later with 'aircana agents refresh #{normalized_agent_name}'"
+          refresh_message = kb_type == "local" ? "fetch knowledge" : "try again later with 'aircana agents refresh #{normalized_agent_name}'"
+          Aircana.human_logger.info "You can #{refresh_message}"
         end
 
-        def prompt_for_url_fetch(prompt, normalized_agent_name) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def prompt_for_url_fetch(prompt, normalized_agent_name, kb_type) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
           return unless prompt.yes?("Would you like to add web URLs for this agent's knowledge base?")
 
           urls = []
@@ -301,11 +335,11 @@ module Aircana
           begin
             Aircana.human_logger.info "Fetching #{urls.size} URL(s)..."
             web = Aircana::Contexts::Web.new
-            result = web.fetch_urls_for(agent: normalized_agent_name, urls: urls)
+            result = web.fetch_urls_for(agent: normalized_agent_name, urls: urls, kb_type: kb_type)
 
             if result[:pages_count].positive?
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
-              ensure_gitignore_entry
+              ensure_gitignore_entry(kb_type)
             else
               Aircana.human_logger.warn "No URLs were successfully fetched"
             end
@@ -427,6 +461,10 @@ module Aircana
           Aircana.human_logger.info "=== Refresh All Summary ==="
           Aircana.human_logger.success "✓ Successful: #{results[:successful]}/#{results[:total]} agents"
           Aircana.human_logger.success "✓ Total pages refreshed: #{results[:total_pages]}"
+
+          if results[:skipped].positive?
+            Aircana.human_logger.info "⊘ Skipped: #{results[:skipped]} agent(s) (local knowledge base)"
+          end
 
           if results[:failed].positive?
             Aircana.human_logger.error "✗ Failed: #{results[:failed]} agents"

@@ -7,31 +7,36 @@ module Aircana
   module Contexts
     class Manifest
       class << self
-        def create_manifest(agent, sources)
+        def create_manifest(agent, sources, kb_type: "remote")
           validate_sources(sources)
+          validate_kb_type(kb_type)
 
           manifest_path = manifest_path_for(agent)
-          manifest_data = build_manifest_data(agent, sources)
+          manifest_data = build_manifest_data(agent, sources, kb_type)
 
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
 
-          Aircana.human_logger.info "Created knowledge manifest for agent '#{agent}'"
+          Aircana.human_logger.info "Created knowledge manifest for agent '#{agent}' (kb_type: #{kb_type})"
           manifest_path
         end
 
-        def update_manifest(agent, sources)
+        def update_manifest(agent, sources, kb_type: nil)
           validate_sources(sources)
 
           manifest_path = manifest_path_for(agent)
 
           if File.exist?(manifest_path)
             existing_data = JSON.parse(File.read(manifest_path))
-            manifest_data = existing_data.merge({ "sources" => sources })
+            # Preserve existing kb_type unless explicitly provided
+            kb_type_to_use = kb_type || existing_data["kb_type"] || "remote"
+            manifest_data = existing_data.merge({ "sources" => sources, "kb_type" => kb_type_to_use })
           else
-            manifest_data = build_manifest_data(agent, sources)
+            kb_type_to_use = kb_type || "remote"
+            manifest_data = build_manifest_data(agent, sources, kb_type_to_use)
           end
 
+          validate_kb_type(manifest_data["kb_type"])
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
           manifest_path
@@ -61,6 +66,13 @@ module Aircana
           manifest["sources"] || []
         end
 
+        def kb_type_from_manifest(agent)
+          manifest = read_manifest(agent)
+          return "remote" unless manifest
+
+          manifest["kb_type"] || "remote"
+        end
+
         def manifest_exists?(agent)
           File.exist?(manifest_path_for(agent))
         end
@@ -76,10 +88,11 @@ module Aircana
           File.join(Aircana.configuration.agent_knowledge_dir, agent)
         end
 
-        def build_manifest_data(agent, sources)
+        def build_manifest_data(agent, sources, kb_type = "remote")
           {
             "version" => "1.0",
             "agent" => agent,
+            "kb_type" => kb_type,
             "sources" => sources
           }
         end
@@ -94,6 +107,10 @@ module Aircana
           unless manifest_data["version"] == "1.0"
             raise ManifestError, "Unsupported manifest version: #{manifest_data["version"]}"
           end
+
+          # kb_type is optional for backward compatibility, defaults to "remote"
+          kb_type = manifest_data["kb_type"] || "remote"
+          validate_kb_type(kb_type)
 
           validate_sources(manifest_data["sources"])
         end
@@ -143,6 +160,13 @@ module Aircana
           raise ManifestError, "Each URL entry must be a hash" unless url_entry.is_a?(Hash)
 
           raise ManifestError, "URL entry missing required field: url" unless url_entry.key?("url")
+        end
+
+        def validate_kb_type(kb_type)
+          valid_types = %w[remote local]
+          return if valid_types.include?(kb_type)
+
+          raise ManifestError, "Invalid kb_type: #{kb_type}. Must be one of: #{valid_types.join(", ")}"
         end
       end
     end
