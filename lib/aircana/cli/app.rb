@@ -72,6 +72,11 @@ module Aircana
         def refresh_all
           Agents.refresh_all
         end
+
+        desc "migrate-to-local", "Migrate remote knowledge bases to local (version-controlled)"
+        def migrate_to_local
+          Agents.migrate_to_local
+        end
       end
 
       class HooksSubcommand < Subcommand

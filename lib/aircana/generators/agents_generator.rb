@@ -5,7 +5,7 @@ require_relative "../generators"
 module Aircana
   module Generators
     class AgentsGenerator < BaseGenerator
-      attr_reader :agent_name, :short_description, :description, :model, :color, :default_agent
+      attr_reader :agent_name, :short_description, :description, :model, :color, :default_agent, :kb_type
 
       AVAILABLE_DEFAULT_AGENTS = %w[planner jira sub-agent-coordinator executor reviewer apply_feedback].freeze
 
@@ -25,7 +25,7 @@ module Aircana
 
       def initialize( # rubocop:disable Metrics/ParameterLists
         agent_name:, short_description: nil, description: nil, model: nil, color: nil,
-        file_in: nil, file_out: nil, default_agent: false
+        file_in: nil, file_out: nil, default_agent: false, kb_type: "remote"
       )
         @agent_name = agent_name
         @short_description = short_description
@@ -33,6 +33,7 @@ module Aircana
         @model = model
         @color = color
         @default_agent = default_agent
+        @kb_type = kb_type
 
         super(
           file_in: file_in || default_template_path,
@@ -68,8 +69,13 @@ module Aircana
       end
 
       def knowledge_path
-        # Use global agents directory with plugin prefix
-        "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
+        if kb_type == "local"
+          # Use local plugin directory for version-controlled knowledge
+          ".claude/agents/#{agent_name}/knowledge/"
+        else
+          # Use global agents directory with plugin prefix
+          "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
+        end
       end
     end
   end

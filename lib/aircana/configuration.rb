@@ -54,6 +54,25 @@ module Aircana
       File.join(@global_agents_dir, "#{plugin_name}-#{agent_name}", "knowledge")
     end
 
+    # Returns the local knowledge directory path for an agent
+    # Format: <plugin-root>/agents/<agent-name>/knowledge/
+    def local_agent_knowledge_path(agent_name)
+      File.join(@agents_dir, agent_name, "knowledge")
+    end
+
+    # Returns the appropriate knowledge directory path based on kb_type
+    # kb_type can be "remote" or "local"
+    def agent_knowledge_path(agent_name, kb_type)
+      case kb_type
+      when "local"
+        local_agent_knowledge_path(agent_name)
+      when "remote"
+        global_agent_knowledge_path(agent_name)
+      else
+        raise ArgumentError, "Invalid kb_type: #{kb_type}. Must be 'remote' or 'local'"
+      end
+    end
+
     private
 
     def setup_directory_paths

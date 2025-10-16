@@ -24,21 +24,22 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_pages_for(agent:)
+      def fetch_pages_for(agent:, kb_type: "remote")
         validate_configuration!
         setup_httparty
 
         pages = search_and_log_pages(agent)
         return { pages_count: 0, sources: [] } if pages.empty?
 
-        sources = process_pages_with_manifest(pages, agent)
-        create_or_update_manifest(agent, sources)
+        sources = process_pages_with_manifest(pages, agent, kb_type)
+        create_or_update_manifest(agent, sources, kb_type)
 
         { pages_count: pages.size, sources: sources }
       end
 
       def refresh_from_manifest(agent:)
         sources = Manifest.sources_from_manifest(agent)
+        kb_type = Manifest.kb_type_from_manifest(agent)
         return { pages_count: 0, sources: [] } if sources.empty?
 
         validate_configuration!
@@ -55,7 +56,7 @@ module Aircana
 
         return { pages_count: 0, sources: [] } if all_pages.empty?
 
-        updated_sources = process_pages_with_manifest(all_pages, agent)
+        updated_sources = process_pages_with_manifest(all_pages, agent, kb_type)
 
         { pages_count: all_pages.size, sources: updated_sources }
       end
@@ -68,17 +69,17 @@ module Aircana
         pages
       end
 
-      def process_pages(pages, agent)
+      def process_pages(pages, agent, kb_type = "remote")
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, agent)
+          store_page_as_markdown(page, agent, kb_type)
         end
       end
 
-      def process_pages_with_manifest(pages, agent)
+      def process_pages_with_manifest(pages, agent, kb_type = "remote")
         page_metadata = []
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, agent)
+          store_page_as_markdown(page, agent, kb_type)
           page_metadata << extract_page_metadata(page)
         end
 
@@ -112,11 +113,11 @@ module Aircana
         ]
       end
 
-      def create_or_update_manifest(agent, sources)
+      def create_or_update_manifest(agent, sources, kb_type = "remote")
         if Manifest.manifest_exists?(agent)
-          Manifest.update_manifest(agent, sources)
+          Manifest.update_manifest(agent, sources, kb_type: kb_type)
         else
-          Manifest.create_manifest(agent, sources)
+          Manifest.create_manifest(agent, sources, kb_type: kb_type)
         end
       end
 

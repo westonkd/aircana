@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Optional local knowledge base storage for agents
+  - New `kb_type` field in agent manifests ("remote" or "local")
+  - Local knowledge bases stored in `.claude/agents/<name>/knowledge/` (version controlled)
+  - Remote knowledge bases stored in `~/.claude/agents/` (not version controlled)
+  - Agent creation wizard prompts for knowledge base type with explanation
+  - Refresh commands automatically skip local knowledge base agents
+  - Existing agents without `kb_type` field default to "remote" for backward compatibility
+- Migration command: `aircana agents migrate-to-local`
+  - Migrates remote knowledge bases to local (version-controlled) storage
+  - Automatically refreshes knowledge from sources before migration
+  - Copies knowledge files from global to local directory
+  - Updates manifests and regenerates agent files with correct paths
+  - Provides detailed migration summary
+
+### Fixed
+- Local knowledge base agent files now correctly reference `.claude/agents/<name>/knowledge/` instead of `agents/<name>/knowledge/`
+
 ## [3.0.0] - 2025-10-12
 
 ### Added

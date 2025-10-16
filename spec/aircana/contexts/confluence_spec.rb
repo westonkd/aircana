@@ -75,12 +75,14 @@ RSpec.describe Aircana::Contexts::Confluence do
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 1",
           content: "# Test Content 1\n\nSome content",
-          agent: "test-agent"
+          agent: "test-agent",
+          kb_type: "remote"
         )
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 2",
           content: "# Test Content 2\n\nMore content",
-          agent: "test-agent"
+          agent: "test-agent",
+          kb_type: "remote"
         )
       end
 
@@ -157,7 +159,8 @@ RSpec.describe Aircana::Contexts::Confluence do
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page", # title comes from the mock page data
           content: "# Test Content",
-          agent: "test-agent"
+          agent: "test-agent",
+          kb_type: "remote"
         )
       end
     end

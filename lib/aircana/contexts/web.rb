@@ -22,11 +22,11 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_url_for(agent:, url:)
+      def fetch_url_for(agent:, url:, kb_type: "remote")
         validate_url!(url)
 
         page_data = fetch_and_process_url(url)
-        store_page_as_markdown(page_data, agent)
+        store_page_as_markdown(page_data, agent, kb_type)
 
         build_url_metadata(page_data)
       rescue StandardError => e
@@ -34,14 +34,14 @@ module Aircana
         nil
       end
 
-      def fetch_urls_for(agent:, urls:) # rubocop:disable Metrics/MethodLength
+      def fetch_urls_for(agent:, urls:, kb_type: "remote") # rubocop:disable Metrics/MethodLength
         return { pages_count: 0, sources: [] } if urls.empty?
 
         pages_metadata = []
         successful_urls = []
 
         ProgressTracker.with_batch_progress(urls, "Fetching URLs") do |url, _index|
-          metadata = fetch_url_for(agent: agent, url: url)
+          metadata = fetch_url_for(agent: agent, url: url, kb_type: kb_type)
           if metadata
             pages_metadata << metadata
             successful_urls << url
@@ -50,7 +50,7 @@ module Aircana
 
         if successful_urls.any?
           sources = build_sources_metadata(successful_urls, pages_metadata)
-          update_or_create_manifest(agent, sources)
+          update_or_create_manifest(agent, sources, kb_type)
           { pages_count: successful_urls.size, sources: sources }
         else
           { pages_count: 0, sources: [] }
@@ -59,6 +59,7 @@ module Aircana
 
       def refresh_web_sources(agent:) # rubocop:disable Metrics/CyclomaticComplexity
         sources = Manifest.sources_from_manifest(agent)
+        kb_type = Manifest.kb_type_from_manifest(agent)
         web_sources = sources.select { |s| s["type"] == "web" }
 
         return { pages_count: 0, sources: [] } if web_sources.empty?
@@ -66,7 +67,7 @@ module Aircana
         all_urls = web_sources.flat_map { |source| source["urls"]&.map { |u| u["url"] } || [] }
         return { pages_count: 0, sources: [] } if all_urls.empty?
 
-        fetch_urls_for(agent: agent, urls: all_urls)
+        fetch_urls_for(agent: agent, urls: all_urls, kb_type: kb_type)
       end
 
       private
@@ -200,11 +201,12 @@ module Aircana
         extract_text_content(html)
       end
 
-      def store_page_as_markdown(page_data, agent)
+      def store_page_as_markdown(page_data, agent, kb_type = "remote")
         @local_storage.store_content(
           title: page_data[:title],
           content: page_data[:content],
-          agent: agent
+          agent: agent,
+          kb_type: kb_type
         )
       end
 
@@ -223,7 +225,7 @@ module Aircana
         ]
       end
 
-      def update_or_create_manifest(agent, new_sources)
+      def update_or_create_manifest(agent, new_sources, kb_type = "remote")
         existing_sources = Manifest.sources_from_manifest(agent)
 
         # Remove existing web sources and add new ones
@@ -231,9 +233,9 @@ module Aircana
         all_sources = other_sources + new_sources
 
         if Manifest.manifest_exists?(agent)
-          Manifest.update_manifest(agent, all_sources)
+          Manifest.update_manifest(agent, all_sources, kb_type: kb_type)
         else
-          Manifest.create_manifest(agent, all_sources)
+          Manifest.create_manifest(agent, all_sources, kb_type: kb_type)
         end
       end
 

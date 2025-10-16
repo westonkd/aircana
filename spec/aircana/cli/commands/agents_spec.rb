@@ -106,7 +106,9 @@ RSpec.describe Aircana::CLI::Agents do
 
     context "when agent exists and URL fetch is successful" do
       before do
-        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(url_metadata)
+        allow(Aircana::Contexts::Manifest).to receive(:kb_type_from_manifest).with(agent).and_return("remote")
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url,
+                                                        kb_type: "remote").and_return(url_metadata)
         allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with(agent).and_return([])
         allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
       end
@@ -114,7 +116,7 @@ RSpec.describe Aircana::CLI::Agents do
       it "adds URL to agent's knowledge base" do
         described_class.add_url(agent, url)
 
-        expect(mock_web).to have_received(:fetch_url_for).with(agent: agent, url: url)
+        expect(mock_web).to have_received(:fetch_url_for).with(agent: agent, url: url, kb_type: "remote")
         expect(@log_messages).to include([:success, "Successfully added URL to agent '#{agent}'"])
       end
 
@@ -174,7 +176,8 @@ RSpec.describe Aircana::CLI::Agents do
 
     context "when URL fetch fails" do
       before do
-        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url).and_return(nil)
+        allow(Aircana::Contexts::Manifest).to receive(:kb_type_from_manifest).with(agent).and_return("remote")
+        allow(mock_web).to receive(:fetch_url_for).with(agent: agent, url: url, kb_type: "remote").and_return(nil)
       end
 
       it "logs error and exits" do
@@ -185,8 +188,9 @@ RSpec.describe Aircana::CLI::Agents do
 
     context "when web context raises an error" do
       before do
+        allow(Aircana::Contexts::Manifest).to receive(:kb_type_from_manifest).with(agent).and_return("remote")
         allow(mock_web).to receive(:fetch_url_for)
-          .with(agent: agent, url: url)
+          .with(agent: agent, url: url, kb_type: "remote")
           .and_raise(Aircana::Error, "Invalid URL format")
       end
 

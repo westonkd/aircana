@@ -1,6 +1,7 @@
 {
   "version": "1.0",
   "agent": "test-agent",
+  "kb_type": "remote",
   "sources": [
     {
       "type": "confluence",
