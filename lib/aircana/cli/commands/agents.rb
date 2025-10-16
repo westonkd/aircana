@@ -28,7 +28,7 @@ module Aircana
           handle_refresh_error(normalized_agent, e)
         end
 
-        def create # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def create
           prompt = TTY::Prompt.new
 
           agent_name = prompt.ask("Agent name:")
@@ -39,10 +39,15 @@ module Aircana
           # Prompt for knowledge base type
           kb_type = prompt.select("Knowledge base type:", [
                                     {
-                                      name: "Remote - Stored in ~/.claude/agents/, not version controlled, requires refresh", value: "remote"
+                                      name: "Remote - Stored in ~/.claude/agents/, not version controlled, " \
+                                            "requires refresh",
+                                      value: "remote"
                                     },
-                                    { name: "Local - Stored in agents/<name>/knowledge/, version controlled, no refresh needed",
-                                      value: "local" }
+                                    {
+                                      name: "Local - Stored in agents/<name>/knowledge/, version controlled, " \
+                                            "no refresh needed",
+                                      value: "local"
+                                    }
                                   ])
 
           description = description_from_claude(short_description)
@@ -81,7 +86,7 @@ module Aircana
           print_agents_list(agent_folders)
         end
 
-        def add_url(agent, url) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
+        def add_url(agent, url)
           normalized_agent = normalize_string(agent)
 
           unless agent_exists?(normalized_agent)
@@ -122,7 +127,7 @@ module Aircana
           exit 1
         end
 
-        def refresh_all # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def refresh_all
           agent_names = all_agents
 
           if agent_names.empty?
@@ -165,7 +170,7 @@ module Aircana
           print_refresh_all_summary(results)
         end
 
-        def migrate_to_local # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def migrate_to_local
           agent_names = all_agents
 
           if agent_names.empty?
@@ -184,7 +189,8 @@ module Aircana
           end
 
           Aircana.human_logger.warn "⚠️  This will migrate #{remote_agents.size} agent(s) to local knowledge bases."
-          Aircana.human_logger.warn "Knowledge will be version-controlled and stored in .claude/agents/<agent>/knowledge/"
+          Aircana.human_logger.warn "Knowledge will be version-controlled and stored in " \
+                                    ".claude/agents/<agent>/knowledge/"
           Aircana.human_logger.info ""
 
           results = {
@@ -227,7 +233,7 @@ module Aircana
           end
         end
 
-        def perform_manifest_aware_refresh(normalized_agent) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def perform_manifest_aware_refresh(normalized_agent)
           total_pages = 0
           all_sources = []
 
@@ -342,7 +348,7 @@ module Aircana
           PROMPT
         end
 
-        def prompt_for_knowledge_fetch(prompt, normalized_agent_name, kb_type) # rubocop:disable Metrics/MethodLength
+        def prompt_for_knowledge_fetch(prompt, normalized_agent_name, kb_type)
           return unless confluence_configured?
 
           if prompt.yes?("Would you like to fetch knowledge for this agent from Confluence now?")
@@ -350,18 +356,26 @@ module Aircana
             result = perform_refresh(normalized_agent_name, kb_type)
             ensure_gitignore_entry(kb_type) if result[:pages_count]&.positive?
           else
-            refresh_message = kb_type == "local" ? "fetch knowledge" : "run 'aircana agents refresh #{normalized_agent_name}'"
+            refresh_message = if kb_type == "local"
+                                "fetch knowledge"
+                              else
+                                "run 'aircana agents refresh #{normalized_agent_name}'"
+                              end
             Aircana.human_logger.info(
               "Skipping knowledge fetch. You can #{refresh_message} later."
             )
           end
         rescue Aircana::Error => e
           Aircana.human_logger.warn "Failed to fetch knowledge: #{e.message}"
-          refresh_message = kb_type == "local" ? "fetch knowledge" : "try again later with 'aircana agents refresh #{normalized_agent_name}'"
+          refresh_message = if kb_type == "local"
+                              "fetch knowledge"
+                            else
+                              "try again later with 'aircana agents refresh #{normalized_agent_name}'"
+                            end
           Aircana.human_logger.info "You can #{refresh_message}"
         end
 
-        def prompt_for_url_fetch(prompt, normalized_agent_name, kb_type) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def prompt_for_url_fetch(prompt, normalized_agent_name, kb_type)
           return unless prompt.yes?("Would you like to add web URLs for this agent's knowledge base?")
 
           urls = []
@@ -406,7 +420,7 @@ module Aircana
           open_file_in_editor(file_path)
         end
 
-        def confluence_configured? # rubocop:disable Metrics/AbcSize
+        def confluence_configured?
           config = Aircana.configuration
 
           base_url_present = !config.confluence_base_url.nil? && !config.confluence_base_url.empty?
@@ -482,7 +496,7 @@ module Aircana
           find_agent_folders(agent_dir)
         end
 
-        def refresh_single_agent(agent_name) # rubocop:disable Metrics/MethodLength
+        def refresh_single_agent(agent_name)
           Aircana.human_logger.info "Refreshing agent '#{agent_name}'..."
 
           begin
@@ -503,7 +517,7 @@ module Aircana
           end
         end
 
-        def print_refresh_all_summary(results) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def print_refresh_all_summary(results)
           Aircana.human_logger.info ""
           Aircana.human_logger.info "=== Refresh All Summary ==="
           Aircana.human_logger.success "✓ Successful: #{results[:successful]}/#{results[:total]} agents"
@@ -525,7 +539,7 @@ module Aircana
           Aircana.human_logger.info ""
         end
 
-        def migrate_single_agent(agent_name) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def migrate_single_agent(agent_name)
           Aircana.human_logger.info "Migrating agent '#{agent_name}'..."
 
           begin
@@ -609,7 +623,7 @@ module Aircana
           ).generate
         end
 
-        def print_migration_summary(results) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def print_migration_summary(results)
           Aircana.human_logger.info ""
           Aircana.human_logger.info "=== Migration Summary ==="
           Aircana.human_logger.success "✓ Successfully migrated: #{results[:successful]}/#{results[:total]} agents"
