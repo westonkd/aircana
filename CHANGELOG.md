@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2025-10-16
+
 ### Added
 - Optional local knowledge base storage for agents
   - New `kb_type` field in agent manifests ("remote" or "local")
@@ -24,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Local knowledge base agent files now correctly reference `.claude/agents/<name>/knowledge/` instead of `agents/<name>/knowledge/`
+- Rubocop linting violations
+  - Fixed line length issues with string concatenation
+  - Added appropriate Metrics exclusions for complex CLI command methods
+  - Removed redundant cop disable directives
 
 ## [3.0.0] - 2025-10-12
 
