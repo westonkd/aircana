@@ -38,9 +38,12 @@ module Aircana
 
           # Prompt for knowledge base type
           kb_type = prompt.select("Knowledge base type:", [
-            { name: "Remote - Stored in ~/.claude/agents/, not version controlled, requires refresh", value: "remote" },
-            { name: "Local - Stored in agents/<name>/knowledge/, version controlled, no refresh needed", value: "local" }
-          ])
+                                    {
+                                      name: "Remote - Stored in ~/.claude/agents/, not version controlled, requires refresh", value: "remote"
+                                    },
+                                    { name: "Local - Stored in agents/<name>/knowledge/, version controlled, no refresh needed",
+                                      value: "local" }
+                                  ])
 
           description = description_from_claude(short_description)
           normalized_agent_name = normalize_string(agent_name)
