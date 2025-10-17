@@ -48,29 +48,30 @@ module Aircana
       File.basename(@plugin_root).downcase.gsub(/[^a-z0-9]+/, "-")
     end
 
-    # Returns the global knowledge directory path for an agent
+    # Returns the global knowledge directory path for an agent (runtime location)
     # Format: ~/.claude/agents/<plugin-name>-<agent-name>/knowledge/
+    # Both local and remote agents use this path at runtime
     def global_agent_knowledge_path(agent_name)
       File.join(@global_agents_dir, "#{plugin_name}-#{agent_name}", "knowledge")
     end
 
-    # Returns the local knowledge directory path for an agent
+    # Returns the local knowledge directory path for an agent (version-controlled source)
     # Format: <plugin-root>/agents/<agent-name>/knowledge/
+    # Used only for local agents as the source that gets synced to global path
     def local_agent_knowledge_path(agent_name)
       File.join(@agents_dir, agent_name, "knowledge")
     end
 
     # Returns the appropriate knowledge directory path based on kb_type
-    # kb_type can be "remote" or "local"
-    def agent_knowledge_path(agent_name, kb_type)
-      case kb_type
-      when "local"
-        local_agent_knowledge_path(agent_name)
-      when "remote"
-        global_agent_knowledge_path(agent_name)
-      else
-        raise ArgumentError, "Invalid kb_type: #{kb_type}. Must be 'remote' or 'local'"
-      end
+    # For runtime access, both local and remote agents use global_agent_knowledge_path
+    # Local agents are synced there via SessionStart hook from their version-controlled source
+    # kb_type can be "remote" or "local" but is not used (kept for backward compatibility)
+    def agent_knowledge_path(agent_name, _kb_type = nil)
+      # Both types use the global path at runtime
+      # The difference is how the content gets there:
+      # - Remote: via 'aircana agents refresh' from Confluence/web
+      # - Local: via SessionStart hook from version-controlled agents/<name>/knowledge/
+      global_agent_knowledge_path(agent_name)
     end
 
     private
