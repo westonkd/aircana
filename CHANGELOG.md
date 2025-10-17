@@ -12,20 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Optional local knowledge base storage for agents
   - New `kb_type` field in agent manifests ("remote" or "local")
-  - Local knowledge bases stored in `.claude/agents/<name>/knowledge/` (version controlled)
-  - Remote knowledge bases stored in `~/.claude/agents/` (not version controlled)
+  - Local knowledge bases version-controlled in `agents/<name>/knowledge/` directory
+  - Auto-synced to `~/.claude/agents/<plugin>-<agent>/knowledge/` via SessionStart hook
+  - Remote knowledge bases fetched from Confluence/web to `~/.claude/agents/` (not version controlled)
   - Agent creation wizard prompts for knowledge base type with explanation
   - Refresh commands automatically skip local knowledge base agents
   - Existing agents without `kb_type` field default to "remote" for backward compatibility
+- SessionStart hook automatically syncs local knowledge bases to `~/.claude/agents/` on session start
+  - Compatible with macOS and Linux
+  - Only syncs agents with `kb_type: "local"` in manifest
+  - Uses rsync when available, falls back to cp
+  - Logs sync operations to `~/.aircana/hooks.log`
 - Migration command: `aircana agents migrate-to-local`
   - Migrates remote knowledge bases to local (version-controlled) storage
   - Automatically refreshes knowledge from sources before migration
   - Copies knowledge files from global to local directory
   - Updates manifests and regenerates agent files with correct paths
   - Provides detailed migration summary
+- Smart .gitignore management
+  - Remote agents: Adds `.claude/agents/*/knowledge/` to .gitignore
+  - Local agents: Adds `!agents/*/knowledge/` negation to ensure version control
 
 ### Fixed
-- Local knowledge base agent files now correctly reference `.claude/agents/<name>/knowledge/` instead of `agents/<name>/knowledge/`
+- Local and remote agents now use consistent runtime path: `~/.claude/agents/<plugin>-<agent>/knowledge/`
 - Rubocop linting violations
   - Fixed line length issues with string concatenation
   - Added appropriate Metrics exclusions for complex CLI command methods

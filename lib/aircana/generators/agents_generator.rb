@@ -69,13 +69,10 @@ module Aircana
       end
 
       def knowledge_path
-        if kb_type == "local"
-          # Use local plugin directory for version-controlled knowledge
-          ".claude/agents/#{agent_name}/knowledge/"
-        else
-          # Use global agents directory with plugin prefix
-          "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
-        end
+        # Both local and remote agents use the same runtime path in ~/.claude/agents/
+        # Local agents: Synced from version control (agents/<name>/knowledge/) via SessionStart hook
+        # Remote agents: Fetched from Confluence/web via 'aircana agents refresh'
+        "~/.claude/agents/#{plugin_prefix}-#{agent_name}/knowledge/"
       end
     end
   end

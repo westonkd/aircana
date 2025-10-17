@@ -39,13 +39,13 @@ module Aircana
           # Prompt for knowledge base type
           kb_type = prompt.select("Knowledge base type:", [
                                     {
-                                      name: "Remote - Stored in ~/.claude/agents/, not version controlled, " \
+                                      name: "Remote - Fetched from Confluence/web, stored in ~/.claude/agents/, " \
                                             "requires refresh",
                                       value: "remote"
                                     },
                                     {
-                                      name: "Local - Stored in agents/<name>/knowledge/, version controlled, " \
-                                            "no refresh needed",
+                                      name: "Local - Version controlled in plugin, auto-synced to ~/.claude/agents/ " \
+                                            "on session start",
                                       value: "local"
                                     }
                                   ])
@@ -63,6 +63,9 @@ module Aircana
           ).generate
 
           Aircana.human_logger.success "Agent created at #{file}"
+
+          # If local kb_type, ensure SessionStart hook is installed
+          ensure_local_knowledge_sync_hook if kb_type == "local"
 
           # Prompt for knowledge fetching
           prompt_for_knowledge_fetch(prompt, normalized_agent_name, kb_type)
@@ -189,8 +192,8 @@ module Aircana
           end
 
           Aircana.human_logger.warn "⚠️  This will migrate #{remote_agents.size} agent(s) to local knowledge bases."
-          Aircana.human_logger.warn "Knowledge will be version-controlled and stored in " \
-                                    ".claude/agents/<agent>/knowledge/"
+          Aircana.human_logger.warn "Knowledge will be version-controlled in agents/<agent>/knowledge/"
+          Aircana.human_logger.warn "and auto-synced to ~/.claude/agents/ on session start"
           Aircana.human_logger.info ""
 
           results = {
@@ -268,27 +271,53 @@ module Aircana
         end
 
         def ensure_gitignore_entry(kb_type = "remote")
-          # Only add to gitignore for remote knowledge bases
-          return if kb_type == "local"
-
           gitignore_path = gitignore_file_path
-          pattern = gitignore_pattern
 
+          if kb_type == "local"
+            # For local agents, ensure version-controlled knowledge is not ignored
+            ensure_local_knowledge_not_ignored(gitignore_path)
+          else
+            # For remote agents, add ignore pattern for .claude/agents/*/knowledge/
+            ensure_remote_knowledge_ignored(gitignore_path)
+          end
+        rescue StandardError => e
+          Aircana.human_logger.warn "Could not update .gitignore: #{e.message}"
+        end
+
+        def ensure_remote_knowledge_ignored(gitignore_path)
+          pattern = remote_knowledge_pattern
           return if gitignore_has_pattern?(gitignore_path, pattern)
 
           append_to_gitignore(gitignore_path, pattern)
-          Aircana.human_logger.success "Added knowledge directories to .gitignore"
-        rescue StandardError => e
-          Aircana.human_logger.warn "Could not update .gitignore: #{e.message}"
-          Aircana.human_logger.info "Manually add: #{pattern}"
+          Aircana.human_logger.success "Added remote knowledge directories to .gitignore"
+        end
+
+        def ensure_local_knowledge_not_ignored(gitignore_path)
+          negation_pattern = local_knowledge_negation_pattern
+          return if gitignore_has_pattern?(gitignore_path, negation_pattern)
+
+          # Add comment and negation pattern
+          comment = "# Local agent knowledge IS version controlled (don't ignore)"
+          content_to_append = "\n#{comment}\n#{negation_pattern}\n"
+
+          existing_content = File.exist?(gitignore_path) ? File.read(gitignore_path) : ""
+          needs_newline = !existing_content.empty? && !existing_content.end_with?("\n")
+          content_to_append = "\n#{content_to_append}" if needs_newline
+
+          File.open(gitignore_path, "a") { |f| f.write(content_to_append) }
+          Aircana.human_logger.success "Added local knowledge negation to .gitignore"
         end
 
         def gitignore_file_path
           File.join(Aircana.configuration.project_dir, ".gitignore")
         end
 
-        def gitignore_pattern
+        def remote_knowledge_pattern
           ".claude/agents/*/knowledge/"
+        end
+
+        def local_knowledge_negation_pattern
+          "!agents/*/knowledge/"
         end
 
         def gitignore_has_pattern?(gitignore_path, pattern)
@@ -296,7 +325,7 @@ module Aircana
 
           content = File.read(gitignore_path)
           if content.lines.any? { |line| line.strip == pattern }
-            Aircana.human_logger.info "Knowledge directories already in .gitignore"
+            Aircana.human_logger.info "Pattern '#{pattern}' already in .gitignore"
             true
           else
             false
@@ -560,6 +589,10 @@ module Aircana
             Aircana.human_logger.info "  Regenerating agent file..."
             regenerate_agent_file(agent_name)
 
+            # Step 5: Ensure SessionStart hook is installed (only install once for all local agents)
+            Aircana.human_logger.info "  Ensuring SessionStart hook is installed..."
+            ensure_local_knowledge_sync_hook
+
             Aircana.human_logger.success "✓ Successfully migrated '#{agent_name}'"
             { success: true }
           rescue StandardError => e
@@ -647,11 +680,52 @@ module Aircana
 
           if results[:successful].positive?
             Aircana.human_logger.info ""
-            Aircana.human_logger.warn "⚠️  Knowledge is now version-controlled in .claude/agents/<agent>/knowledge/"
+            Aircana.human_logger.warn "⚠️  Knowledge is now version-controlled in agents/<agent>/knowledge/"
+            Aircana.human_logger.info "A SessionStart hook has been added to auto-sync knowledge to ~/.claude/agents/"
             Aircana.human_logger.info "Review and commit these changes to your repository."
           end
 
           Aircana.human_logger.info ""
+        end
+
+        def ensure_local_knowledge_sync_hook
+          hooks_manifest = Aircana::HooksManifest.new(Aircana.configuration.plugin_root)
+
+          # Check if sync hook already exists
+          current_hooks = hooks_manifest.read || {}
+          session_start_hooks = current_hooks["SessionStart"] || []
+
+          # Check if our sync script already exists
+          sync_hook_exists = session_start_hooks.any? do |hook_group|
+            hook_group["hooks"]&.any? { |h| h["command"]&.include?("sync_local_knowledge.sh") }
+          end
+
+          return if sync_hook_exists
+
+          # Generate the sync script
+          generate_sync_script
+
+          # Add hook to manifest
+          hook_entry = {
+            "type" => "command",
+            "command" => "./scripts/sync_local_knowledge.sh"
+          }
+
+          hooks_manifest.add_hook(event: "SessionStart", hook_entry: hook_entry)
+          Aircana.human_logger.success "Added SessionStart hook to sync local knowledge bases"
+        end
+
+        def generate_sync_script
+          script_path = File.join(Aircana.configuration.scripts_dir, "sync_local_knowledge.sh")
+          return if File.exist?(script_path)
+
+          template_path = File.join(File.dirname(__FILE__), "..", "..", "templates", "hooks",
+                                    "sync_local_knowledge.erb")
+          template_content = File.read(template_path)
+
+          FileUtils.mkdir_p(Aircana.configuration.scripts_dir)
+          File.write(script_path, ERB.new(template_content).result)
+          File.chmod(0o755, script_path)
         end
       end
     end
