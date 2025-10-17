@@ -1,0 +1,86 @@
+#!/bin/bash
+# Sync local agent knowledge bases to ~/.claude on session start
+# Compatible with macOS and Linux
+
+set -e
+
+# Create log directory
+mkdir -p ~/.aircana
+LOG_FILE="$HOME/.aircana/hooks.log"
+
+# Get plugin root from environment
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
+
+if [ -z "$PLUGIN_ROOT" ]; then
+    echo "$(date): Warning - CLAUDE_PLUGIN_ROOT not set, skipping knowledge sync" >> "$LOG_FILE"
+    echo "{}"
+    exit 0
+fi
+
+# Source: version-controlled local knowledge in plugin
+# Target: ~/.claude/agents/<plugin-name>-<agent-name>/knowledge/
+LOCAL_AGENTS_DIR="${PLUGIN_ROOT}/agents"
+CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
+
+# Only proceed if agents directory exists
+if [ ! -d "$LOCAL_AGENTS_DIR" ]; then
+    echo "{}"
+    exit 0
+fi
+
+# Read plugin name from plugin.json
+PLUGIN_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "${PLUGIN_ROOT}/.claude-plugin/plugin.json" | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+if [ -z "$PLUGIN_NAME" ]; then
+    echo "$(date): Warning - Could not read plugin name" >> "$LOG_FILE"
+    echo "{}"
+    exit 0
+fi
+
+SYNCED_COUNT=0
+
+# Iterate through each agent directory
+for agent_dir in "$LOCAL_AGENTS_DIR"/*; do
+    if [ ! -d "$agent_dir" ]; then
+        continue
+    fi
+
+    agent_name=$(basename "$agent_dir")
+    manifest_file="${agent_dir}/manifest.json"
+
+    # Check if manifest exists and has kb_type: local
+    if [ -f "$manifest_file" ]; then
+        kb_type=$(grep -o '"kb_type"[[:space:]]*:[[:space:]]*"[^"]*"' "$manifest_file" | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+        if [ "$kb_type" = "local" ]; then
+            # Source: version-controlled knowledge in plugin
+            source_knowledge="${agent_dir}/knowledge"
+
+            # Target: ~/.claude/agents/<plugin-name>-<agent-name>/knowledge/
+            target_knowledge="${CLAUDE_AGENTS_DIR}/${PLUGIN_NAME}-${agent_name}/knowledge"
+
+            if [ -d "$source_knowledge" ]; then
+                # Create target directory
+                mkdir -p "$target_knowledge"
+
+                # Sync knowledge files (rsync if available, fallback to cp)
+                if command -v rsync &> /dev/null; then
+                    rsync -a --delete "$source_knowledge/" "$target_knowledge/"
+                else
+                    # Fallback: remove old files and copy new ones
+                    rm -rf "$target_knowledge"/*
+                    cp -R "$source_knowledge"/* "$target_knowledge/" 2>/dev/null || true
+                fi
+
+                SYNCED_COUNT=$((SYNCED_COUNT + 1))
+                echo "$(date): Synced local knowledge for agent: ${agent_name}" >> "$LOG_FILE"
+            fi
+        fi
+    fi
+done
+
+if [ $SYNCED_COUNT -gt 0 ]; then
+    echo "$(date): Synced ${SYNCED_COUNT} local agent knowledge base(s)" >> "$LOG_FILE"
+fi
+
+echo "{}"
