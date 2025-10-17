@@ -5,7 +5,7 @@ require "aircana/contexts/web"
 
 RSpec.describe Aircana::Contexts::Web do
   let(:web) { described_class.new }
-  let(:agent) { "test-agent" }
+  let(:kb_name) { "test-kb" }
   let(:url) { "https://example.com/test-page" }
   let(:html_content) do
     <<~HTML
@@ -25,7 +25,7 @@ RSpec.describe Aircana::Contexts::Web do
 
   before do
     allow(Aircana).to receive(:configuration).and_return(
-      double(agent_knowledge_dir: "/tmp/test_agents")
+      double(kb_knowledge_dir: "/tmp/test_kbs")
     )
     allow(Aircana).to receive(:human_logger).and_return(
       double(info: nil, success: nil, warn: nil, error: nil)
@@ -34,7 +34,7 @@ RSpec.describe Aircana::Contexts::Web do
 
   describe "#fetch_urls_for" do
     it "handles empty URL list" do
-      result = web.fetch_urls_for(agent: agent, urls: [])
+      result = web.fetch_urls_for(kb_name: kb_name, urls: [])
 
       expect(result[:pages_count]).to eq(0)
       expect(result[:sources]).to eq([])
@@ -44,9 +44,9 @@ RSpec.describe Aircana::Contexts::Web do
   describe "#refresh_web_sources" do
     it "returns empty result when no web sources exist" do
       allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest)
-        .with(agent).and_return([])
+        .with(kb_name).and_return([])
 
-      result = web.refresh_web_sources(agent: agent)
+      result = web.refresh_web_sources(kb_name: kb_name)
 
       expect(result[:pages_count]).to eq(0)
       expect(result[:sources]).to eq([])

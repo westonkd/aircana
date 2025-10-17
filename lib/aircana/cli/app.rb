@@ -9,7 +9,7 @@ require_relative "commands/init"
 
 require_relative "subcommand"
 require_relative "help_formatter"
-require_relative "commands/agents"
+require_relative "commands/kb"
 require_relative "commands/hooks"
 require_relative "commands/plugin"
 
@@ -47,35 +47,30 @@ module Aircana
         Init.run(directory: directory, plugin_name: options[:plugin_name])
       end
 
-      class AgentsSubcommand < Subcommand
-        desc "create", "Create a new agent"
+      class KBSubcommand < Subcommand
+        desc "create", "Create a new knowledge base"
         def create
-          Agents.create
+          KB.create
         end
 
-        desc "refresh AGENT", "Refresh agent knowledge from Confluence pages with matching labels"
-        def refresh(agent)
-          Agents.refresh(agent)
+        desc "refresh KB_NAME", "Refresh knowledge base from Confluence/web sources"
+        def refresh(kb_name)
+          KB.refresh(kb_name)
         end
 
-        desc "list", "List all configured agents"
+        desc "list", "List all configured knowledge bases"
         def list
-          Agents.list
+          KB.list
         end
 
-        desc "add-url AGENT URL", "Add a web URL to an agent's knowledge base"
-        def add_url(agent, url)
-          Agents.add_url(agent, url)
+        desc "add-url KB_NAME URL", "Add a web URL to a knowledge base"
+        def add_url(kb_name, url)
+          KB.add_url(kb_name, url)
         end
 
-        desc "refresh-all", "Refresh knowledge for all configured agents"
+        desc "refresh-all", "Refresh all remote knowledge bases"
         def refresh_all
-          Agents.refresh_all
-        end
-
-        desc "migrate-to-local", "Migrate remote knowledge bases to local (version-controlled)"
-        def migrate_to_local
-          Agents.migrate_to_local
+          KB.refresh_all
         end
       end
 
@@ -106,8 +101,8 @@ module Aircana
         end
       end
 
-      desc "agents", "Create and manage agents and their knowledgebases"
-      subcommand "agents", AgentsSubcommand
+      desc "kb", "Create and manage knowledge bases for Claude Code skills"
+      subcommand "kb", KBSubcommand
 
       desc "hooks", "Manage Claude Code hooks"
       subcommand "hooks", HooksSubcommand

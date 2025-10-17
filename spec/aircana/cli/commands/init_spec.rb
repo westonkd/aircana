@@ -59,8 +59,6 @@ RSpec.describe Aircana::CLI::Init do
       # Create a sample command file
       File.write(File.join(test_commands_dir, "sample-command.md"), "# Sample Command")
 
-      # Mock agents generator for default agents check
-      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
       allow(File).to receive(:expand_path).and_call_original
       allow(Aircana::CLI::Generate).to receive(:run)
     end
@@ -98,7 +96,6 @@ RSpec.describe Aircana::CLI::Init do
       end
 
       allow(Aircana::CLI::Generate).to receive(:run)
-      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
     end
 
     context "when hooks.json doesn't exist" do
@@ -303,7 +300,6 @@ RSpec.describe Aircana::CLI::Init do
       FileUtils.mkdir_p(test_commands_dir)
       File.write(File.join(test_commands_dir, "sample-command.md"), "# Sample Command")
 
-      allow(Aircana::Generators::AgentsGenerator).to receive(:available_default_agents).and_return([])
       allow(Aircana::CLI::Generate).to receive(:run)
     end
 

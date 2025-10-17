@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0.rc1] - 2025-10-17
+
+### Changed
+- **BREAKING**: Renamed "agents" command to "kb" (knowledge base) management
+  - `aircana agents` → `aircana kb`
+  - Commands: `create`, `refresh`, `list`, `add-url`, `refresh-all`
+  - Updated CLI help menu to show "Knowledge Base Management" section
+  - Internal refactoring: `AgentsGenerator` → `SkillsGenerator`
+  - Template changes: `agents/` templates → `skills/` templates
+
+### Removed
+- Removed agent-specific hook templates (refresh_agents, sync_local_knowledge)
+- Removed default agent templates (planner, executor, reviewer, apply_feedback, jira, sub-agent-coordinator)
+- Cleaned up unused agent management files
+
+### Migration Guide
+To upgrade from version 3.x:
+1. Replace all `aircana agents` commands with `aircana kb`:
+   - `aircana agents create` → `aircana kb create`
+   - `aircana agents refresh my-agent` → `aircana kb refresh my-agent`
+   - `aircana agents refresh-all` → `aircana kb refresh-all`
+   - `aircana agents add-url my-agent URL` → `aircana kb add-url my-agent URL`
+   - `aircana agents list` → `aircana kb list`
+
 ## [3.2.1] - 2025-01-16
 
 ### Fixed

@@ -23,8 +23,7 @@ module Aircana
 
       def command_groups
         {
-          "File Management" => %w[files],
-          "Agent Management" => %w[agents],
+          "Knowledge Base Management" => %w[kb],
           "Hook Management" => %w[hooks],
           "System" => %w[generate init doctor dump-context]
         }
@@ -52,7 +51,7 @@ module Aircana
       end
 
       def subcommand?(cmd_name)
-        %w[files agents hooks].include?(cmd_name)
+        %w[kb hooks].include?(cmd_name)
       end
 
       def print_subcommand_group(subcommand_name, cmd)
@@ -63,7 +62,9 @@ module Aircana
       end
 
       def get_subcommand_class(subcommand_name)
-        class_name = "#{subcommand_name.capitalize}Subcommand"
+        # Handle special cases like "kb" -> "KB"
+        prefix = subcommand_name == "kb" ? "KB" : subcommand_name.capitalize
+        class_name = "#{prefix}Subcommand"
         return self.class.const_get(class_name) if self.class.const_defined?(class_name)
 
         nil

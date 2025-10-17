@@ -17,18 +17,18 @@ module Aircana
         ReverseMarkdown.convert(html_content, github_flavored: true)
       end
 
-      def log_pages_found(count, agent)
-        Aircana.human_logger.info "Found #{count} pages for agent '#{agent}'"
+      def log_pages_found(count, kb_name)
+        Aircana.human_logger.info "Found #{count} pages for KB '#{kb_name}'"
       end
 
-      def store_page_as_markdown(page, agent, kb_type = "remote")
+      def store_page_as_markdown(page, kb_name, kb_type = "local")
         content = page&.dig("body", "storage", "value") || fetch_page_content(page&.[]("id"))
         markdown_content = convert_to_markdown(content)
 
         @local_storage.store_content(
           title: page&.[]("title"),
           content: markdown_content,
-          agent: agent,
+          kb_name: kb_name,
           kb_type: kb_type
         )
       end
