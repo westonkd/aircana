@@ -426,7 +426,7 @@ module Aircana
           Dir.entries(kb_dir).select do |entry|
             path = File.join(kb_dir, entry)
             File.directory?(path) && !entry.start_with?(".")
-          end
+          end.sort
         end
 
         def print_kbs_list(kb_folders)
