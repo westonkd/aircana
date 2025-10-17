@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0.rc2] - 2025-10-17
+
+### Fixed
+- **KB Creation UX**: Improved knowledge base name prompt to guide users naturally
+  - Changed prompt from "Knowledge base name:" to "What topic should this knowledge base cover?"
+  - Added example default: "e.g., 'Canvas Backend Database', 'API Design'"
+  - Prevents duplicate "Learn" prefix in generated skill names
+- **SKILL.md Generation**: Fixed empty knowledge file references in SKILL.md
+  - Reordered operations to generate SKILL.md after content is fetched
+  - Modified prompt functions to return success status
+  - SKILL.md now only generated as fallback if no content fetched
+- **Confluence Content Processing**: Added comprehensive Confluence macro preprocessing
+  - Removes empty code blocks from Confluence API responses
+  - Converts panel macros to blockquotes
+  - Converts info/note/warning macros to formatted blockquotes with emoji indicators
+  - Strips all Confluence-specific XML tags while preserving content
+  - Fixes bug where code examples were missing from knowledge base
+- **Filename Strategy**: Fixed mismatch between stored filenames and manifest references
+  - Primary method now scans actual markdown files on disk
+  - Matches disk files to manifest summaries
+  - Fallback extracts from manifest metadata for tests/initial generation
+  - SKILL.md now correctly references existing knowledge files
+- **Empty Knowledge Base Warning**: Added helpful warning when generating SKILL.md with no content
+  - Warns user that SKILL.md will be empty
+  - Suggests running `aircana kb refresh <kb-name>` to fetch knowledge
+
+### Technical
+- All tests passing (206 examples, 0 failures)
+- Rubocop clean with justified disable directives for regex line lengths
+- Backward compatible with existing tests and behavior
+
 ## [4.0.0.rc1] - 2025-10-17
 
 ### Changed
