@@ -636,7 +636,7 @@ module Aircana
           return unless frontmatter_match
 
           frontmatter = frontmatter_match[1]
-          description = frontmatter_match[2]
+          body = frontmatter_match[2]
 
           # Parse YAML-like frontmatter
           metadata = {}
@@ -644,6 +644,11 @@ module Aircana
             key, value = line.strip.split(":", 2)
             metadata[key.strip] = value&.strip
           end
+
+          # Extract custom description (after the template sections)
+          # The template generates sections starting with "INSTRUCTIONS IMPORTANT" and "## Knowledge Base Integration"
+          # We want to preserve only the custom description that comes after these template sections
+          description = extract_custom_description(body)
 
           # Generate new agent file with kb_type="local"
           Generators::AgentsGenerator.new(
@@ -654,6 +659,41 @@ module Aircana
             color: metadata["color"],
             kb_type: "local"
           ).generate
+        end
+
+        def extract_custom_description(body)
+          # Remove leading/trailing whitespace
+          body = body.strip
+
+          # Split into lines and find where custom content starts
+          # Template sections include:
+          # - "INSTRUCTIONS IMPORTANT:" lines
+          # - "## Knowledge Base Integration" sections
+          # - "MANDATORY WORKFLOW:" sections
+          # Custom description typically starts with "You are" or comes after these template sections
+
+          lines = body.lines
+          custom_start_idx = nil
+
+          # Find the last occurrence of template markers
+          template_markers = /^(INSTRUCTIONS IMPORTANT:|## Knowledge Base Integration|
+                               MANDATORY WORKFLOW:|Your knowledge base contains)/ix
+
+          lines.each_with_index do |line, idx|
+            if line.match?(template_markers)
+              custom_start_idx = nil # Reset as we found another template section
+            elsif custom_start_idx.nil? && line.strip.start_with?("You are")
+              custom_start_idx = idx
+            end
+          end
+
+          if custom_start_idx
+            lines[custom_start_idx..].join.strip
+          else
+            # Fallback: return the last non-empty paragraph
+            paragraphs = body.split(/\n\n+/).reject(&:empty?)
+            paragraphs.last || ""
+          end
         end
 
         def print_migration_summary(results)
