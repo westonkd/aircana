@@ -1,0 +1,9 @@
+{
+  "name": "test-plugin",
+  "version": "0.1.0",
+  "description": "Test plugin",
+  "author": {
+    "name": "Test Author"
+  },
+  "license": "MIT"
+}
