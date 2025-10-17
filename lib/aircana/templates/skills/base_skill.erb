@@ -1,0 +1,12 @@
+---
+name: Learn <%= kb_name.split("-").map(&:capitalize).join(" ") %>
+description: <%= skill_description %>
+---
+
+# Learn <%= kb_name.split("-").map(&:capitalize).join(" ") %>
+
+## Instructions
+Choose a sub-topic most relevant to your current task:
+<% knowledge_files.each do |file| %>
+* <%= file[:summary] %>: [<%= file[:filename] %>](<%= file[:filename] %>)
+<% end %>

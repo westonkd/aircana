@@ -22,11 +22,11 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_url_for(agent:, url:, kb_type: "remote")
+      def fetch_url_for(kb_name:, url:, kb_type: "local")
         validate_url!(url)
 
         page_data = fetch_and_process_url(url)
-        store_page_as_markdown(page_data, agent, kb_type)
+        store_page_as_markdown(page_data, kb_name, kb_type)
 
         build_url_metadata(page_data)
       rescue StandardError => e
@@ -34,14 +34,14 @@ module Aircana
         nil
       end
 
-      def fetch_urls_for(agent:, urls:, kb_type: "remote") # rubocop:disable Metrics/MethodLength
+      def fetch_urls_for(kb_name:, urls:, kb_type: "local") # rubocop:disable Metrics/MethodLength
         return { pages_count: 0, sources: [] } if urls.empty?
 
         pages_metadata = []
         successful_urls = []
 
         ProgressTracker.with_batch_progress(urls, "Fetching URLs") do |url, _index|
-          metadata = fetch_url_for(agent: agent, url: url, kb_type: kb_type)
+          metadata = fetch_url_for(kb_name: kb_name, url: url, kb_type: kb_type)
           if metadata
             pages_metadata << metadata
             successful_urls << url
@@ -50,16 +50,16 @@ module Aircana
 
         if successful_urls.any?
           sources = build_sources_metadata(successful_urls, pages_metadata)
-          update_or_create_manifest(agent, sources, kb_type)
+          update_or_create_manifest(kb_name, sources, kb_type)
           { pages_count: successful_urls.size, sources: sources }
         else
           { pages_count: 0, sources: [] }
         end
       end
 
-      def refresh_web_sources(agent:) # rubocop:disable Metrics/CyclomaticComplexity
-        sources = Manifest.sources_from_manifest(agent)
-        kb_type = Manifest.kb_type_from_manifest(agent)
+      def refresh_web_sources(kb_name:) # rubocop:disable Metrics/CyclomaticComplexity
+        sources = Manifest.sources_from_manifest(kb_name)
+        kb_type = Manifest.kb_type_from_manifest(kb_name)
         web_sources = sources.select { |s| s["type"] == "web" }
 
         return { pages_count: 0, sources: [] } if web_sources.empty?
@@ -67,7 +67,7 @@ module Aircana
         all_urls = web_sources.flat_map { |source| source["urls"]&.map { |u| u["url"] } || [] }
         return { pages_count: 0, sources: [] } if all_urls.empty?
 
-        fetch_urls_for(agent: agent, urls: all_urls, kb_type: kb_type)
+        fetch_urls_for(kb_name: kb_name, urls: all_urls, kb_type: kb_type)
       end
 
       private
@@ -201,19 +201,49 @@ module Aircana
         extract_text_content(html)
       end
 
-      def store_page_as_markdown(page_data, agent, kb_type = "remote")
+      def store_page_as_markdown(page_data, kb_name, kb_type = "local")
         @local_storage.store_content(
           title: page_data[:title],
           content: page_data[:content],
-          agent: agent,
+          kb_name: kb_name,
           kb_type: kb_type
         )
       end
 
       def build_url_metadata(page_data)
+        summary = generate_summary(page_data[:content], page_data[:title], page_data[:url])
+
         {
-          "url" => page_data[:url]
+          "url" => page_data[:url],
+          "summary" => summary
         }
+      end
+
+      def generate_summary(content, title, url)
+        prompt = build_summary_prompt(content, title, url)
+        LLM::ClaudeClient.new.prompt(prompt).strip
+      rescue StandardError => e
+        Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
+        # Fallback to title or truncated content
+        title || "#{content[0..80].gsub(/\s+/, " ").strip}..."
+      end
+
+      def build_summary_prompt(content, title, url)
+        truncated_content = content.length > 2000 ? "#{content[0..2000]}..." : content
+
+        <<~PROMPT
+          Generate a concise 8-12 word summary of the following web page.
+          URL: #{url}
+          Title: #{title}
+
+          Content:
+          #{truncated_content}
+
+          The summary should describe what information this page contains in a way that helps
+          someone understand when they should read it. Focus on the key topics covered.
+
+          Respond with only the summary text, no additional explanation or formatting.
+        PROMPT
       end
 
       def build_sources_metadata(_urls, pages_metadata)
@@ -225,17 +255,17 @@ module Aircana
         ]
       end
 
-      def update_or_create_manifest(agent, new_sources, kb_type = "remote")
-        existing_sources = Manifest.sources_from_manifest(agent)
+      def update_or_create_manifest(kb_name, new_sources, kb_type = "local")
+        existing_sources = Manifest.sources_from_manifest(kb_name)
 
         # Remove existing web sources and add new ones
         other_sources = existing_sources.reject { |s| s["type"] == "web" }
         all_sources = other_sources + new_sources
 
-        if Manifest.manifest_exists?(agent)
-          Manifest.update_manifest(agent, all_sources, kb_type: kb_type)
+        if Manifest.manifest_exists?(kb_name)
+          Manifest.update_manifest(kb_name, all_sources, kb_type: kb_type)
         else
-          Manifest.create_manifest(agent, all_sources, kb_type: kb_type)
+          Manifest.create_manifest(kb_name, all_sources, kb_type: kb_type)
         end
       end
 

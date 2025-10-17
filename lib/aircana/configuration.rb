@@ -5,9 +5,9 @@ require "json"
 module Aircana
   class Configuration
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
-                  :claude_code_config_path, :claude_code_project_config_path, :agent_knowledge_dir,
+                  :claude_code_config_path, :claude_code_project_config_path, :kb_knowledge_dir,
                   :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
-                  :plugin_root, :plugin_manifest_dir, :commands_dir, :agents_dir, :global_agents_dir
+                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir
 
     def initialize
       setup_directory_paths
@@ -48,30 +48,17 @@ module Aircana
       File.basename(@plugin_root).downcase.gsub(/[^a-z0-9]+/, "-")
     end
 
-    # Returns the global knowledge directory path for an agent (runtime location)
-    # Format: ~/.claude/agents/<plugin-name>-<agent-name>/knowledge/
-    # Both local and remote agents use this path at runtime
-    def global_agent_knowledge_path(agent_name)
-      File.join(@global_agents_dir, "#{plugin_name}-#{agent_name}", "knowledge")
+    # Returns the knowledge directory path for a KB
+    # Format: .claude/skills/<kb-name>/
+    # All knowledge files stored directly in the skill directory
+    def kb_path(kb_name)
+      File.join(@skills_dir, kb_name)
     end
 
-    # Returns the local knowledge directory path for an agent (version-controlled source)
-    # Format: <plugin-root>/agents/<agent-name>/knowledge/
-    # Used only for local agents as the source that gets synced to global path
-    def local_agent_knowledge_path(agent_name)
-      File.join(@agents_dir, agent_name, "knowledge")
-    end
-
-    # Returns the appropriate knowledge directory path based on kb_type
-    # For runtime access, both local and remote agents use global_agent_knowledge_path
-    # Local agents are synced there via SessionStart hook from their version-controlled source
-    # kb_type can be "remote" or "local" but is not used (kept for backward compatibility)
-    def agent_knowledge_path(agent_name, _kb_type = nil)
-      # Both types use the global path at runtime
-      # The difference is how the content gets there:
-      # - Remote: via 'aircana agents refresh' from Confluence/web
-      # - Local: via SessionStart hook from version-controlled agents/<name>/knowledge/
-      global_agent_knowledge_path(agent_name)
+    # Returns the knowledge directory for a specific KB (same as kb_path for now)
+    # Kept for API compatibility during refactoring
+    def kb_knowledge_path(kb_name)
+      kb_path(kb_name)
     end
 
     private
@@ -88,18 +75,16 @@ module Aircana
       @plugin_root = ENV.fetch("AIRCANA_PLUGIN_ROOT", ENV.fetch("CLAUDE_PLUGIN_ROOT", @project_dir))
       @plugin_manifest_dir = File.join(@plugin_root, ".claude-plugin")
       @commands_dir = File.join(@plugin_root, "commands")
-      @agents_dir = File.join(@plugin_root, "agents")
+      @skills_dir = File.join(@plugin_root, ".claude", "skills")
       @hooks_dir = File.join(@plugin_root, "hooks")
       @scripts_dir = File.join(@plugin_root, "scripts")
-      @agent_knowledge_dir = File.join(@plugin_root, "agents")
+      @kb_knowledge_dir = @skills_dir
     end
 
     def setup_claude_code_paths
       @claude_code_config_path = File.join(Dir.home, ".claude")
       # For backward compatibility, keep this but plugin mode uses plugin_root
       @claude_code_project_config_path = File.join(Dir.pwd, ".claude")
-      # Global agents directory for knowledge bases (not version controlled)
-      @global_agents_dir = File.join(Dir.home, ".claude", "agents")
     end
 
     def setup_stream

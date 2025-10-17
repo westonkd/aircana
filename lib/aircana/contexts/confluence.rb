@@ -24,22 +24,23 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_pages_for(agent:, kb_type: "remote")
+      def fetch_pages_for(kb_name:, kb_type: "local", label: nil)
         validate_configuration!
         setup_httparty
 
-        pages = search_and_log_pages(agent)
+        label_to_search = label || kb_name
+        pages = search_and_log_pages(label_to_search)
         return { pages_count: 0, sources: [] } if pages.empty?
 
-        sources = process_pages_with_manifest(pages, agent, kb_type)
-        create_or_update_manifest(agent, sources, kb_type)
+        sources = process_pages_with_manifest(pages, kb_name, kb_type)
+        create_or_update_manifest(kb_name, sources, kb_type)
 
         { pages_count: pages.size, sources: sources }
       end
 
-      def refresh_from_manifest(agent:)
-        sources = Manifest.sources_from_manifest(agent)
-        kb_type = Manifest.kb_type_from_manifest(agent)
+      def refresh_from_manifest(kb_name:)
+        sources = Manifest.sources_from_manifest(kb_name)
+        kb_type = Manifest.kb_type_from_manifest(kb_name)
         return { pages_count: 0, sources: [] } if sources.empty?
 
         validate_configuration!
@@ -56,34 +57,34 @@ module Aircana
 
         return { pages_count: 0, sources: [] } if all_pages.empty?
 
-        updated_sources = process_pages_with_manifest(all_pages, agent, kb_type)
+        updated_sources = process_pages_with_manifest(all_pages, kb_name, kb_type)
 
         { pages_count: all_pages.size, sources: updated_sources }
       end
 
-      def search_and_log_pages(agent)
-        pages = ProgressTracker.with_spinner("Searching for pages labeled '#{agent}'") do
-          fetch_pages_by_label(agent)
+      def search_and_log_pages(label)
+        pages = ProgressTracker.with_spinner("Searching for pages labeled '#{label}'") do
+          fetch_pages_by_label(label)
         end
-        log_pages_found(pages.size, agent)
+        log_pages_found(pages.size, label)
         pages
       end
 
-      def process_pages(pages, agent, kb_type = "remote")
+      def process_pages(pages, kb_name, kb_type = "local")
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, agent, kb_type)
+          store_page_as_markdown(page, kb_name, kb_type)
         end
       end
 
-      def process_pages_with_manifest(pages, agent, kb_type = "remote")
+      def process_pages_with_manifest(pages, kb_name, kb_type = "local")
         page_metadata = []
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, agent, kb_type)
+          store_page_as_markdown(page, kb_name, kb_type)
           page_metadata << extract_page_metadata(page)
         end
 
-        build_source_metadata(agent, page_metadata)
+        build_source_metadata(kb_name, page_metadata)
       end
 
       private
@@ -98,26 +99,56 @@ module Aircana
       end
 
       def extract_page_metadata(page)
+        content = page&.dig("body", "storage", "value") || ""
+        markdown_content = convert_to_markdown(content)
+        summary = generate_summary(markdown_content, page["title"] || "Confluence page")
+
         {
-          "id" => page["id"]
+          "id" => page["id"],
+          "summary" => summary
         }
       end
 
-      def build_source_metadata(agent, page_metadata)
+      def generate_summary(content, title)
+        prompt = build_summary_prompt(content, title)
+        LLM::ClaudeClient.new.prompt(prompt).strip
+      rescue StandardError => e
+        Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
+        # Fallback to title or truncated content
+        title || "#{content[0..80].gsub(/\s+/, " ").strip}..."
+      end
+
+      def build_summary_prompt(content, title)
+        truncated_content = content.length > 2000 ? "#{content[0..2000]}..." : content
+
+        <<~PROMPT
+          Generate a concise 8-12 word summary of the following documentation.
+          Title: #{title}
+
+          Content:
+          #{truncated_content}
+
+          The summary should describe what information this document contains in a way that helps
+          someone understand when they should read it. Focus on the key topics covered.
+
+          Respond with only the summary text, no additional explanation or formatting.
+        PROMPT
+      end
+
+      def build_source_metadata(_kb_name, page_metadata)
         [
           {
             "type" => "confluence",
-            "label" => agent,
             "pages" => page_metadata
           }
         ]
       end
 
-      def create_or_update_manifest(agent, sources, kb_type = "remote")
-        if Manifest.manifest_exists?(agent)
-          Manifest.update_manifest(agent, sources, kb_type: kb_type)
+      def create_or_update_manifest(kb_name, sources, kb_type = "local")
+        if Manifest.manifest_exists?(kb_name)
+          Manifest.update_manifest(kb_name, sources, kb_type: kb_type)
         else
-          Manifest.create_manifest(agent, sources, kb_type: kb_type)
+          Manifest.create_manifest(kb_name, sources, kb_type: kb_type)
         end
       end
 

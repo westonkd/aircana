@@ -19,6 +19,11 @@ RSpec.describe Aircana::Contexts::Confluence do
     # Mock the local storage
     allow(Aircana::Contexts::Local).to receive(:new).and_return(mock_local_storage)
     allow(mock_local_storage).to receive(:store_content)
+
+    # Mock Claude API client for summary generation
+    mock_claude_client = instance_double(Aircana::LLM::ClaudeClient)
+    allow(Aircana::LLM::ClaudeClient).to receive(:new).and_return(mock_claude_client)
+    allow(mock_claude_client).to receive(:prompt).and_return("Generated summary from Claude")
   end
 
   describe "#fetch_pages_for" do
@@ -26,9 +31,9 @@ RSpec.describe Aircana::Contexts::Confluence do
       it "fetches pages with matching label and stores them as markdown" do
         # Mock labels response
         labels_response = double(success?: true, code: 200,
-                                 body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
+                                 body: '{"results":[{"id":"10001","name":"test-kb","prefix":"global"}]}')
         allow(labels_response).to receive(:[]).with("results").and_return([
-                                                                            { "id" => "10001", "name" => "test-agent",
+                                                                            { "id" => "10001", "name" => "test-kb",
                                                                               "prefix" => "global" }
                                                                           ])
         allow(labels_response).to receive(:dig).with("_links", "next").and_return(nil)
@@ -67,7 +72,7 @@ RSpec.describe Aircana::Contexts::Confluence do
           .with("<h1>Test Content 2</h1><p>More content</p>", github_flavored: true)
           .and_return("# Test Content 2\n\nMore content")
 
-        result = confluence.fetch_pages_for(agent: "test-agent")
+        result = confluence.fetch_pages_for(kb_name: "test-kb", kb_type: "remote")
 
         expect(result[:pages_count]).to eq(2)
         expect(result[:sources]).to be_an(Array)
@@ -75,13 +80,13 @@ RSpec.describe Aircana::Contexts::Confluence do
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 1",
           content: "# Test Content 1\n\nSome content",
-          agent: "test-agent",
+          kb_name: "test-kb",
           kb_type: "remote"
         )
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 2",
           content: "# Test Content 2\n\nMore content",
-          agent: "test-agent",
+          kb_name: "test-kb",
           kb_type: "remote"
         )
       end
@@ -92,7 +97,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         allow(labels_response).to receive(:dig).with("_links", "next").and_return(nil)
         allow(described_class).to receive(:get).with("/wiki/api/v2/labels", anything).and_return(labels_response)
 
-        result = confluence.fetch_pages_for(agent: "nonexistent-agent")
+        result = confluence.fetch_pages_for(kb_name: "nonexistent-kb")
 
         expect(result[:pages_count]).to eq(0)
         expect(result[:sources]).to eq([])
@@ -112,10 +117,10 @@ RSpec.describe Aircana::Contexts::Confluence do
 
         # Mock second page response (with matching label)
         second_page_response = double(success?: true, code: 200,
-                                      body: '{"results":[{"id":"10001","name":"test-agent","prefix":"global"}]}')
+                                      body: '{"results":[{"id":"10001","name":"test-kb","prefix":"global"}]}')
         allow(second_page_response).to receive(:[]).with("results").and_return([
                                                                                  { "id" => "10001",
-                                                                                   "name" => "test-agent",
+                                                                                   "name" => "test-kb",
                                                                                    "prefix" => "global" }
                                                                                ])
         allow(second_page_response).to receive(:dig).with("_links", "next").and_return(nil)
@@ -152,14 +157,14 @@ RSpec.describe Aircana::Contexts::Confluence do
           .with("<h1>Test Content</h1>", github_flavored: true)
           .and_return("# Test Content")
 
-        result = confluence.fetch_pages_for(agent: "test-agent")
+        result = confluence.fetch_pages_for(kb_name: "test-kb", kb_type: "remote")
 
         expect(result[:pages_count]).to eq(1)
         expect(result[:sources]).to be_an(Array)
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page", # title comes from the mock page data
           content: "# Test Content",
-          agent: "test-agent",
+          kb_name: "test-kb",
           kb_type: "remote"
         )
       end
@@ -170,7 +175,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         Aircana.configure { |config| config.confluence_base_url = nil }
 
         expect do
-          confluence.fetch_pages_for(agent: "test-agent")
+          confluence.fetch_pages_for(kb_name: "test-kb")
         end.to raise_error(Aircana::Error, "Confluence base URL not configured")
       end
 
@@ -178,7 +183,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         Aircana.configure { |config| config.confluence_username = nil }
 
         expect do
-          confluence.fetch_pages_for(agent: "test-agent")
+          confluence.fetch_pages_for(kb_name: "test-kb")
         end.to raise_error(Aircana::Error, "Confluence username not configured")
       end
 
@@ -186,7 +191,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         Aircana.configure { |config| config.confluence_api_token = "" }
 
         expect do
-          confluence.fetch_pages_for(agent: "test-agent")
+          confluence.fetch_pages_for(kb_name: "test-kb")
         end.to raise_error(Aircana::Error, "Confluence API token not configured")
       end
     end
@@ -197,7 +202,7 @@ RSpec.describe Aircana::Contexts::Confluence do
                                                                                                 "Network error")
 
         expect do
-          confluence.fetch_pages_for(agent: "test-agent")
+          confluence.fetch_pages_for(kb_name: "test-kb")
         end.to raise_error(Aircana::Error, "Failed to fetch pages from Confluence: Network error")
       end
 
@@ -207,7 +212,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         allow(described_class).to receive(:get).with("/wiki/api/v2/labels", anything).and_return(labels_response)
 
         expect do
-          confluence.fetch_pages_for(agent: "test-agent")
+          confluence.fetch_pages_for(kb_name: "test-kb")
         end.to raise_error(Aircana::Error, "Failed to fetch pages from Confluence: HTTP 401: Unauthorized")
       end
     end

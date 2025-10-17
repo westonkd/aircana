@@ -5,27 +5,26 @@ require "fileutils"
 module Aircana
   module Contexts
     class Local
-      def store_content(title:, content:, agent:, kb_type: "remote")
-        agent_dir = create_agent_knowledge_dir(agent, kb_type)
+      def store_content(title:, content:, kb_name:, kb_type: "local") # rubocop:disable Lint/UnusedMethodArgument
+        kb_dir = create_kb_dir(kb_name)
         filename = sanitize_filename(title)
-        filepath = File.join(agent_dir, "#{filename}.md")
+        filepath = File.join(kb_dir, "#{filename}.md")
 
         File.write(filepath, content)
-        Aircana.human_logger.success "Stored '#{title}' for agent '#{agent}' at #{filepath}"
+        Aircana.human_logger.success "Stored '#{title}' for KB '#{kb_name}' at #{filepath}"
 
         filepath
       end
 
       private
 
-      def create_agent_knowledge_dir(agent, kb_type = "remote")
+      def create_kb_dir(kb_name)
         config = Aircana.configuration
-        # Route to appropriate directory based on kb_type
-        agent_dir = config.agent_knowledge_path(agent, kb_type)
+        kb_dir = config.kb_knowledge_path(kb_name)
 
-        FileUtils.mkdir_p(agent_dir)
+        FileUtils.mkdir_p(kb_dir)
 
-        agent_dir
+        kb_dir
       end
 
       def sanitize_filename(title)

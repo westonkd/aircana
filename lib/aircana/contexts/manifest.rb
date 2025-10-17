@@ -7,33 +7,33 @@ module Aircana
   module Contexts
     class Manifest
       class << self
-        def create_manifest(agent, sources, kb_type: "remote")
+        def create_manifest(kb_name, sources, kb_type: "local")
           validate_sources(sources)
           validate_kb_type(kb_type)
 
-          manifest_path = manifest_path_for(agent)
-          manifest_data = build_manifest_data(agent, sources, kb_type)
+          manifest_path = manifest_path_for(kb_name)
+          manifest_data = build_manifest_data(kb_name, sources, kb_type)
 
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
 
-          Aircana.human_logger.info "Created knowledge manifest for agent '#{agent}' (kb_type: #{kb_type})"
+          Aircana.human_logger.info "Created knowledge manifest for '#{kb_name}' (kb_type: #{kb_type})"
           manifest_path
         end
 
-        def update_manifest(agent, sources, kb_type: nil)
+        def update_manifest(kb_name, sources, kb_type: nil)
           validate_sources(sources)
 
-          manifest_path = manifest_path_for(agent)
+          manifest_path = manifest_path_for(kb_name)
 
           if File.exist?(manifest_path)
             existing_data = JSON.parse(File.read(manifest_path))
             # Preserve existing kb_type unless explicitly provided
-            kb_type_to_use = kb_type || existing_data["kb_type"] || "remote"
+            kb_type_to_use = kb_type || existing_data["kb_type"] || "local"
             manifest_data = existing_data.merge({ "sources" => sources, "kb_type" => kb_type_to_use })
           else
-            kb_type_to_use = kb_type || "remote"
-            manifest_data = build_manifest_data(agent, sources, kb_type_to_use)
+            kb_type_to_use = kb_type || "local"
+            manifest_data = build_manifest_data(kb_name, sources, kb_type_to_use)
           end
 
           validate_kb_type(manifest_data["kb_type"])
@@ -42,8 +42,8 @@ module Aircana
           manifest_path
         end
 
-        def read_manifest(agent)
-          manifest_path = manifest_path_for(agent)
+        def read_manifest(kb_name)
+          manifest_path = manifest_path_for(kb_name)
           return nil unless File.exist?(manifest_path)
 
           begin
@@ -51,54 +51,54 @@ module Aircana
             validate_manifest(manifest_data)
             manifest_data
           rescue JSON::ParserError => e
-            Aircana.human_logger.warn "Invalid manifest for agent '#{agent}': #{e.message}"
+            Aircana.human_logger.warn "Invalid manifest for KB '#{kb_name}': #{e.message}"
             nil
           rescue ManifestError => e
-            Aircana.human_logger.warn "Manifest validation failed for agent '#{agent}': #{e.message}"
+            Aircana.human_logger.warn "Manifest validation failed for KB '#{kb_name}': #{e.message}"
             nil
           end
         end
 
-        def sources_from_manifest(agent)
-          manifest = read_manifest(agent)
+        def sources_from_manifest(kb_name)
+          manifest = read_manifest(kb_name)
           return [] unless manifest
 
           manifest["sources"] || []
         end
 
-        def kb_type_from_manifest(agent)
-          manifest = read_manifest(agent)
-          return "remote" unless manifest
+        def kb_type_from_manifest(kb_name)
+          manifest = read_manifest(kb_name)
+          return "local" unless manifest
 
-          manifest["kb_type"] || "remote"
+          manifest["kb_type"] || "local"
         end
 
-        def manifest_exists?(agent)
-          File.exist?(manifest_path_for(agent))
+        def manifest_exists?(kb_name)
+          File.exist?(manifest_path_for(kb_name))
         end
 
         private
 
-        def manifest_path_for(agent)
-          resolved_agent_path = resolve_agent_path(agent)
-          File.join(resolved_agent_path, "manifest.json")
+        def manifest_path_for(kb_name)
+          resolved_kb_path = resolve_kb_path(kb_name)
+          File.join(resolved_kb_path, "manifest.json")
         end
 
-        def resolve_agent_path(agent)
-          File.join(Aircana.configuration.agent_knowledge_dir, agent)
+        def resolve_kb_path(kb_name)
+          File.join(Aircana.configuration.kb_knowledge_dir, kb_name)
         end
 
-        def build_manifest_data(agent, sources, kb_type = "remote")
+        def build_manifest_data(kb_name, sources, kb_type = "local")
           {
             "version" => "1.0",
-            "agent" => agent,
+            "name" => kb_name,
             "kb_type" => kb_type,
             "sources" => sources
           }
         end
 
         def validate_manifest(manifest_data)
-          required_fields = %w[version agent sources]
+          required_fields = %w[version name sources]
 
           required_fields.each do |field|
             raise ManifestError, "Missing required field: #{field}" unless manifest_data.key?(field)
@@ -108,8 +108,8 @@ module Aircana
             raise ManifestError, "Unsupported manifest version: #{manifest_data["version"]}"
           end
 
-          # kb_type is optional for backward compatibility, defaults to "remote"
-          kb_type = manifest_data["kb_type"] || "remote"
+          # kb_type is optional for backward compatibility, defaults to "local"
+          kb_type = manifest_data["kb_type"] || "local"
           validate_kb_type(kb_type)
 
           validate_sources(manifest_data["sources"])
@@ -139,11 +139,21 @@ module Aircana
         end
 
         def validate_confluence_source(source)
-          raise ManifestError, "Confluence source missing required field: label" unless source.key?("label")
+          raise ManifestError, "Confluence source missing required field: pages" unless source.key?("pages")
 
-          return unless source.key?("pages") && !source["pages"].is_a?(Array)
+          raise ManifestError, "Confluence pages must be an array" unless source["pages"].is_a?(Array)
 
-          raise ManifestError, "Confluence pages must be an array"
+          source["pages"].each do |page_entry|
+            validate_confluence_page_entry(page_entry)
+          end
+        end
+
+        def validate_confluence_page_entry(page_entry)
+          raise ManifestError, "Each page entry must be a hash" unless page_entry.is_a?(Hash)
+
+          raise ManifestError, "Page entry missing required field: id" unless page_entry.key?("id")
+
+          raise ManifestError, "Page entry missing required field: summary" unless page_entry.key?("summary")
         end
 
         def validate_web_source(source)
@@ -160,6 +170,8 @@ module Aircana
           raise ManifestError, "Each URL entry must be a hash" unless url_entry.is_a?(Hash)
 
           raise ManifestError, "URL entry missing required field: url" unless url_entry.key?("url")
+
+          raise ManifestError, "URL entry missing required field: summary" unless url_entry.key?("summary")
         end
 
         def validate_kb_type(kb_type)
