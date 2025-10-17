@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.1.0] - 2025-10-16
+## [3.2.0] - 2025-01-16
+
+### Added
+- SessionStart hook automatically syncs local knowledge bases to `~/.claude/agents/` on session start
+  - Compatible with macOS and Linux
+  - Only syncs agents with `kb_type: "local"` in manifest
+  - Uses rsync when available, falls back to cp
+  - Logs sync operations to `~/.aircana/hooks.log`
+- Smart .gitignore management
+  - Remote agents: Adds `.claude/agents/*/knowledge/` to .gitignore
+  - Local agents: Adds `!agents/*/knowledge/` negation to ensure version control
+
+### Changed
+- Local knowledge bases now stored in version-controlled `agents/<name>/knowledge/` directory
+- Local knowledge auto-synced to `~/.claude/agents/<plugin>-<agent>/knowledge/` via SessionStart hook
+- Both local and remote agents use consistent runtime path: `~/.claude/agents/<plugin>-<agent>/knowledge/`
+- Updated CLI prompts to accurately describe sync behavior for local agents
+- Migration warnings updated to reflect new local knowledge sync architecture
+
+### Fixed
+- Local and remote agents now use consistent runtime path in agent file definitions
+
+## [3.1.0] - 2025-01-16
 
 ### Added
 - Optional local knowledge base storage for agents
