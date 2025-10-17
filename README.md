@@ -5,9 +5,9 @@
 
 ## Intro
 
-Aircana is a CLI for generating [Claude Code plugins](https://docs.claude.com/en/docs/claude-code/plugins) with per-agent knowledge bases. Each agent gets a curated knowledge base synced from Confluence (label-based) or web URLs, yielding more relevant, predictable, and project-specific results than general-purpose agents.
+Aircana is a CLI for generating [Claude Code plugins](https://docs.claude.com/en/docs/claude-code/plugins) with specialized knowledge bases. Each knowledge base provides curated documentation synced from Confluence (label-based) or web URLs, yielding more relevant, predictable, and project-specific results than general-purpose AI assistance.
 
-Knowledge bases automatically refresh once daily on session start, keeping agents up-to-date without manual intervention. Knowledge sources are tracked in version-controlled manifests, so team members can independently refresh content while keeping actual documentation out of git.
+Knowledge bases automatically refresh once daily on session start, keeping content up-to-date without manual intervention. Knowledge sources are tracked in version-controlled manifests, so team members can independently refresh content while keeping actual documentation out of git.
 
 ## How can I try it?
 
@@ -43,25 +43,25 @@ aircana init --plugin-name my-custom-plugin
 
 This creates a plugin structure with:
 - `.claude-plugin/plugin.json` - Plugin manifest
-- `agents/` - Specialized agents
+- `agents/` - Knowledge base definitions
 - `commands/` - Slash commands
 - `hooks/` - Hook configurations (hooks.json)
 - `scripts/` - Hook scripts and utilities
 
 ### Next Steps
 
-**1. Create a specialized agent:**
+**1. Create a specialized knowledge base:**
 ```bash
-aircana agents create
+aircana kb create
 ```
 
 **2. Add knowledge sources:**
 ```bash
 # From Confluence (requires configuration)
-aircana agents refresh my-agent
+aircana kb refresh my-kb
 
 # From web URLs
-aircana agents add-url my-agent https://docs.example.com
+aircana kb add-url my-kb https://docs.example.com
 ```
 
 **3. Manage your plugin:**
@@ -85,11 +85,11 @@ aircana plugin validate
 
 ### Things to try
 
-- Follow the [Getting Started](#getting-started) tutorial to create agents with knowledge bases—Aircana's key differentiator
+- Follow the [Getting Started](#getting-started) tutorial to create knowledge bases—Aircana's key differentiator
 
-- Configure the Confluence integration and create domain-specific agents
+- Configure the Confluence integration and create domain-specific knowledge bases
 
-- Use the `/ask-expert` command to consult multiple specialized agents
+- Use the `/ask-expert` command to consult multiple specialized experts
 
 - Set up the development workflow with plan, execute, review, and apply-feedback commands
 
@@ -97,7 +97,7 @@ aircana plugin validate
 
 ## Getting Started
 
-This tutorial walks through creating a complete Claude Code plugin with agents backed by Confluence knowledge bases, then publishing it to a marketplace for team distribution.
+This tutorial walks through creating a complete Claude Code plugin with knowledge bases backed by Confluence, then publishing it to a marketplace for team distribution.
 
 ### Prerequisites
 
@@ -140,45 +140,45 @@ ls -la
 
 This creates:
 - `.claude-plugin/plugin.json` - Plugin manifest with metadata
-- `agents/` - Directory for specialized agents
+- `agents/` - Directory for knowledge base definitions
 - `commands/` - Custom slash commands
 - `hooks/hooks.json` - Hook configurations
 - `scripts/` - Hook scripts and utilities
 
-### Step 2: Create an Agent Backed by Confluence
+### Step 2: Create a Knowledge Base Backed by Confluence
 
 ```bash
-aircana agents create
+aircana kb create
 ```
 
 You'll be prompted for:
-- **Agent name**: e.g., "backend-api" (use kebab-case)
+- **Knowledge base name**: e.g., "backend-api" (use kebab-case)
 - **Description**: e.g., "Expert in backend API development and best practices"
 - **Model**: Choose sonnet (smarter), haiku (faster), or inherit (uses default)
 - **Color**: Pick an interface color for visual identification
 
-The agent file is created at `agents/backend-api.md` with:
-- Agent configuration (name, description, model)
+The knowledge base file is created at `agents/backend-api.md` with:
+- Configuration (name, description, model)
 - Knowledge base path reference
 - Custom instructions
 
 ### Step 3: Tag Confluence Pages
 
-In Confluence, label pages you want the agent to access:
+In Confluence, label pages you want the knowledge base to access:
 
 1. Open a relevant Confluence page (e.g., "API Design Guidelines")
 2. Click **...** → **Edit labels**
-3. Add label: `backend-api` (must match your agent name)
+3. Add label: `backend-api` (must match your knowledge base name)
 4. Click **Save**
 
-Repeat for all documentation pages relevant to this agent. Aircana will discover pages by label during the refresh process.
+Repeat for all documentation pages relevant to this knowledge base. Aircana will discover pages by label during the refresh process.
 
 **Tip:** Use a consistent labeling strategy. For example, label all backend documentation with `backend-api`, all frontend docs with `frontend-expert`, etc.
 
-### Step 4: Refresh Agent Knowledge
+### Step 4: Refresh Knowledge Base
 
 ```bash
-aircana agents refresh backend-api
+aircana kb refresh backend-api
 ```
 
 This will:
@@ -188,43 +188,43 @@ This will:
 4. Store content in the knowledge base directory
 5. Update `agents/backend-api/manifest.json` with source metadata
 
-**Output:** Knowledge files are created in `~/.claude/agents/my-team-backend-api/knowledge/`
+**Output:** Knowledge files are created in `~/.claude/skills/backend-api/`
 
 **Note:** The actual knowledge content is stored globally (not in your plugin directory) to avoid version control bloat and potential sensitive information leaks. Only the manifest (source tracking) is version controlled.
 
 ### Step 5: Add Web URLs (Optional)
 
-You can also add public web documentation to your agent's knowledge base:
+You can also add public web documentation to your knowledge base:
 
 ```bash
-aircana agents add-url backend-api https://docs.example.com/api-guide
-aircana agents add-url backend-api https://restfulapi.net/rest-architectural-constraints/
+aircana kb add-url backend-api https://docs.example.com/api-guide
+aircana kb add-url backend-api https://restfulapi.net/rest-architectural-constraints/
 ```
 
 This downloads the web page, extracts main content (removes nav/ads/scripts), converts to Markdown, and adds it to the knowledge base.
 
 Refresh to sync web URLs:
 ```bash
-aircana agents refresh backend-api
+aircana kb refresh backend-api
 ```
 
-### Step 6: Use Your Agent
+### Step 6: Use Your Knowledge Base
 
-Your agent is now ready! Claude Code will automatically consult your agent when appropriate based on the agent's description. You can also explicitly request the agent:
+Your knowledge base is now ready! Claude Code will automatically use it when appropriate based on the description. You can also explicitly invoke it:
 
 ```
 Ask backend-api to review this API endpoint design
 Ask backend-api how to implement authentication
 ```
 
-The agent has access to all Confluence pages and web URLs you've synced to its knowledge base.
+Claude has access to all Confluence pages and web URLs you've synced to the knowledge base.
 
 ### Step 7: Share Your Plugin with Your Team
 
 For detailed instructions on distributing your plugin via Git repositories or Claude Code plugin marketplaces, see the official [Claude Code Plugin Marketplaces documentation](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces).
 
 **Quick summary:**
-- Share via Git repository: Team members clone the plugin, configure Confluence credentials, and run `aircana agents refresh-all`
+- Share via Git repository: Team members clone the plugin, configure Confluence credentials, and run `aircana kb refresh-all`
 - Publish to a marketplace: Create a marketplace.json file in a separate repository, add your plugin metadata, and team members install via the marketplace UI
 
 ### Next: Keep Knowledge Up-to-Date
@@ -232,14 +232,14 @@ For detailed instructions on distributing your plugin via Git repositories or Cl
 As your Confluence documentation evolves:
 
 ```bash
-# Refresh a specific agent's knowledge
-aircana agents refresh backend-api
+# Refresh a specific knowledge base
+aircana kb refresh backend-api
 
-# Or refresh all agents at once
-aircana agents refresh-all
+# Or refresh all knowledge bases at once
+aircana kb refresh-all
 ```
 
-Knowledge sources are tracked in `agents/<agent-name>/manifest.json`, so team members can independently refresh without manual coordination.
+Knowledge sources are tracked in `agents/<kb-name>/manifest.json`, so team members can independently refresh without manual coordination.
 
 ## Key Concepts
 
@@ -247,7 +247,7 @@ Knowledge sources are tracked in `agents/<agent-name>/manifest.json`, so team me
 
 Aircana creates Claude Code plugins - portable, distributable packages that extend Claude Code with custom functionality. Each plugin includes:
 - **Manifest**: Metadata describing the plugin (name, version, author, etc.)
-- **Agents**: Specialized domain experts
+- **Knowledge Bases**: Specialized domain expertise from curated documentation
 - **Commands**: Custom slash commands
 - **Hooks**: Event-driven automation
 
@@ -278,35 +278,27 @@ Optional path overrides (for non-standard layouts):
 ```json
 {
   "commands": "./custom/commands/",
-  "agents": "./custom/agents/",
+  "agents": "./custom/skills/",
   "hooks": "./config/hooks.json",
   "mcpServers": "./mcp-config.json"
 }
 ```
 
-### Specialized Agents
-
-Agents are domain-specific experts to whom Claude Code can delegate tasks and questions. Each agent has:
-- **Dedicated context window**: Prevents context pollution and maintains focus
-- **Knowledge base**: Access to curated domain-specific documentation
-- **Custom configuration**: Model, color, and behavior settings
-
-Claude Code can run agents in parallel, creating a "swarm" of experts that can expedite planning and execution while considering broader context.
-
 ### Knowledge Bases
 
-Aircana provides each agent with a human-curated knowledge base stored within the plugin structure. This enables agents to:
-- Access domain-specific documentation automatically
-- Stay up-to-date with refreshable sources
-- Provide more relevant responses with less back-and-forth
+Aircana creates human-curated knowledge bases that provide Claude Code with domain-specific expertise. Each knowledge base:
+- **Provides focused documentation**: Access to curated domain-specific content
+- **Stays up-to-date**: Refreshable sources from Confluence and web URLs
+- **Improves responses**: More relevant, predictable results with less back-and-forth
+- **Custom configuration**: Model, color, and behavior settings
 
-Knowledge bases support multiple source types and can be refreshed to pull the latest content. **Aircana-generated plugins automatically refresh all agent knowledge bases once daily on session start** via the SessionStart hook, keeping agents up-to-date without manual intervention.
+Knowledge bases support multiple source types and can be refreshed to pull the latest content. **Aircana-generated plugins automatically refresh all knowledge bases once daily on session start** via the SessionStart hook, keeping content up-to-date without manual intervention.
 
 #### Confluence
 
-To add a Confluence page to an agent's knowledge base, label the desired page in Confluence, then run `aircana agent refresh <AGENT>`.
+To add a Confluence page to a knowledge base, label the desired page in Confluence, then run `aircana kb refresh <KB-NAME>`.
 
-Aircana will also pull any Confluence pages labeled with a matching agent name during initial agent creation (`aircana agent create`).
+Aircana will also pull any Confluence pages labeled with a matching knowledge base name during initial creation (`aircana kb create`).
 
 See the Confluence setup guide or run `aircana doctor` for instructions on setting up Confluence integration.
 
@@ -314,11 +306,11 @@ See the Confluence setup guide or run `aircana doctor` for instructions on setti
 
 In addition to Confluence sources, Aircana allows adding arbitrary public websites to a knowledge base.
 
-Websites are also refreshed when `aircana agent refresh <AGENT>` is used.
+Websites are also refreshed when `aircana kb refresh <KB-NAME>` is used.
 
 #### Structure
 
-Knowledge bases are stored within the plugin's agent directory. For example:
+Knowledge bases are stored within the plugin's agents directory. For example:
 
 ```
 my-plugin/
@@ -327,7 +319,7 @@ my-plugin/
 ├── agents/
 │   ├── backend-expert.md
 │   └── backend-expert/
-│       ├── knowledge/
+│       ├── knowledge/          # (optional, for local KBs)
 │       │   ├── API-Design.md
 │       │   └── Authentication.md
 │       └── manifest.json
@@ -340,7 +332,7 @@ my-plugin/
     └── session_start.sh
 ```
 
-Agent files and their knowledge bases are co-located in the plugin's `agents/` directory.
+Knowledge base files and manifests are co-located in the plugin's `agents/` directory.
 
 **Version Control Considerations:**
 
@@ -349,12 +341,14 @@ In many cases, adding the actual knowledge base to version control is undesirabl
 - Content may include sensitive information not suitable for public repos
 - Knowledge refreshes would create frequent, large commits
 
-Aircana manages a per-agent `manifest.json` file to track knowledge sources without committing the actual content. Team members can refresh knowledge bases using `aircana agents refresh`.
+Aircana manages a per-knowledge-base `manifest.json` file to track knowledge sources without committing the actual content. Team members can refresh knowledge bases using `aircana kb refresh`.
+
+For remote knowledge bases, actual content is stored in `~/.claude/skills/<kb-name>/`. For local knowledge bases, content is version-controlled in `agents/<kb-name>/knowledge/` and synced to the runtime location.
 
 ### Plugin Artifacts
 
 Aircana uses ERB templates to generate plugin components consistently:
-- **Agents**: Domain experts with knowledge base integration
+- **Knowledge Bases (Skills)**: Domain expertise with curated documentation
 - **Commands**: Slash commands with parameter handling
 - **Hooks**: Event handlers for automation
 
@@ -370,9 +364,9 @@ At Instructure this means you can easily configure Claude Code to send you slack
 
 ## Best Practices
 
-### Designing Effective Agents
+### Designing Effective Knowledge Bases
 
-**Design agents as narrow domain experts, not generalists.** More granular agents with focused knowledge bases generally perform better than broad, general-purpose agents.
+**Design knowledge bases as narrow domain experts, not generalists.** More granular knowledge bases with focused content generally perform better than broad, general-purpose ones.
 
 **Examples:**
 
@@ -382,20 +376,20 @@ At Instructure this means you can easily configure Claude Code to send you slack
 - `frontend-styling-expert` - CSS, design systems, responsive layouts
 
 ❌ **Avoid - Too broad:**
-- `backend-engineer` - Too many domains, knowledge base becomes unfocused
+- `backend-engineer` - Too many domains, knowledge becomes unfocused
 - `full-stack-developer` - Overlapping responsibilities with unclear boundaries
 
 **Why narrow domains work better:**
-- **Focused knowledge bases**: Each agent gets highly relevant documentation for their specific domain
-- **Better results**: Agents can provide more accurate, detailed answers within their expertise
-- **Less context pollution**: Smaller, focused context windows prevent information overload
-- **Non-overlapping responsibilities**: Clear delegation boundaries reduce confusion
+- **Focused content**: Each knowledge base contains highly relevant documentation for a specific domain
+- **Better results**: More accurate, detailed responses within the area of expertise
+- **Less context pollution**: Smaller, focused content prevents information overload
+- **Clear boundaries**: Non-overlapping domains reduce confusion
 
 **Tips:**
 - Break large domains into smaller, specialized areas
-- Each agent should have a clear, distinct purpose
+- Each knowledge base should have a clear, distinct purpose
 - Knowledge bases should contain 5-20 highly relevant documents, not 100+ loosely related ones
-- Use agent descriptions to clearly define boundaries and expertise areas
+- Use descriptions to clearly define boundaries and expertise areas
 
 ## Development Workflow
 
@@ -587,13 +581,13 @@ aircana plugin version set         # Set specific version
 aircana plugin validate            # Validate plugin structure
 ```
 
-### Agent Management
+### Knowledge Base Management
 ```bash
-aircana agents create              # Create new agent interactively
-aircana agents refresh [AGENT]     # Sync agent knowledge from Confluence and web sources
-aircana agents refresh-all         # Refresh knowledge for all agents
-aircana agents add-url [AGENT] [URL] # Add a web URL to an agent's knowledge base
-aircana agents list                # List all configured agents
+aircana kb create                  # Create new knowledge base interactively
+aircana kb refresh [KB-NAME]       # Sync knowledge base from Confluence and web sources
+aircana kb refresh-all             # Refresh all knowledge bases
+aircana kb add-url [KB-NAME] [URL] # Add a web URL to a knowledge base
+aircana kb list                    # List all configured knowledge bases
 ```
 
 ### Hook Management
@@ -610,7 +604,7 @@ aircana hooks status               # Show hook configuration status
 aircana generate                   # Generate plugin components from templates
 aircana doctor                     # Check system health and dependencies
 aircana doctor --verbose           # Show detailed dependency information
-aircana dump-context [AGENT]       # View current context for agent
+aircana dump-context [KB-NAME]     # View current context for knowledge base
 ```
 
 ## Development
