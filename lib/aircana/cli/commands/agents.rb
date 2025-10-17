@@ -708,7 +708,7 @@ module Aircana
           # Add hook to manifest
           hook_entry = {
             "type" => "command",
-            "command" => "./scripts/sync_local_knowledge.sh"
+            "command" => "${CLAUDE_PLUGIN_ROOT}/scripts/sync_local_knowledge.sh"
           }
 
           hooks_manifest.add_hook(event: "SessionStart", hook_entry: hook_entry)

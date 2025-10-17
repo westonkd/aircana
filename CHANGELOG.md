@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2025-01-16
+
+### Fixed
+- SessionStart hook command now uses `${CLAUDE_PLUGIN_ROOT}` environment variable for proper path resolution
+  - Changed from relative path `./scripts/sync_local_knowledge.sh` to `${CLAUDE_PLUGIN_ROOT}/scripts/sync_local_knowledge.sh`
+  - Fixes "No such file or directory" error when hook executes
+
 ## [3.2.0] - 2025-01-16
 
 ### Added
