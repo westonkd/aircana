@@ -29,7 +29,8 @@ module Aircana
         def create # rubocop:disable Metrics/MethodLength
           prompt = TTY::Prompt.new
 
-          kb_name = prompt.ask("Knowledge base name:")
+          kb_name = prompt.ask("What topic should this knowledge base cover?",
+                               default: "e.g., 'Canvas Backend Database', 'API Design'")
           short_description = prompt.ask("Briefly describe what this KB contains:")
 
           # Prompt for knowledge base type
@@ -48,13 +49,14 @@ module Aircana
           normalized_kb_name = normalize_string(kb_name)
 
           # Prompt for knowledge fetching
-          prompt_for_knowledge_fetch(prompt, normalized_kb_name, kb_type, short_description)
+          fetched_confluence = prompt_for_knowledge_fetch(prompt, normalized_kb_name, kb_type, short_description)
 
           # Prompt for web URL fetching
-          prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
+          fetched_urls = prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
 
-          # Generate SKILL.md
-          regenerate_skill_md(normalized_kb_name, short_description)
+          # Generate SKILL.md if no content was fetched during the prompts
+          # (the prompt functions already generate it when they successfully fetch content)
+          regenerate_skill_md(normalized_kb_name, short_description) unless fetched_confluence || fetched_urls
 
           # If remote kb_type, ensure SessionStart hook is installed
           ensure_remote_knowledge_refresh_hook if kb_type == "remote"
@@ -326,7 +328,7 @@ module Aircana
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def prompt_for_knowledge_fetch(prompt, normalized_kb_name, kb_type, short_description)
-          return unless confluence_configured?
+          return false unless confluence_configured?
 
           if prompt.yes?("Would you like to fetch knowledge for this KB from Confluence now?")
             Aircana.human_logger.info "Fetching knowledge from Confluence..."
@@ -340,8 +342,11 @@ module Aircana
                     end
 
             result = perform_refresh(normalized_kb_name, kb_type, label: label)
-            ensure_gitignore_entry(kb_type) if result[:pages_count]&.positive?
-            regenerate_skill_md(normalized_kb_name, short_description) if result[:pages_count]&.positive?
+            if result[:pages_count]&.positive?
+              ensure_gitignore_entry(kb_type)
+              regenerate_skill_md(normalized_kb_name, short_description)
+              return true
+            end
           else
             refresh_message = if kb_type == "local"
                                 "fetch knowledge"
@@ -352,6 +357,8 @@ module Aircana
               "Skipping knowledge fetch. You can #{refresh_message} later."
             )
           end
+
+          false
         rescue Aircana::Error => e
           Aircana.human_logger.warn "Failed to fetch knowledge: #{e.message}"
           refresh_message = if kb_type == "local"
@@ -360,6 +367,7 @@ module Aircana
                               "try again later with 'aircana kb refresh #{normalized_kb_name}'"
                             end
           Aircana.human_logger.info "You can #{refresh_message}"
+          false
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
         # rubocop:enable Metrics/PerceivedComplexity
@@ -367,7 +375,7 @@ module Aircana
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
-          return unless prompt.yes?("Would you like to add web URLs for this KB's knowledge base?")
+          return false unless prompt.yes?("Would you like to add web URLs for this KB's knowledge base?")
 
           urls = []
           loop do
@@ -382,7 +390,7 @@ module Aircana
             end
           end
 
-          return if urls.empty?
+          return false if urls.empty?
 
           begin
             Aircana.human_logger.info "Fetching #{urls.size} URL(s)..."
@@ -393,6 +401,7 @@ module Aircana
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
               ensure_gitignore_entry(kb_type)
               regenerate_skill_md(normalized_kb_name)
+              return true
             else
               Aircana.human_logger.warn "No URLs were successfully fetched"
             end
@@ -402,6 +411,8 @@ module Aircana
               "You can add URLs later with 'aircana kb add-url #{normalized_kb_name} <URL>'"
             )
           end
+
+          false
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
         # rubocop:enable Metrics/PerceivedComplexity

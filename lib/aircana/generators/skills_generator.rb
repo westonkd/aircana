@@ -5,6 +5,7 @@ require_relative "../contexts/manifest"
 
 module Aircana
   module Generators
+    # rubocop:disable Metrics/ClassLength
     class SkillsGenerator < BaseGenerator
       attr_reader :kb_name, :short_description, :skill_description, :knowledge_files
 
@@ -24,11 +25,20 @@ module Aircana
       # rubocop:enable Metrics/ParameterLists
 
       # Generate SKILL.md based on manifest data
+      # rubocop:disable Metrics/MethodLength
       def self.from_manifest(kb_name)
         manifest = Contexts::Manifest.read_manifest(kb_name)
         raise Error, "No manifest found for knowledge base '#{kb_name}'" unless manifest
 
         knowledge_files = extract_knowledge_files_from_manifest(manifest)
+
+        # Warn if no knowledge files were found
+        if knowledge_files.empty?
+          Aircana.human_logger.warn "No knowledge files found for KB '#{kb_name}'. " \
+                                    "SKILL.md will be generated but will be empty. " \
+                                    "Run 'aircana kb refresh #{kb_name}' to fetch knowledge."
+        end
+
         skill_description = generate_skill_description_from_manifest(manifest, kb_name)
 
         new(
@@ -37,11 +47,45 @@ module Aircana
           knowledge_files: knowledge_files
         )
       end
+      # rubocop:enable Metrics/MethodLength
 
       # Class methods for manifest processing
+      def self.extract_knowledge_files_from_manifest(manifest)
+        kb_name = manifest["name"]
+
+        # If kb_dir exists, scan actual files on disk (preferred method)
+        if kb_name && Aircana.configuration.kb_knowledge_dir
+          kb_dir = Aircana.configuration.kb_path(kb_name)
+
+          return extract_files_from_disk(manifest, kb_dir) if Dir.exist?(kb_dir)
+        end
+
+        # Fallback: extract from manifest metadata (for tests or before files are created)
+        extract_files_from_manifest_metadata(manifest)
+      end
+
+      # rubocop:disable Metrics/MethodLength
+      def self.extract_files_from_disk(manifest, kb_dir)
+        actual_files = Dir.glob(File.join(kb_dir, "*.md"))
+                          .reject { |f| File.basename(f) == "SKILL.md" }
+                          .sort
+
+        # Build file list with summaries from manifest
+        actual_files.map do |filepath|
+          filename = File.basename(filepath)
+          summary = find_summary_for_file(manifest, filename)
+
+          {
+            summary: summary || File.basename(filename, ".md").tr("-", " ").capitalize,
+            filename: filename
+          }
+        end
+      end
+      # rubocop:enable Metrics/MethodLength
+
       # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
-      def self.extract_knowledge_files_from_manifest(manifest)
+      def self.extract_files_from_manifest_metadata(manifest)
         files = []
 
         manifest["sources"]&.each do |source|
@@ -64,6 +108,29 @@ module Aircana
         end
 
         files
+      end
+      # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      # Find the summary for a given filename from the manifest
+      # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      def self.find_summary_for_file(manifest, filename)
+        manifest["sources"]&.each do |source|
+          case source["type"]
+          when "confluence"
+            source["pages"]&.each do |page|
+              return page["summary"] if filename.include?(page["id"])
+            end
+          when "web"
+            source["urls"]&.each do |url_entry|
+              sanitized_url_part = sanitize_filename_from_url(url_entry["url"])
+              return url_entry["summary"] if filename.include?(sanitized_url_part)
+            end
+          end
+        end
+
+        nil
       end
       # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
@@ -91,6 +158,7 @@ module Aircana
       rescue URI::InvalidURIError
         "web_resource"
       end
+      # rubocop:enable Metrics/ClassLength
 
       protected
 
