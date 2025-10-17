@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Testing and Quality
 - `rake spec` or `bundle exec rspec` - Run all tests
-- `bundle exec rspec spec/aircana/cli/commands/agents_spec.rb` - Run specific test file
-- `bundle exec rspec spec/aircana/cli/commands/agents_spec.rb:15` - Run test at specific line
+- `bundle exec rspec spec/aircana/cli/commands/kb_spec.rb` - Run specific test file
+- `bundle exec rspec spec/aircana/cli/commands/kb_spec.rb:15` - Run test at specific line
 - `bundle exec rspec --format documentation` - Run tests with detailed output
 - `bundle exec rubocop` - Run linter
 - `bundle exec rubocop -a` - Run linter with auto-fix
@@ -36,12 +36,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana plugin version set` - Set specific version
 - `aircana plugin validate` - Validate plugin structure and manifests
 
-**Agent Management:**
-- `aircana agents create` - Create a new agent interactively
-- `aircana agents list` - List all configured agents
-- `aircana agents refresh <agent>` - Refresh agent knowledge from Confluence and web sources
-- `aircana agents refresh-all` - Refresh knowledge for all configured agents
-- `aircana agents add-url <agent> <url>` - Add a web URL to an agent's knowledge base
+**Knowledge Base Management:**
+- `aircana kb create` - Create a new knowledge base interactively
+- `aircana kb list` - List all configured knowledge bases
+- `aircana kb refresh <kb-name>` - Refresh knowledge base from Confluence and web sources
+- `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases
+- `aircana kb add-url <kb-name> <url>` - Add a web URL to a knowledge base
 
 **Hook Management:**
 - `aircana hooks list` - List all available hooks
@@ -54,25 +54,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana doctor` - Check system health and dependencies
 - `aircana doctor --verbose` - Show detailed dependency information
 - `aircana generate` - Generate plugin components from templates
-- `aircana dump-context <agent_name>` - Dump context for specified agent
+- `aircana dump-context <kb-name>` - Dump context for specified knowledge base
 
 ## Architecture
 
 ### Core Structure
-Aircana is a Ruby gem that creates and manages Claude Code plugins. The main components:
+Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledge bases. The main components:
 
 - **CLI Layer** (`lib/aircana/cli/`): Thor-based command line interface with subcommands
   - `app.rb`: Main Thor application defining all commands and subcommands
-  - `subcommand.rb`: Base class for subcommands (agents, hooks, plugin)
+  - `subcommand.rb`: Base class for subcommands (kb, hooks, plugin)
   - `shell_command.rb`: Shell command execution utilities
   - `commands/`: Individual command implementations
     - `init.rb`: Plugin initialization
     - `plugin.rb`: Plugin metadata management
-    - `agents.rb`: Agent CRUD operations
+    - `kb.rb`: Knowledge base CRUD operations
     - `hooks.rb`: Hook management
     - `doctor.rb`: System health checks with modular check system
     - `generate.rb`: Generates plugin components from templates
-    - `dump_context.rb`: Outputs agent knowledge for debugging
+    - `dump_context.rb`: Outputs knowledge base content for debugging
 
 - **Plugin Management**:
   - `plugin_manifest.rb`: Manages `.claude-plugin/plugin.json` with validation
@@ -88,25 +88,26 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins. The main com
     - HTML to Markdown conversion (ReverseMarkdown)
     - Main content extraction (removes nav, ads, scripts)
     - Claude API integration for generating meaningful page titles
-  - `manifest.rb`: Per-agent manifest system tracking:
+  - `manifest.rb`: Per-knowledge-base manifest system tracking:
     - Knowledge sources (Confluence, web)
     - Source metadata (page IDs, URLs, timestamps)
+    - KB type (local or remote)
     - Manifest format version (1.0)
   - `local.rb`: File system operations for storing knowledge
 
 - **Generators** (`lib/aircana/generators/`): ERB-based template generation
   - `base_generator.rb`: Base class with ERB rendering and file writing
-  - `agents_generator.rb`: Agent file generation with default agent support
-    - Default agents: planner, jira, sub-agent-coordinator, executor, reviewer, apply_feedback
+  - `skills_generator.rb`: Knowledge base file generation (Markdown format)
   - Command generators: plan, execute, record, review, apply_feedback, ask_expert
   - `hooks_generator.rb`: Hook script generation
   - Templates location: `lib/aircana/templates/`
 
 - **Configuration** (`lib/aircana/configuration.rb`): Path resolution system
   - Plugin root detection via environment variables (AIRCANA_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT)
-  - Plugin-aware paths (commands, agents, hooks directories)
+  - Plugin-aware paths (commands, skills, hooks directories)
   - Global vs plugin-local knowledge storage
   - Automatic plugin name extraction from plugin.json
+  - Resolves to `~/.claude/skills/<kb-name>/` for knowledge storage
 
 - **LLM Integration**:
   - `llm/claude_client.rb`: Claude API client for web title generation
@@ -118,18 +119,19 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins. The main com
   - `fzf_helper.rb`: Interactive fuzzy selection
 
 ### Key Concepts
-- **Plugins**: Distributable Claude Code extensions with manifests, agents, commands, and hooks
+- **Plugins**: Distributable Claude Code extensions with manifests, skills/knowledge bases, commands, and hooks
 - **Plugin Manifests**: JSON files defining plugin metadata (`.claude-plugin/plugin.json`)
-- **Agents**: Domain-specific experts with dedicated knowledge bases and context windows
-- **Knowledge Bases**: Curated documentation from Confluence and web sources
+- **Knowledge Bases (Skills)**: Curated documentation from Confluence and web sources that provide domain expertise
+- **Manifests**: Per-knowledge-base JSON tracking sources, metadata, and KB type (local/remote)
 - **Hooks**: Event-driven automation through `hooks/hooks.json`
 - **Commands**: Custom slash commands for workflow automation
 
 ### File Organization
 - **Plugin Structure**:
   - `.claude-plugin/plugin.json` - Plugin manifest with metadata and versioning
-  - `agents/` - Agent markdown files (agent definitions)
-  - `agents/<agent_name>/manifest.json` - Tracks knowledge sources per agent
+  - `agents/` - Knowledge base markdown files (skill definitions)
+  - `agents/<kb-name>/manifest.json` - Tracks knowledge sources per KB
+  - `agents/<kb-name>/knowledge/` - Local knowledge base content (if KB type is "local")
   - `commands/` - Slash command markdown files
   - `hooks/` - hooks.json manifest defining hook configurations
   - `scripts/` - Hook scripts and utility scripts
@@ -137,24 +139,31 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins. The main com
 - **Global Configuration**:
   - `~/.aircana/` - Global Aircana configuration directory
   - `~/.aircana/aircana.out/` - Generated templates output directory
+  - `~/.claude/skills/` - Runtime knowledge base storage
 
 - **Knowledge Storage Architecture**:
-  - **Global (not version controlled)**: `~/.claude/agents/<plugin-name>-<agent-name>/knowledge/`
+  - **Remote KBs (not version controlled)**: `~/.claude/skills/<kb-name>/`
     - Actual knowledge base content (Markdown files)
-    - Refreshed via `aircana agents refresh`
+    - Refreshed via `aircana kb refresh`
     - Excluded from version control to avoid bloat/sensitivity
-  - **Plugin-local (version controlled)**: `agents/<agent_name>/manifest.json`
+  - **Local KBs (version controlled)**: `agents/<kb-name>/knowledge/`
+    - Version-controlled knowledge content in plugin repository
+    - Auto-synced to `~/.claude/skills/<kb-name>/` via SessionStart hook
+    - Teams can collaborate on knowledge directly in Git
+  - **Plugin-local manifests (version controlled)**: `agents/<kb-name>/manifest.json`
     - Tracks knowledge sources (Confluence labels, web URLs)
+    - Specifies KB type ("local" or "remote")
     - Team members can refresh knowledge independently
     - Format:
       ```json
       {
         "version": "1.0",
-        "agent": "agent-name",
+        "kb_name": "my-kb",
+        "kb_type": "remote",
         "sources": [
           {
             "type": "confluence",
-            "label": "agent-name",
+            "label": "my-kb",
             "pages": [{"id": "123456"}]
           },
           {
@@ -201,7 +210,7 @@ This pattern keeps each module focused on a single responsibility while composin
 
 **ERB Template Generation**:
 All plugin components are generated from ERB templates in `lib/aircana/templates/`:
-- `agents/` - Agent templates (base_agent.erb, defaults/)
+- `skills/` - Knowledge base templates (skill.md.erb)
 - `commands/` - Slash command templates
 - `hooks/` - Hook script templates
 
@@ -223,10 +232,11 @@ end
 ```
 
 **Manifest-Based Knowledge Tracking**:
-Each agent has a `manifest.json` that tracks knowledge sources without storing content:
-- Version controlled: manifest.json (sources metadata)
-- Not version controlled: actual knowledge content in ~/.claude/agents/
-- Team members run `aircana agents refresh` to sync knowledge locally
+Each knowledge base has a `manifest.json` that tracks knowledge sources:
+- Version controlled: `agents/<kb-name>/manifest.json` (sources metadata, KB type)
+- Remote KBs: Content stored in `~/.claude/skills/<kb-name>/` (not version controlled)
+- Local KBs: Content stored in `agents/<kb-name>/knowledge/` (version controlled), synced to `~/.claude/skills/`
+- Team members run `aircana kb refresh` to sync remote knowledge locally
 
 **Plugin-Aware Path Resolution**:
 Configuration class detects plugin mode and resolves paths accordingly:
@@ -242,12 +252,12 @@ Configuration class detects plugin mode and resolves paths accordingly:
 - Run specific test: `bundle exec rspec spec/path/to/file_spec.rb:15`
 
 ### Knowledge Sources
-Agents can sync knowledge from multiple sources:
+Knowledge bases can sync content from multiple sources:
 
 **Confluence Integration:**
 - Environment variables: `CONFLUENCE_BASE_URL`, `CONFLUENCE_USERNAME`, `CONFLUENCE_API_TOKEN`
 - Pages fetched via Confluence REST API v2 using HTTParty
-- Label-based discovery: searches for pages labeled with agent name under "global" prefix
+- Label-based discovery: searches for pages labeled with KB name under "global" prefix
 - Pagination support for large result sets
 - HTML content converted to Markdown via ReverseMarkdown
 - Page metadata (ID) tracked in manifest for refresh operations
@@ -265,9 +275,10 @@ Agents can sync knowledge from multiple sources:
 - URL metadata tracked in manifest
 
 **Unified Management:**
-- Both source types tracked in manifest.json per agent
+- Both source types tracked in manifest.json per knowledge base
 - Manifest schema version 1.0
-- `aircana agents refresh <agent>` refreshes all sources (Confluence + web)
-- `aircana agents refresh-all` refreshes all configured agents
-- Content stored as Markdown in `~/.claude/agents/<plugin-name>-<agent-name>/knowledge/`
-- Knowledge paths referenced in agent files use tilde notation: `~/.claude/agents/.../knowledge/`
+- `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for remote KBs
+- `aircana kb refresh-all` refreshes all configured remote knowledge bases
+- Remote KB content stored as Markdown in `~/.claude/skills/<kb-name>/`
+- Local KB content stored in `agents/<kb-name>/knowledge/`, synced to `~/.claude/skills/<kb-name>/`
+- Knowledge paths referenced in skill files use tilde notation: `~/.claude/skills/.../`
