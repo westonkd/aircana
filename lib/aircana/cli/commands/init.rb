@@ -132,7 +132,6 @@ module Aircana
           Aircana.create_dir_if_needed(commands_dir)
 
           copy_command_files(commands_dir)
-          install_default_agents
         end
 
         def copy_command_files(destination_dir)
@@ -140,33 +139,6 @@ module Aircana
             Aircana.human_logger.success("Installing command: #{File.basename(file)}")
             FileUtils.cp(file, destination_dir)
           end
-        end
-
-        def install_default_agents
-          agents_dir = Aircana.configuration.agents_dir
-          Aircana.create_dir_if_needed(agents_dir)
-
-          copy_agent_files(agents_dir)
-        end
-
-        def copy_agent_files(destination_dir)
-          agent_files_pattern = File.join(Aircana.configuration.output_dir, "agents", "*.md")
-          Dir.glob(agent_files_pattern).each do |file|
-            agent_name = File.basename(file, ".md")
-            next unless default_agent?(agent_name)
-
-            destination_file = File.join(destination_dir, File.basename(file))
-            # Skip copying if source and destination are the same
-            next if File.expand_path(file) == File.expand_path(destination_file)
-
-            Aircana.human_logger.success("Installing default agent: #{agent_name}")
-            FileUtils.cp(file, destination_dir)
-          end
-        end
-
-        def default_agent?(agent_name)
-          require_relative "../../generators/agents_generator"
-          Aircana::Generators::AgentsGenerator.available_default_agents.include?(agent_name)
         end
 
         def install_hooks
@@ -201,7 +173,7 @@ module Aircana
             "post_tool_use" => { event: "PostToolUse", matcher: nil },
             "user_prompt_submit" => { event: "UserPromptSubmit", matcher: nil },
             "session_start" => { event: "SessionStart", matcher: nil },
-            "refresh_agents" => { event: "SessionStart", matcher: nil },
+            "refresh_skills" => { event: "SessionStart", matcher: nil },
             "notification_sqs" => { event: "Notification", matcher: nil },
             "rubocop_pre_commit" => { event: "PreToolUse", matcher: "Bash" },
             "rspec_test" => { event: "PostToolUse", matcher: "Bash" },
@@ -265,11 +237,11 @@ module Aircana
           Aircana.human_logger.info("\nPlugin structure:")
           Aircana.human_logger.info("  .claude-plugin/plugin.json  - Plugin metadata")
           Aircana.human_logger.info("  commands/                   - Slash commands")
-          Aircana.human_logger.info("  agents/                     - Specialized agents")
+          Aircana.human_logger.info("  agents/                     - Knowledge bases")
           Aircana.human_logger.info("  hooks/                      - Event hook configurations")
           Aircana.human_logger.info("  scripts/                    - Hook scripts and utilities")
           Aircana.human_logger.info("\nNext steps:")
-          Aircana.human_logger.info("  - Create agents: aircana agents create")
+          Aircana.human_logger.info("  - Create knowledge bases: aircana kb create")
           Aircana.human_logger.info("  - Install plugin in Claude Code")
           Aircana.human_logger.info("  - Run: aircana plugin info")
         end

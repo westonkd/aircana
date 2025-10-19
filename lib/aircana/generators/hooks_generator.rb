@@ -11,7 +11,7 @@ module Aircana
         post_tool_use
         user_prompt_submit
         session_start
-        refresh_agents
+        refresh_skills
         notification_sqs
         rubocop_pre_commit
         rspec_test
@@ -21,7 +21,7 @@ module Aircana
       # Default hooks that are auto-installed
       DEFAULT_HOOK_TYPES = %w[
         session_start
-        refresh_agents
+        refresh_skills
         notification_sqs
       ].freeze
 

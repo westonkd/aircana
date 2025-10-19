@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "../../generators/plan_command_generator"
-require_relative "../../generators/record_command_generator"
-require_relative "../../generators/execute_command_generator"
-require_relative "../../generators/review_command_generator"
-require_relative "../../generators/apply_feedback_command_generator"
-require_relative "../../generators/ask_expert_command_generator"
+# Commands that reference old agent system - commented out for now
+# require_relative "../../generators/plan_command_generator"
+# require_relative "../../generators/record_command_generator"
+# require_relative "../../generators/execute_command_generator"
+# require_relative "../../generators/review_command_generator"
+# require_relative "../../generators/apply_feedback_command_generator"
+# require_relative "../../generators/ask_expert_command_generator"
 require_relative "../../generators/hooks_generator"
 
 module Aircana
@@ -13,14 +14,18 @@ module Aircana
     module Generate
       class << self
         def generators
-          @generators ||= [
-            Aircana::Generators::PlanCommandGenerator.new,
-            Aircana::Generators::RecordCommandGenerator.new,
-            Aircana::Generators::ExecuteCommandGenerator.new,
-            Aircana::Generators::ReviewCommandGenerator.new,
-            Aircana::Generators::ApplyFeedbackCommandGenerator.new,
-            Aircana::Generators::AskExpertCommandGenerator.new
-          ]
+          # No default commands for now - they referenced the old agent system
+          @generators ||= []
+
+          # TODO: Re-enable these when we have a new command system
+          # @generators ||= [
+          #   Aircana::Generators::PlanCommandGenerator.new,
+          #   Aircana::Generators::RecordCommandGenerator.new,
+          #   Aircana::Generators::ExecuteCommandGenerator.new,
+          #   Aircana::Generators::ReviewCommandGenerator.new,
+          #   Aircana::Generators::ApplyFeedbackCommandGenerator.new,
+          #   Aircana::Generators::AskExpertCommandGenerator.new
+          # ]
         end
 
         def run

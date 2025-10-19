@@ -10,7 +10,6 @@ require_relative "commands/init"
 require_relative "subcommand"
 require_relative "help_formatter"
 require_relative "commands/kb"
-require_relative "commands/hooks"
 require_relative "commands/plugin"
 
 module Aircana
@@ -74,38 +73,8 @@ module Aircana
         end
       end
 
-      class HooksSubcommand < Subcommand
-        desc "list", "List all available and installed hooks"
-        def list
-          Hooks.list
-        end
-
-        desc "enable HOOK_NAME", "Enable a specific hook"
-        def enable(hook_name)
-          Hooks.enable(hook_name)
-        end
-
-        desc "disable HOOK_NAME", "Disable a specific hook"
-        def disable(hook_name)
-          Hooks.disable(hook_name)
-        end
-
-        desc "create", "Create a new custom hook"
-        def create
-          Hooks.create
-        end
-
-        desc "status", "Show current hook configuration status"
-        def status
-          Hooks.status
-        end
-      end
-
       desc "kb", "Create and manage knowledge bases for Claude Code skills"
       subcommand "kb", KBSubcommand
-
-      desc "hooks", "Manage Claude Code hooks"
-      subcommand "hooks", HooksSubcommand
 
       class PluginSubcommand < Subcommand
         desc "info", "Display plugin information"

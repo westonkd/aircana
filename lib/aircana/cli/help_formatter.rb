@@ -24,8 +24,7 @@ module Aircana
       def command_groups
         {
           "Knowledge Base Management" => %w[kb],
-          "Hook Management" => %w[hooks],
-          "System" => %w[generate init doctor dump-context]
+          "System" => %w[init doctor]
         }
       end
 

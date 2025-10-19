@@ -1,0 +1,121 @@
+#!/bin/bash
+# Auto-refresh remote knowledge bases on session start
+# Runs at most once per 24 hours to avoid API rate limits
+# Only refreshes remote KBs, skips local KBs
+
+set -e
+
+# Create log directory if it doesn't exist
+mkdir -p ~/.aircana
+LOG_FILE="$HOME/.aircana/hooks.log"
+
+# Claude Code provides this environment variable
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
+
+if [ -z "$PLUGIN_ROOT" ]; then
+    echo "$(date): Warning - CLAUDE_PLUGIN_ROOT not set, skipping KB refresh" >> "$LOG_FILE"
+    echo "{}"
+    exit 0
+fi
+
+TIMESTAMP_FILE="${PLUGIN_ROOT}/.last_refresh"
+REFRESH_INTERVAL_SECONDS=86400  # 24 hours
+
+# Check if we've refreshed recently
+if [ -f "$TIMESTAMP_FILE" ]; then
+    LAST_REFRESH=$(cat "$TIMESTAMP_FILE")
+    CURRENT_TIME=$(date +%s)
+    TIME_DIFF=$((CURRENT_TIME - LAST_REFRESH))
+
+    if [ $TIME_DIFF -lt $REFRESH_INTERVAL_SECONDS ]; then
+        HOURS_SINCE=$((TIME_DIFF / 3600))
+        echo "$(date): Knowledge bases refreshed ${HOURS_SINCE}h ago, skipping refresh" >> "$LOG_FILE"
+        echo "{}"
+        exit 0
+    fi
+fi
+
+# Tell aircana where the plugin lives
+export AIRCANA_PLUGIN_ROOT="$PLUGIN_ROOT"
+
+echo "$(date): Starting knowledge base refresh from plugin root: $PLUGIN_ROOT" >> "$LOG_FILE"
+
+# Find all knowledge bases in agents directory
+AGENTS_DIR="${PLUGIN_ROOT}/agents"
+
+if [ ! -d "$AGENTS_DIR" ]; then
+    echo "$(date): No agents directory found, skipping refresh" >> "$LOG_FILE"
+    echo "{}"
+    exit 0
+fi
+
+# Track if we refreshed any KBs
+REFRESHED_COUNT=0
+SKIPPED_COUNT=0
+
+# Iterate through each KB directory
+for kb_dir in "${AGENTS_DIR}"/*/ ; do
+    # Skip if no directories found
+    [ -d "$kb_dir" ] || continue
+
+    kb_name=$(basename "$kb_dir")
+    manifest_file="${kb_dir}manifest.json"
+
+    # Skip if no manifest exists
+    if [ ! -f "$manifest_file" ]; then
+        echo "$(date): No manifest found for KB '$kb_name', skipping" >> "$LOG_FILE"
+        continue
+    fi
+
+    # Determine KB type from manifest (default to remote if not specified)
+    kb_type="remote"
+
+    # Try to parse with jq if available, otherwise use grep
+    if command -v jq >/dev/null 2>&1; then
+        kb_type=$(jq -r '.kb_type // "remote"' "$manifest_file" 2>/dev/null || echo "remote")
+    else
+        # Fallback: grep for kb_type field
+        if grep -q '"kb_type"[[:space:]]*:[[:space:]]*"local"' "$manifest_file" 2>/dev/null; then
+            kb_type="local"
+        fi
+    fi
+
+    # Only refresh remote KBs
+    if [ "$kb_type" = "local" ]; then
+        echo "$(date): Skipping local KB '$kb_name'" >> "$LOG_FILE"
+        SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+        continue
+    fi
+
+    # Refresh remote KB
+    echo "$(date): Refreshing remote KB '$kb_name'" >> "$LOG_FILE"
+    if aircana kb refresh "$kb_name" >> "$LOG_FILE" 2>&1; then
+        echo "$(date): Successfully refreshed KB '$kb_name'" >> "$LOG_FILE"
+        REFRESHED_COUNT=$((REFRESHED_COUNT + 1))
+    else
+        echo "$(date): Warning - Failed to refresh KB '$kb_name'" >> "$LOG_FILE"
+    fi
+done
+
+# Update timestamp on completion (even if some refreshes failed)
+date +%s > "$TIMESTAMP_FILE"
+
+# Log summary
+echo "$(date): KB refresh completed - refreshed: $REFRESHED_COUNT, skipped (local): $SKIPPED_COUNT" >> "$LOG_FILE"
+
+# Return success with context
+if [ $REFRESHED_COUNT -gt 0 ]; then
+    CONTEXT="Refreshed $REFRESHED_COUNT remote knowledge base(s)"
+else
+    CONTEXT="No remote knowledge bases to refresh"
+fi
+
+ESCAPED_CONTEXT=$(echo -n "$CONTEXT" | sed 's/"/\\"/g')
+cat << EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "$ESCAPED_CONTEXT"
+  }
+}
+EOF
