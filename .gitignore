@@ -79,3 +79,13 @@ Thumbs.db
 
 # Docker development artifacts
 docker-compose.override.yml
+
+# Local KB knowledge IS version controlled (don't ignore)
+!skills/*/*.md
+
+# Aircan testing files
+hooks
+scripts
+skills
+agents
+spec_target*

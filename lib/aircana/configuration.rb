@@ -69,17 +69,28 @@ module Aircana
       @output_dir = File.join(@global_dir, "aircana.out")
     end
 
+    # rubocop:disable Metrics/MethodLength
     def setup_plugin_paths
       # Plugin root can be set via AIRCANA_PLUGIN_ROOT (for hooks) or CLAUDE_PLUGIN_ROOT,
       # otherwise defaults to the current project directory
       @plugin_root = ENV.fetch("AIRCANA_PLUGIN_ROOT", ENV.fetch("CLAUDE_PLUGIN_ROOT", @project_dir))
       @plugin_manifest_dir = File.join(@plugin_root, ".claude-plugin")
       @commands_dir = File.join(@plugin_root, "commands")
-      @skills_dir = File.join(@plugin_root, ".claude", "skills")
+
+      # Skills directory location depends on whether we're in a plugin
+      # Plugin mode: skills/ (Claude Code standard location)
+      # Non-plugin mode: .claude/skills/ (local development/one-off usage)
+      @skills_dir = if plugin_mode?
+                      File.join(@plugin_root, "skills")
+                    else
+                      File.join(@plugin_root, ".claude", "skills")
+                    end
+
       @hooks_dir = File.join(@plugin_root, "hooks")
       @scripts_dir = File.join(@plugin_root, "scripts")
       @kb_knowledge_dir = @skills_dir
     end
+    # rubocop:enable Metrics/MethodLength
 
     def setup_claude_code_paths
       @claude_code_config_path = File.join(Dir.home, ".claude")
