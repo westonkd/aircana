@@ -104,9 +104,10 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
 - **Configuration** (`lib/aircana/configuration.rb`): Path resolution system
   - Plugin root detection via environment variables (AIRCANA_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT)
   - Plugin-aware paths (commands, skills, hooks directories)
-  - Global vs plugin-local knowledge storage
+  - Conditional skills directory location:
+    - Plugin mode (has `.claude-plugin/plugin.json`): `skills/` (Claude Code standard)
+    - Non-plugin mode (one-off usage): `.claude/skills/` (local development)
   - Automatic plugin name extraction from plugin.json
-  - Resolves to `~/.claude/skills/<kb-name>/` for knowledge storage
 
 - **LLM Integration**:
   - `llm/claude_client.rb`: Claude API client for web title generation
@@ -126,32 +127,39 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
 - **Commands**: Custom slash commands for workflow automation
 
 ### File Organization
-- **Plugin Structure**:
+- **Plugin Structure** (when in plugin mode):
   - `.claude-plugin/plugin.json` - Plugin manifest with metadata and versioning
-  - `agents/` - Knowledge base markdown files (skill definitions)
+  - `agents/` - Knowledge base manifests (metadata about knowledge sources)
   - `agents/<kb-name>/manifest.json` - Tracks knowledge sources per KB
-  - `agents/<kb-name>/knowledge/` - Local knowledge base content (if KB type is "local")
+  - `skills/` - Knowledge base SKILL.md files (Claude Code reads from here)
+  - `skills/<kb-name>/SKILL.md` - Main skill definition file
+  - `skills/<kb-name>/*.md` - Knowledge content (Confluence pages, web articles)
   - `commands/` - Slash command markdown files
   - `hooks/` - hooks.json manifest defining hook configurations
   - `scripts/` - Hook scripts and utility scripts
 
+- **Non-Plugin Structure** (one-off usage outside a plugin):
+  - `.claude/skills/` - All KB files stored here
+  - `.claude/skills/<kb-name>/manifest.json` - KB manifest
+  - `.claude/skills/<kb-name>/SKILL.md` - Skill definition
+  - `.claude/skills/<kb-name>/*.md` - Knowledge content
+
 - **Global Configuration**:
   - `~/.aircana/` - Global Aircana configuration directory
   - `~/.aircana/aircana.out/` - Generated templates output directory
-  - `~/.claude/skills/` - Runtime knowledge base storage
 
 - **Knowledge Storage Architecture**:
-  - **Remote KBs (not version controlled)**: `~/.claude/skills/<kb-name>/`
-    - Actual knowledge base content (Markdown files)
-    - Refreshed via `aircana kb refresh`
-    - Excluded from version control to avoid bloat/sensitivity
-  - **Local KBs (version controlled)**: `agents/<kb-name>/knowledge/`
-    - Version-controlled knowledge content in plugin repository
-    - Auto-synced to `~/.claude/skills/<kb-name>/` via SessionStart hook
-    - Teams can collaborate on knowledge directly in Git
-  - **Plugin-local manifests (version controlled)**: `agents/<kb-name>/manifest.json`
-    - Tracks knowledge sources (Confluence labels, web URLs)
-    - Specifies KB type ("local" or "remote")
+  - **Plugin Mode**:
+    - Manifests: `agents/<kb-name>/manifest.json` (version controlled)
+    - SKILL.md: `skills/<kb-name>/SKILL.md` (version controlled or gitignored based on KB type)
+    - Knowledge content: `skills/<kb-name>/*.md`
+    - Remote KBs: `skills/<kb-name>/` added to .gitignore (not version controlled)
+    - Local KBs: `skills/<kb-name>/` version controlled (team collaboration)
+  - **Non-Plugin Mode**:
+    - Everything in `.claude/skills/<kb-name>/`:
+      - `manifest.json` - KB manifest
+      - `SKILL.md` - Skill definition
+      - `*.md` - Knowledge content
     - Team members can refresh knowledge independently
     - Format:
       ```json
@@ -232,9 +240,9 @@ end
 
 **Manifest-Based Knowledge Tracking**:
 Each knowledge base has a `manifest.json` that tracks knowledge sources:
-- Version controlled: `agents/<kb-name>/manifest.json` (sources metadata, KB type)
-- Remote KBs: Content stored in `~/.claude/skills/<kb-name>/` (not version controlled)
-- Local KBs: Content stored in `agents/<kb-name>/knowledge/` (version controlled), synced to `~/.claude/skills/`
+- Plugin mode: Stored in `agents/<kb-name>/manifest.json` (version controlled)
+- Non-plugin mode: Stored in `.claude/skills/<kb-name>/manifest.json`
+- Contains KB type (remote/local), source URLs, Confluence labels
 - Team members run `aircana kb refresh` to sync remote knowledge locally
 
 **Plugin-Aware Path Resolution**:
@@ -278,6 +286,5 @@ Knowledge bases can sync content from multiple sources:
 - Manifest schema version 1.0
 - `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for remote KBs
 - `aircana kb refresh-all` refreshes all configured remote knowledge bases
-- Remote KB content stored as Markdown in `~/.claude/skills/<kb-name>/`
-- Local KB content stored in `agents/<kb-name>/knowledge/`, synced to `~/.claude/skills/<kb-name>/`
-- Knowledge paths referenced in skill files use tilde notation: `~/.claude/skills/.../`
+- **Plugin mode**: KB content stored in `skills/<kb-name>/`
+- **Non-plugin mode**: KB content stored in `.claude/skills/<kb-name>/`

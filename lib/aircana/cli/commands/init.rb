@@ -57,10 +57,10 @@ module Aircana
             Aircana.configuration.instance_variable_set(:@plugin_manifest_dir,
                                                         File.join(target_dir, ".claude-plugin"))
             Aircana.configuration.instance_variable_set(:@commands_dir, File.join(target_dir, "commands"))
-            Aircana.configuration.instance_variable_set(:@agents_dir, File.join(target_dir, "agents"))
+            Aircana.configuration.instance_variable_set(:@skills_dir, File.join(target_dir, "skills"))
+            Aircana.configuration.instance_variable_set(:@kb_knowledge_dir, File.join(target_dir, "skills"))
             Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(target_dir, "hooks"))
             Aircana.configuration.instance_variable_set(:@scripts_dir, File.join(target_dir, "scripts"))
-            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir, File.join(target_dir, "agents"))
 
             yield
           ensure
@@ -71,11 +71,17 @@ module Aircana
                                                         File.join(original_plugin_root, ".claude-plugin"))
             Aircana.configuration.instance_variable_set(:@commands_dir,
                                                         File.join(original_plugin_root, "commands"))
-            Aircana.configuration.instance_variable_set(:@agents_dir, File.join(original_plugin_root, "agents"))
+            # Restore skills_dir based on whether original_plugin_root is a plugin
+            original_plugin_mode = File.exist?(File.join(original_plugin_root, ".claude-plugin", "plugin.json"))
+            original_skills_dir = if original_plugin_mode
+                                    File.join(original_plugin_root, "skills")
+                                  else
+                                    File.join(original_plugin_root, ".claude", "skills")
+                                  end
+            Aircana.configuration.instance_variable_set(:@skills_dir, original_skills_dir)
+            Aircana.configuration.instance_variable_set(:@kb_knowledge_dir, original_skills_dir)
             Aircana.configuration.instance_variable_set(:@hooks_dir, File.join(original_plugin_root, "hooks"))
             Aircana.configuration.instance_variable_set(:@scripts_dir, File.join(original_plugin_root, "scripts"))
-            Aircana.configuration.instance_variable_set(:@agent_knowledge_dir,
-                                                        File.join(original_plugin_root, "agents"))
           end
         end
 
@@ -109,7 +115,7 @@ module Aircana
 
         def create_plugin_structure(target_dir)
           # Create plugin directories
-          [".claude-plugin", "commands", "agents", "hooks", "scripts"].each do |dir|
+          [".claude-plugin", "commands", "agents", "skills", "hooks", "scripts"].each do |dir|
             dir_path = File.join(target_dir, dir)
             Aircana.create_dir_if_needed(dir_path)
             Aircana.human_logger.info("Created directory: #{dir}/")
@@ -237,7 +243,8 @@ module Aircana
           Aircana.human_logger.info("\nPlugin structure:")
           Aircana.human_logger.info("  .claude-plugin/plugin.json  - Plugin metadata")
           Aircana.human_logger.info("  commands/                   - Slash commands")
-          Aircana.human_logger.info("  agents/                     - Knowledge bases")
+          Aircana.human_logger.info("  agents/                     - Knowledge base manifests")
+          Aircana.human_logger.info("  skills/                     - Knowledge base SKILL.md files")
           Aircana.human_logger.info("  hooks/                      - Event hook configurations")
           Aircana.human_logger.info("  scripts/                    - Hook scripts and utilities")
           Aircana.human_logger.info("\nNext steps:")

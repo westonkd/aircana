@@ -284,11 +284,21 @@ module Aircana
         end
 
         def remote_knowledge_pattern
-          ".claude/skills/*/*.md"
+          # Pattern depends on whether we're in a plugin
+          if Aircana.configuration.plugin_mode?
+            "skills/*/*.md"
+          else
+            ".claude/skills/*/*.md"
+          end
         end
 
         def local_knowledge_negation_pattern
-          "!.claude/skills/*/*.md"
+          # Negation pattern depends on whether we're in a plugin
+          if Aircana.configuration.plugin_mode?
+            "!skills/*/*.md"
+          else
+            "!.claude/skills/*/*.md"
+          end
         end
 
         def gitignore_has_pattern?(gitignore_path, pattern)
