@@ -549,15 +549,15 @@ export AWS_REGION="us-east-1"
 
 The message template supports `{{message}}` placeholder which gets replaced with the Claude Code notification text.
 
-#### 3. Install and Enable Hook
+#### 3. Initialize Plugin
+
+The notification_sqs hook is automatically generated when you initialize your plugin:
 
 ```bash
-aircana generate
 aircana init
-aircana hooks enable notification_sqs
 ```
 
-Reload your shell or run `source ~/.zshrc` (or your shell config file).
+The hook will be automatically enabled and ready to use.
 
 ### Verify Configuration
 
@@ -588,15 +588,6 @@ aircana kb refresh [KB-NAME]       # Sync knowledge base from Confluence and web
 aircana kb refresh-all             # Refresh all knowledge bases
 aircana kb add-url [KB-NAME] [URL] # Add a web URL to a knowledge base
 aircana kb list                    # List all configured knowledge bases
-```
-
-### Hook Management
-```bash
-aircana hooks list                 # List all available and installed hooks
-aircana hooks enable [HOOK]        # Enable a specific hook
-aircana hooks disable [HOOK]       # Disable a specific hook
-aircana hooks create               # Create custom hook
-aircana hooks status               # Show hook configuration status
 ```
 
 ### System

@@ -43,12 +43,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases
 - `aircana kb add-url <kb-name> <url>` - Add a web URL to a knowledge base
 
-**Hook Management:**
-- `aircana hooks list` - List all available hooks
-- `aircana hooks enable <hook>` - Enable a specific hook
-- `aircana hooks disable <hook>` - Disable a specific hook
-- `aircana hooks create` - Create custom hook
-- `aircana hooks status` - Show hook configuration status
+**Hooks:**
+- Hooks are automatically generated during `aircana init`
+- Default hooks include: `session_start`, `refresh_skills`, and `notification_sqs`
+- `refresh_skills` automatically refreshes remote knowledge bases once per 24 hours
+- Hook scripts are stored in `scripts/` directory
+- Hook configuration is managed via `hooks/hooks.json`
 
 **System:**
 - `aircana doctor` - Check system health and dependencies
@@ -63,13 +63,12 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
 
 - **CLI Layer** (`lib/aircana/cli/`): Thor-based command line interface with subcommands
   - `app.rb`: Main Thor application defining all commands and subcommands
-  - `subcommand.rb`: Base class for subcommands (kb, hooks, plugin)
+  - `subcommand.rb`: Base class for subcommands (kb, plugin)
   - `shell_command.rb`: Shell command execution utilities
   - `commands/`: Individual command implementations
     - `init.rb`: Plugin initialization
     - `plugin.rb`: Plugin metadata management
     - `kb.rb`: Knowledge base CRUD operations
-    - `hooks.rb`: Hook management
     - `doctor.rb`: System health checks with modular check system
     - `generate.rb`: Generates plugin components from templates
     - `dump_context.rb`: Outputs knowledge base content for debugging
