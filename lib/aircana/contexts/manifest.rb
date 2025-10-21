@@ -154,6 +154,8 @@ module Aircana
           raise ManifestError, "Page entry missing required field: id" unless page_entry.key?("id")
 
           raise ManifestError, "Page entry missing required field: summary" unless page_entry.key?("summary")
+
+          # Title is optional for backward compatibility with existing manifests
         end
 
         def validate_web_source(source)

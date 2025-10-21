@@ -101,10 +101,12 @@ module Aircana
       def extract_page_metadata(page)
         content = page&.dig("body", "storage", "value") || ""
         markdown_content = convert_to_markdown(content)
-        summary = generate_summary(markdown_content, page["title"] || "Confluence page")
+        title = page["title"] || "Confluence page"
+        summary = generate_summary(markdown_content, title)
 
         {
           "id" => page["id"],
+          "title" => title,
           "summary" => summary
         }
       end
