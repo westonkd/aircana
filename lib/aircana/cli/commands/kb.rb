@@ -221,25 +221,17 @@ module Aircana
         end
         # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
-        # rubocop:disable Metrics/MethodLength
-        def regenerate_skill_md(kb_name, short_description = nil)
+        def regenerate_skill_md(kb_name, _short_description = nil)
           return unless Aircana::Contexts::Manifest.manifest_exists?(kb_name)
 
-          generator = if short_description
-                        Generators::SkillsGenerator.new(
-                          kb_name: kb_name,
-                          short_description: short_description
-                        )
-                      else
-                        Generators::SkillsGenerator.from_manifest(kb_name)
-                      end
+          # Always use from_manifest when manifest exists to ensure knowledge_files are loaded
+          generator = Generators::SkillsGenerator.from_manifest(kb_name)
 
           generator.generate
           Aircana.human_logger.success "Generated SKILL.md for '#{kb_name}'"
         rescue StandardError => e
           Aircana.human_logger.warn "Failed to generate SKILL.md: #{e.message}"
         end
-        # rubocop:enable Metrics/MethodLength
 
         def ensure_gitignore_entry(kb_type)
           gitignore_path = gitignore_file_path

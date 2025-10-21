@@ -120,7 +120,14 @@ module Aircana
           case source["type"]
           when "confluence"
             source["pages"]&.each do |page|
+              # Match by page ID (for old manifests) or by sanitized title (for new manifests)
               return page["summary"] if filename.include?(page["id"])
+
+              # Try matching by sanitized title if available
+              if page["title"]
+                sanitized_title = sanitize_filename(page["title"])
+                return page["summary"] if filename.include?(sanitized_title)
+              end
             end
           when "web"
             source["urls"]&.each do |url_entry|
@@ -134,6 +141,20 @@ module Aircana
       end
       # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
+
+      def self.sanitize_filename(title)
+        # Match the sanitization logic in Local#sanitize_filename
+        sanitized = title.strip
+                         .gsub(%r{[<>:"/\\|?*]}, "-")
+                         .gsub(/\s+/, "-")
+                         .gsub(/-+/, "-")
+                         .gsub(/^-|-$/, "")
+
+        sanitized = "untitled" if sanitized.empty?
+        sanitized = sanitized[0, 200] if sanitized.length > 200
+
+        sanitized
+      end
 
       def self.generate_skill_description_from_manifest(manifest, kb_name)
         # Generate a description optimized for Claude's skill discovery
