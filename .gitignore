@@ -83,9 +83,12 @@ docker-compose.override.yml
 # Local KB knowledge IS version controlled (don't ignore)
 !skills/*/*.md
 
-# Aircan testing files
+# Aircana testing files
 hooks
 scripts
 skills
 agents
 spec_target*
+
+# But DO track template directories
+!lib/aircana/templates/agents/
