@@ -3,6 +3,7 @@
 require "json"
 require "tty-prompt"
 require_relative "../../generators/skills_generator"
+require_relative "../../generators/agents_generator"
 require_relative "../../contexts/manifest"
 require_relative "../../contexts/web"
 
@@ -10,6 +11,7 @@ module Aircana
   module CLI
     module KB # rubocop:disable Metrics/ModuleLength
       class << self # rubocop:disable Metrics/ClassLength
+        # rubocop:disable Metrics/MethodLength
         def refresh(kb_name)
           normalized_kb_name = normalize_string(kb_name)
 
@@ -22,9 +24,11 @@ module Aircana
 
           perform_manifest_aware_refresh(normalized_kb_name)
           regenerate_skill_md(normalized_kb_name)
+          regenerate_agent_md(normalized_kb_name)
         rescue Aircana::Error => e
           handle_refresh_error(normalized_kb_name, e)
         end
+        # rubocop:enable Metrics/MethodLength
 
         def create # rubocop:disable Metrics/MethodLength
           prompt = TTY::Prompt.new
@@ -54,9 +58,12 @@ module Aircana
           # Prompt for web URL fetching
           fetched_urls = prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
 
-          # Generate SKILL.md if no content was fetched during the prompts
+          # Generate SKILL.md and agent if no content was fetched during the prompts
           # (the prompt functions already generate it when they successfully fetch content)
-          regenerate_skill_md(normalized_kb_name, short_description) unless fetched_confluence || fetched_urls
+          unless fetched_confluence || fetched_urls
+            regenerate_skill_md(normalized_kb_name, short_description)
+            regenerate_agent_md(normalized_kb_name)
+          end
 
           # If remote kb_type, ensure SessionStart hook is installed
           ensure_remote_knowledge_refresh_hook if kb_type == "remote"
@@ -109,8 +116,9 @@ module Aircana
             all_sources = other_sources + web_sources
             Aircana::Contexts::Manifest.update_manifest(normalized_kb_name, all_sources)
 
-            # Regenerate SKILL.md
+            # Regenerate SKILL.md and agent
             regenerate_skill_md(normalized_kb_name)
+            regenerate_agent_md(normalized_kb_name)
 
             Aircana.human_logger.success "Successfully added URL to KB '#{kb_name}'"
           else
@@ -233,6 +241,18 @@ module Aircana
           Aircana.human_logger.warn "Failed to generate SKILL.md: #{e.message}"
         end
 
+        def regenerate_agent_md(kb_name)
+          return unless Aircana::Contexts::Manifest.manifest_exists?(kb_name)
+
+          # Generate agent from manifest
+          generator = Generators::AgentsGenerator.from_manifest(kb_name)
+
+          generator.generate
+          Aircana.human_logger.success "Generated agent for '#{kb_name}'"
+        rescue StandardError => e
+          Aircana.human_logger.warn "Failed to generate agent: #{e.message}"
+        end
+
         def ensure_gitignore_entry(kb_type)
           gitignore_path = gitignore_file_path
 
@@ -347,6 +367,7 @@ module Aircana
             if result[:pages_count]&.positive?
               ensure_gitignore_entry(kb_type)
               regenerate_skill_md(normalized_kb_name, short_description)
+              regenerate_agent_md(normalized_kb_name)
               return true
             end
           else
@@ -403,6 +424,7 @@ module Aircana
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
               ensure_gitignore_entry(kb_type)
               regenerate_skill_md(normalized_kb_name)
+              regenerate_agent_md(normalized_kb_name)
               return true
             else
               Aircana.human_logger.warn "No URLs were successfully fetched"
@@ -489,6 +511,7 @@ module Aircana
           begin
             result = perform_manifest_aware_refresh(kb_name)
             regenerate_skill_md(kb_name)
+            regenerate_agent_md(kb_name)
             {
               success: true,
               pages_count: result[:pages_count],

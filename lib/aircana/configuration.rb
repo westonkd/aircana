@@ -7,7 +7,7 @@ module Aircana
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
                   :claude_code_config_path, :claude_code_project_config_path, :kb_knowledge_dir,
                   :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
-                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir
+                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir, :agents_dir
 
     def initialize
       setup_directory_paths
@@ -84,6 +84,15 @@ module Aircana
                       File.join(@plugin_root, "skills")
                     else
                       File.join(@plugin_root, ".claude", "skills")
+                    end
+
+      # Agents directory location depends on whether we're in a plugin
+      # Plugin mode: agents/ (Claude Code standard location)
+      # Non-plugin mode: .claude/agents/ (local development/one-off usage)
+      @agents_dir = if plugin_mode?
+                      File.join(@plugin_root, "agents")
+                    else
+                      File.join(@plugin_root, ".claude", "agents")
                     end
 
       @hooks_dir = File.join(@plugin_root, "hooks")
