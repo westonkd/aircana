@@ -51,10 +51,6 @@ module Aircana
           nil
         end
 
-        def mcp_tool_installed?(result)
-          $CHILD_STATUS.success? && !result.include?("not found") && !result.include?("error")
-        end
-
         def detect_os
           return "macOS" if RUBY_PLATFORM.match?(/darwin/)
           return "Ubuntu/Debian" if File.exist?("/etc/debian_version")

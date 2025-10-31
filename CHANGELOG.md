@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **BREAKING**: Removed obsolete slash commands: `/execute`, `/record`, `/review`, `/apply-feedback`
+  - Only `/plan` and `/ask-expert` commands remain
+  - `/plan` command simplified to focus on strategic planning with expert consultation
+  - Workflow commands removed as they were incompatible with new subagent → skill architecture
+
 ## [4.0.0] - 2025-10-31
 
 ### Changed

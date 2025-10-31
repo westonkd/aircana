@@ -11,7 +11,6 @@ module Aircana
 
           if claude_available?
             log_success("claude", "Claude Code installed")
-            check_mcp_tools
           else
             log_failure("claude", "Claude Code not installed")
             log_remedy("Install Claude Code from: https://claude.ai/download")
@@ -19,26 +18,6 @@ module Aircana
           end
 
           check_claude_directories
-        end
-
-        def check_mcp_tools
-          claude_path = find_claude_path
-          return unless claude_path
-
-          check_jira_mcp_tool(claude_path)
-        rescue StandardError => e
-          log_warning("MCP Jira", "Could not check MCP tool: #{e.message}")
-        end
-
-        def check_jira_mcp_tool(claude_path)
-          result = `#{claude_path} mcp get jira 2>&1`
-          if mcp_tool_installed?(result)
-            log_success("MCP Jira", "Atlassian/Jira MCP tool installed")
-          else
-            log_failure("MCP Jira", "Atlassian/Jira MCP tool not found")
-            log_remedy("Install with: claude mcp add --transport sse atlassian https://mcp.atlassian.com/v1/sse")
-            @issues_found = true
-          end
         end
 
         def check_claude_directories
@@ -63,13 +42,13 @@ module Aircana
         def check_agents_status
           agents_dir = File.join(Dir.pwd, ".claude", "agents")
           if Dir.exist?(agents_dir) && !Dir.empty?(agents_dir)
-            agent_count = Dir.glob(File.join(agents_dir, "*.md")).size
-            log_success("agents", "#{agent_count} agent(s) configured")
+            kb_count = Dir.glob(File.join(agents_dir, "*.md")).size
+            log_success("KBs", "#{kb_count} knowledge base(s) configured")
           elsif Dir.exist?(agents_dir)
-            log_info("agents", "Agents directory exists but is empty")
+            log_info("KBs", "Knowledge bases directory exists but is empty")
           else
-            log_info("agents", "No agents configured yet")
-            log_remedy("Create agents with: aircana agents create")
+            log_info("KBs", "No knowledge bases configured yet")
+            log_remedy("Create knowledge bases with: aircana kb create")
           end
         end
       end
@@ -90,7 +69,7 @@ module Aircana
           else
             log_info("Confluence", "Not configured")
             log_remedy("Set CONFLUENCE_BASE_URL, CONFLUENCE_USERNAME, " \
-                       "and CONFLUENCE_API_TOKEN for agent knowledge refresh")
+                       "and CONFLUENCE_API_TOKEN for knowledge base refresh")
           end
         end
 

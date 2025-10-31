@@ -91,7 +91,7 @@ aircana plugin validate
 
 - Use the `/ask-expert` command to consult multiple specialized experts
 
-- Set up the development workflow with plan, execute, review, and apply-feedback commands
+- Use the `/plan` command to create strategic implementation plans with expert consultation
 
 - Explore other tools by running `aircana --help`
 
@@ -391,107 +391,47 @@ At Instructure this means you can easily configure Claude Code to send you slack
 - Knowledge bases should contain 5-20 highly relevant documents, not 100+ loosely related ones
 - Use descriptions to clearly define boundaries and expertise areas
 
-## Development Workflow
+## Slash Commands
 
-Aircana provides a complete development lifecycle through five integrated slash commands:
+Aircana provides two powerful slash commands that leverage your expert knowledge bases:
 
-```mermaid
-stateDiagram-v2
-    [*] --> Plan: /plan
-    Plan --> Record: /record
-    Record --> Execute: /execute
-    Execute --> Review: /review
-    Review --> ApplyFeedback: /apply-feedback
-    ApplyFeedback --> Review: More issues found
-    ApplyFeedback --> [*]: Satisfied
+### `/ask-expert` - Expert Consultation
+
+Consults multiple specialized knowledge bases to answer questions by:
+- Using a coordinator to identify relevant expert agents
+- Running expert consultations in parallel for efficiency
+- Synthesizing responses into a comprehensive answer
+- Citing which experts contributed specific insights
+- Providing follow-up guidance when needed
+
+**Example usage:**
+```
+/ask-expert How should I implement caching for our API?
+/ask-expert What are the best practices for database migrations?
 ```
 
-### Quick Overview
+The command automatically selects the most relevant experts based on your question and the knowledge bases available in your plugin.
 
-1. **`/plan`** - Create strategic implementation plan
-2. **`/record`** - Save plan to Jira ticket
-3. **`/execute`** - Implement plan and create commit
-4. **`/review`** - Adversarial code review with expert feedback
-5. **`/apply-feedback`** - Apply review changes and amend commit
+### `/plan` - Strategic Planning
 
-### Command Details
+Creates strategic implementation plans by consulting domain experts. This command:
+- Verifies you're in Claude Code planning mode
+- Uses a coordinator to identify relevant expert agents
+- Consults experts in parallel for their domain-specific insights
+- Synthesizes expert input into a unified strategic plan
+- Presents the plan as numbered implementation steps
+- Focuses on high-level guidance (not exhaustive code implementations)
 
-#### 1. `/plan` - Strategic Planning
-
-Creates a high-level implementation plan by:
-- Asking you to specify relevant files and directories
-- Consulting specialized sub-agents for domain expertise
-- Sharing research context to avoid duplicate work
-- Generating a focused strategic plan (what to do, not how)
-- Creating actionable todo checklist
-
-The planner focuses on architecture decisions and approach, avoiding exhaustive code implementations.
-
-#### 2. `/record` - Save to Jira
-
-Records your approved plan to a Jira ticket by:
-- Taking the ticket key/ID as input
-- Delegating to the `jira` sub-agent for MCP operations
-- Storing the plan in the ticket description or comments
-
-This creates a traceable link between planning and execution.
-
-#### 3. `/execute` - Implementation
-
-Executes the strategic plan by:
-- Reading the plan from the Jira ticket
-- Creating detailed implementation todo list
-- Presenting plan for your approval
-- Implementing changes sequentially
-- Writing unit tests (delegates to test-writing sub-agent if available)
-- Running tests to verify implementation
-- Creating git commit (delegates to git-ops sub-agent if available)
-
-After commit creation, suggests running `/review`.
-
-#### 4. `/review` - Adversarial Review
-
-Conducts comprehensive code review of HEAD commit by:
-- Analyzing changed files to identify technical domains
-- Using sub-agent-coordinator to select relevant expert agents
-- Presenting changes to experts in parallel
-- Synthesizing feedback organized by severity (Critical/Important/Suggestions)
-- Storing review output for next step
-
-Explicitly states "Reviewing: <commit message>" and ends with "Run /apply-feedback".
-
-#### 5. `/apply-feedback` - Apply Changes
-
-Applies code review feedback by:
-- Reading review output from conversation context
-- Creating prioritized change plan (critical issues first)
-- Presenting plan for your approval
-- Applying approved changes
-- Re-running unit tests
-- Fixing any test failures
-- **Amending HEAD commit** with improvements using `git commit --amend --no-edit`
-
-This preserves the original commit message while incorporating review improvements in a single commit.
-
-### Usage Example
-
-```bash
-# 1. Start planning
-/plan
-> Specify relevant files: src/api/, spec/api/
-
-# 2. Save plan to ticket
-/record PROJ-123
-
-# 3. Execute implementation
-/execute PROJ-123
-
-# 4. Review the commit
-/review
-
-# 5. Apply feedback
-/apply-feedback
+**Example usage:**
 ```
+# First, put Claude Code into planning mode, then:
+/plan Add authentication to the user API
+
+# Or provide task as argument:
+/plan "Refactor the database layer for better performance"
+```
+
+The plan focuses on strategic decisions, architecture considerations, and approach—leveraging the collective expertise of your knowledge bases to create well-informed implementation guidance.
 
 ## Configuration (Optional)
 

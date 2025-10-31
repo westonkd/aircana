@@ -1,35 +1,50 @@
 <%= helpers.model_instructions(
-    "First, ask the user to specify relevant files, directories, or areas of the codebase to examine for this planning task.
+    "You are helping the user create a strategic implementation plan by consulting domain experts. Follow this workflow:
 
-Then use the Task tool with subagent_type 'planner' to invoke the planner agent with the following explicit instructions:
+STEP 1: PLANNING MODE CHECK
+Verify the user is in Claude Code planning mode. If not, tell them:
+\"Please put Claude Code into planning mode first, then describe what you want to plan.\"
 
-STEP 1: CREATE TODO LIST FILE
-First, create a todo list file with the following tasks enumerated in order:
+STEP 2: TASK VALIDATION
+#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: \"What would you like to plan?\" and wait for their response before proceeding.' : "Task to plan: \"#{$ARGUMENTS}\""}
 
-1. Ask user for relevant files and context (if not already provided)
-2. Use Task tool with subagent_type 'jira' to verify Jira ticket information (or ask user to create/provide ticket)
-3. Perform targeted initial research on user-specified files
-4. Consult relevant sub-agents with research context (run in parallel when possible)
-5. Create high-level strategic implementation plan
-6. Iterate with user feedback
-7. Suggest user runs '/record' command to save the plan to Jira ticket
+STEP 3: EXPERT IDENTIFICATION
+Use the Task tool with subagent_type 'sub-agent-coordinator' to identify which expert agents should contribute to this plan. Provide the coordinator with the complete task description and any relevant context.
 
-STEP 2: EXECUTE EACH TASK IN ORDER
-Work through each task in the todo list sequentially:
-- Mark each task as 'in_progress' when you start it
-- Mark each task as 'completed' when finished
-- Continue until all tasks are done
+STEP 4: PARALLEL EXPERT CONSULTATION
+Based on the coordinator's recommendations, use the Task tool to consult each identified expert agent in parallel. For each agent:
+- Use the appropriate subagent_type for each recommended agent
+- Provide the task description plus any agent-specific context the coordinator suggested
+- Execute multiple Task tool calls in a single message for parallel processing
 
-IMPORTANT CONTEXT-SHARING PROTOCOL:
-- When consulting sub-agents, explicitly provide: files already searched, files already read, key findings, and specific focus area
-- This prevents sub-agents from duplicating research work
+STEP 5: SYNTHESIZE STRATEGIC PLAN
+After receiving input from all expert agents:
+- Integrate expert insights into a unified, coherent plan
+- Organize the plan as a numbered list of implementation steps/tasks
+- Include specific guidance from experts where relevant (cite which agent provided which insight)
+- Address any conflicting recommendations and provide your assessment
+- Focus on strategic, high-level guidance (no exhaustive code implementations)
+- Small code examples (5-10 lines) are OK to illustrate key concepts
 
-IMPORTANT PLAN CONSTRAINTS:
-- Focus on strategic, high-level implementation guidance
-- NO rollout plans, effort estimates, or exhaustive code implementations
-- Small code examples (5-10 lines) are OK to illustrate concepts
+STEP 6: PRESENT PLAN
+Present the synthesized plan to the user with:
+- Clear implementation steps numbered in logical order
+- Expert contributions attributed appropriately
+- Any important considerations or trade-offs identified by experts
+- Suggested next steps for beginning implementation
 
-User specified relevant files/areas: #{$USER_FILES || '[User will specify]'}
+IMPORTANT EXECUTION NOTES:
+- Always start with the sub-agent-coordinator for proper expert selection
+- Use parallel Task tool execution when consulting multiple agents (single message with multiple tool calls)
+- Ensure each agent receives context appropriate to their expertise domain
+- Synthesize insights rather than simply concatenating agent responses
+- Keep the plan strategic and actionable
 
-#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user to provide a Jira ticket or task description.' : "Plan for Jira ticket: $ARGUMENTS"}"
+EXAMPLE PARALLEL EXECUTION:
+If coordinator recommends agents A, B, and C, send one message with three Task tool calls:
+1. Task(subagent_type='agent-A', prompt='[task + A-specific context]')
+2. Task(subagent_type='agent-B', prompt='[task + B-specific context]')
+3. Task(subagent_type='agent-C', prompt='[task + C-specific context]')
+
+This approach ensures you leverage expert knowledge while creating a practical, well-informed implementation plan."
 ) %>

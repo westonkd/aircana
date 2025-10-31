@@ -97,7 +97,7 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
 - **Generators** (`lib/aircana/generators/`): ERB-based template generation
   - `base_generator.rb`: Base class with ERB rendering and file writing
   - `skills_generator.rb`: Knowledge base file generation (Markdown format)
-  - Command generators: plan, execute, record, review, apply_feedback, ask_expert
+  - Command generators: plan, ask_expert
   - `hooks_generator.rb`: Hook script generation
   - Templates location: `lib/aircana/templates/`
 
