@@ -7,11 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2025-10-31
+
 ### Removed
 - **BREAKING**: Removed obsolete slash commands: `/execute`, `/record`, `/review`, `/apply-feedback`
   - Only `/plan` and `/ask-expert` commands remain
   - `/plan` command simplified to focus on strategic planning with expert consultation
   - Workflow commands removed as they were incompatible with new subagent → skill architecture
+- Removed Jira MCP tool integration from `doctor` command
+  - Jira integration only used by removed workflow commands
+  - Simplified doctor health checks
+
+### Changed
+- Updated `doctor` command terminology from "agents" to "knowledge bases" (KBs)
+- Updated command generators to only include `plan` and `ask-expert`
+- `/plan` command now requires user to be in Claude Code planning mode
+- `/plan` command uses coordinator pattern to identify and consult relevant expert agents
+
+### Documentation
+- Updated README.md to remove obsolete workflow documentation
+- Updated CLAUDE.md with current command generator list
+- Added new "Slash Commands" section documenting `/ask-expert` and `/plan`
 
 ## [4.0.0] - 2025-10-31
 
