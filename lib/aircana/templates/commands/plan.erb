@@ -8,17 +8,24 @@ Verify the user is in Claude Code planning mode. If not, tell them:
 STEP 2: TASK VALIDATION
 #{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: \"What would you like to plan?\" and wait for their response before proceeding.' : "Task to plan: \"#{$ARGUMENTS}\""}
 
-STEP 3: EXPERT IDENTIFICATION
-Use the Task tool with subagent_type 'sub-agent-coordinator' to identify which expert agents should contribute to this plan. Provide the coordinator with the complete task description and any relevant context.
+STEP 3: IDENTIFY RELEVANT EXPERT AGENTS
+Analyze the task and identify which expert agents from the agents/ directory should contribute to this plan:
+- Review available agent descriptions to understand each agent's domain expertise
+- Select 1-3 agents whose expertise is most relevant to the planning task
+- Consider agents whose knowledge domains complement each other for comprehensive planning
+- If no agents are clearly relevant, create the plan using your general knowledge
 
 STEP 4: PARALLEL EXPERT CONSULTATION
-Based on the coordinator's recommendations, use the Task tool to consult each identified expert agent in parallel. For each agent:
-- Use the appropriate subagent_type for each recommended agent
-- Provide the task description plus any agent-specific context the coordinator suggested
+Use the Task tool to consult each identified relevant agent in parallel. For each agent:
+- Use the agent's name as the subagent_type parameter
+- Provide the task description plus any agent-specific context
 - Execute multiple Task tool calls in a single message for parallel processing
+- Example: If agents 'backend-api' and 'database-design' are relevant:
+  - Task(subagent_type='backend-api', prompt='[task + API planning context]')
+  - Task(subagent_type='database-design', prompt='[task + database planning context]')
 
 STEP 5: SYNTHESIZE STRATEGIC PLAN
-After receiving input from all expert agents:
+After receiving input from all expert agents (or using general knowledge if no agents exist):
 - Integrate expert insights into a unified, coherent plan
 - Organize the plan as a numbered list of implementation steps/tasks
 - Include specific guidance from experts where relevant (cite which agent provided which insight)
@@ -29,22 +36,23 @@ After receiving input from all expert agents:
 STEP 6: PRESENT PLAN
 Present the synthesized plan to the user with:
 - Clear implementation steps numbered in logical order
-- Expert contributions attributed appropriately
-- Any important considerations or trade-offs identified by experts
+- Expert contributions attributed appropriately (if agents were consulted)
+- Any important considerations or trade-offs identified
 - Suggested next steps for beginning implementation
 
 IMPORTANT EXECUTION NOTES:
-- Always start with the sub-agent-coordinator for proper expert selection
+- Identify relevant agents based on their descriptions and the task domain
 - Use parallel Task tool execution when consulting multiple agents (single message with multiple tool calls)
 - Ensure each agent receives context appropriate to their expertise domain
 - Synthesize insights rather than simply concatenating agent responses
 - Keep the plan strategic and actionable
+- If no relevant agents exist, provide a solid plan based on your general knowledge and best practices
 
 EXAMPLE PARALLEL EXECUTION:
-If coordinator recommends agents A, B, and C, send one message with three Task tool calls:
-1. Task(subagent_type='agent-A', prompt='[task + A-specific context]')
-2. Task(subagent_type='agent-B', prompt='[task + B-specific context]')
-3. Task(subagent_type='agent-C', prompt='[task + C-specific context]')
+If 'backend-api', 'frontend-design', and 'testing' agents are relevant, send one message with three Task tool calls:
+1. Task(subagent_type='backend-api', prompt='[task + backend planning context]')
+2. Task(subagent_type='frontend-design', prompt='[task + frontend planning context]')
+3. Task(subagent_type='testing', prompt='[task + testing strategy context]')
 
-This approach ensures you leverage expert knowledge while creating a practical, well-informed implementation plan."
+This approach ensures you leverage available expert knowledge while remaining functional for planning even without specialized agents."
 ) %>
