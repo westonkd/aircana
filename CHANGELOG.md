@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **BREAKING**: Removed obsolete slash commands: `/execute`, `/record`, `/review`, `/apply-feedback`
+  - Only `/plan` and `/ask-expert` commands remain
+  - `/plan` command simplified to focus on strategic planning with expert consultation
+  - Workflow commands removed as they were incompatible with new subagent → skill architecture
+
+## [4.0.0] - 2025-10-31
+
+### Changed
+- **BREAKING**: Renamed "agents" to "knowledge bases" (KBs) throughout the system
+  - Command renamed: `aircana agents` → `aircana kb`
+  - Terminology updated to reflect purpose: curated domain knowledge for Claude Code
+  - All commands now use KB terminology: `create`, `refresh`, `list`, `add-url`, `refresh-all`
+
+### Added
+- Comprehensive Confluence macro preprocessing for better content extraction
+  - Converts panel macros to blockquotes
+  - Converts info/note/warning macros to formatted blockquotes with emoji indicators
+  - Strips Confluence-specific XML tags while preserving content
+  - Fixes missing code examples from knowledge bases
+
+### Fixed
+- Knowledge base creation UX improvements
+  - Better prompts that guide users naturally toward topic naming
+  - Prevents duplicate "Learn" prefix in generated skill names
+- SKILL.md generation now happens after content is fetched
+  - Empty knowledge base warnings added
+  - Proper file references in SKILL.md
+- Filename strategy improvements
+  - Matches disk files to manifest summaries
+  - Correct file references in generated skills
+
+### Removed
+- Agent-specific terminology and templates
+- Unused agent management commands and hooks
+
 ## [4.0.0.rc2] - 2025-10-17
 
 ### Fixed
