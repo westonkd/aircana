@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0] - 2025-10-31
+
+### Changed
+- **BREAKING**: `/ask-expert` command now uses Skills instead of agents
+  - Uses Skill tool for faster knowledge access with shared context
+  - Skills are named like "Learn Backend API", "Learn Database Design"
+  - Better for quick Q&A scenarios
+- `/plan` command continues using agents with Task tool
+  - Maintains separate contexts per agent for better planning isolation
+  - Uses Task tool with subagent_type parameter
+
 ## [4.1.0] - 2025-10-31
 
 ### Removed
