@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0] - 2025-11-10
+
+### Fixed
+- Fixed ERB template syntax errors in command generators
+  - Resolved nested string interpolation issues in `plan.erb` and `ask_expert.erb` templates
+  - Templates were using complex nested `#{...}` interpolation incompatible with Ruby parser
+  - Restructured templates to use ERB variables and string concatenation
+  - Fixes "unexpected backslash" and "unterminated string" syntax errors during `aircana init`
+  - All 187 tests passing
+
 ## [4.2.0] - 2025-10-31
 
 ### Changed
