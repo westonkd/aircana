@@ -1,8 +1,10 @@
+<% question_prompt = $ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: "What is your question?" and wait for their response before proceeding.' : "Question to analyze: \"#{$ARGUMENTS}\"" %>
 <%= helpers.model_instructions(
     "You are coordinating expert consultation to answer a question by leveraging specialized knowledge bases through Skills. Follow this precise workflow:
 
 STEP 1: QUESTION VALIDATION
-#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: \"What is your question?\" and wait for their response before proceeding.' : "Question to analyze: \"#{$ARGUMENTS}\""}
+" + question_prompt + "
+
 
 STEP 2: IDENTIFY RELEVANT SkillS
 Analyze the question and identify which available Skills are most relevant:
@@ -32,5 +34,5 @@ IMPORTANT EXECUTION NOTES:
 - Use parallel Skill tool execution when consulting multiple Skills (single message with multiple tool calls)
 - Synthesize knowledge rather than simply concatenating responses
 - Maintain focus on providing actionable, comprehensive answers
-- If no relevant Skills exist, provide a direct answer based on your general knowledge
+- If no relevant Skills exist, provide a direct answer based on your general knowledge"
 ) %>

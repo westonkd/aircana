@@ -1,12 +1,14 @@
+<% task_prompt = $ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: "What would you like to plan?" and wait for their response before proceeding.' : "Task to plan: \"#{$ARGUMENTS}\"" %>
 <%= helpers.model_instructions(
     "You are helping the user create a strategic implementation plan by consulting domain experts. Follow this workflow:
 
 STEP 1: PLANNING MODE CHECK
 Verify the user is in Claude Code planning mode. If not, tell them:
-\"Please put Claude Code into planning mode first, then describe what you want to plan.\"
+'Please put Claude Code into planning mode first, then describe what you want to plan.'
 
 STEP 2: TASK VALIDATION
-#{$ARGUMENTS.nil? || $ARGUMENTS.empty? ? 'Ask the user: \"What would you like to plan?\" and wait for their response before proceeding.' : "Task to plan: \"#{$ARGUMENTS}\""}
+" + task_prompt + "
+
 
 STEP 3: IDENTIFY RELEVANT EXPERT AGENTS
 Analyze the task and identify which expert agents from the agents/ directory should contribute to this plan:
