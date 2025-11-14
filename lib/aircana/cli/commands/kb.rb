@@ -11,7 +11,6 @@ module Aircana
   module CLI
     module KB # rubocop:disable Metrics/ModuleLength
       class << self # rubocop:disable Metrics/ClassLength
-        # rubocop:disable Metrics/MethodLength
         def refresh(kb_name)
           normalized_kb_name = normalize_string(kb_name)
 
@@ -21,7 +20,6 @@ module Aircana
         rescue Aircana::Error => e
           handle_refresh_error(normalized_kb_name, e)
         end
-        # rubocop:enable Metrics/MethodLength
 
         def create # rubocop:disable Metrics/MethodLength
           prompt = TTY::Prompt.new

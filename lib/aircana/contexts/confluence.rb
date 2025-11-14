@@ -51,7 +51,7 @@ module Aircana
 
         all_pages = []
         labels_used = []
-        
+
         confluence_sources.each do |source|
           # Use label from manifest if available, otherwise fall back to kb_name
           label = source["label"] || kb_name
