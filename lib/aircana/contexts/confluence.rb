@@ -32,7 +32,7 @@ module Aircana
         pages = search_and_log_pages(label_to_search)
         return { pages_count: 0, sources: [] } if pages.empty?
 
-        sources = process_pages_with_manifest(pages, kb_name, kb_type)
+        sources = process_pages_with_manifest(pages, kb_name, kb_type, label_to_search)
         create_or_update_manifest(kb_name, sources, kb_type)
 
         { pages_count: pages.size, sources: sources }
@@ -50,14 +50,20 @@ module Aircana
         return { pages_count: 0, sources: [] } if confluence_sources.empty?
 
         all_pages = []
+        labels_used = []
+        
         confluence_sources.each do |source|
-          pages = fetch_pages_from_source(source)
+          # Use label from manifest if available, otherwise fall back to kb_name
+          label = source["label"] || kb_name
+          labels_used << label
+          pages = fetch_pages_by_label(label)
           all_pages.concat(pages)
         end
 
         return { pages_count: 0, sources: [] } if all_pages.empty?
 
-        updated_sources = process_pages_with_manifest(all_pages, kb_name, kb_type)
+        # Use the first label for metadata (typically there's only one Confluence source per KB)
+        updated_sources = process_pages_with_manifest(all_pages, kb_name, kb_type, labels_used.first)
 
         { pages_count: all_pages.size, sources: updated_sources }
       end
@@ -76,7 +82,7 @@ module Aircana
         end
       end
 
-      def process_pages_with_manifest(pages, kb_name, kb_type = "local")
+      def process_pages_with_manifest(pages, kb_name, kb_type = "local", label = nil)
         page_metadata = []
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
@@ -84,19 +90,10 @@ module Aircana
           page_metadata << extract_page_metadata(page)
         end
 
-        build_source_metadata(kb_name, page_metadata)
+        build_source_metadata(kb_name, page_metadata, label)
       end
 
       private
-
-      def fetch_pages_from_source(source)
-        case source["type"]
-        when "confluence"
-          fetch_pages_by_label(source["label"])
-        else
-          []
-        end
-      end
 
       def extract_page_metadata(page)
         content = page&.dig("body", "storage", "value") || ""
@@ -137,13 +134,15 @@ module Aircana
         PROMPT
       end
 
-      def build_source_metadata(_kb_name, page_metadata)
-        [
-          {
-            "type" => "confluence",
-            "pages" => page_metadata
-          }
-        ]
+      def build_source_metadata(_kb_name, page_metadata, label = nil)
+        source = {
+          "type" => "confluence",
+          "pages" => page_metadata
+        }
+        # Add label if provided so refresh can use it to discover new pages
+        source["label"] = label if label
+
+        [source]
       end
 
       def create_or_update_manifest(kb_name, sources, kb_type = "local")
