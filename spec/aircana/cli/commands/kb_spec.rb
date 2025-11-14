@@ -106,13 +106,48 @@ RSpec.describe Aircana::CLI::KB do
       File.write(File.join(kb_dir, "manifest.json"), JSON.generate(manifest))
     end
 
-    it "returns early with message for local KB" do
+    it "refreshes KB even for local KB type" do
       # Update manifest to make it local
       manifest["kb_type"] = "local"
       File.write(File.join(File.join(Aircana.configuration.skills_dir, kb_name), "manifest.json"),
                  JSON.generate(manifest))
 
-      expect(Aircana.human_logger).to receive(:info).with(/Skipping.*local knowledge base/)
+      confluence = instance_double(Aircana::Contexts::Confluence)
+      allow(Aircana::Contexts::Confluence).to receive(:new).and_return(confluence)
+
+      # Return sources with actual data
+      confluence_sources = [
+        {
+          "type" => "confluence",
+          "pages" => [{ "id" => "123", "summary" => "Test page" }]
+        }
+      ]
+
+      allow(confluence).to receive(:refresh_from_manifest).with(kb_name:).and_return(
+        pages_count: 1,
+        sources: confluence_sources
+      )
+
+      web = instance_double(Aircana::Contexts::Web)
+      allow(Aircana::Contexts::Web).to receive(:new).and_return(web)
+      allow(web).to receive(:refresh_web_sources).with(kb_name:).and_return(
+        pages_count: 0,
+        sources: []
+      )
+
+      allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with(kb_name).and_return(
+        instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
+      )
+
+      allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
+        instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
+      )
+
+      # Expect update_manifest to be called since we have sources
+      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources)
+
+      # Allow success messages (multiple may be logged)
+      allow(Aircana.human_logger).to receive(:success)
 
       described_class.refresh(kb_name)
     end
@@ -143,6 +178,10 @@ RSpec.describe Aircana::CLI::KB do
 
       allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with(kb_name).and_return(
         instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
+      )
+
+      allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
+        instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
       )
 
       # Expect update_manifest to be called since we have sources
@@ -187,6 +226,10 @@ RSpec.describe Aircana::CLI::KB do
 
       allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with(kb_name).and_return(
         instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
+      )
+
+      allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
+        instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
       )
 
       expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, anything)
@@ -254,6 +297,10 @@ RSpec.describe Aircana::CLI::KB do
 
         allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with("remote-kb").and_return(
           instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
+        )
+
+        allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with("remote-kb").and_return(
+          instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
         )
 
         expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with("remote-kb", confluence_sources)

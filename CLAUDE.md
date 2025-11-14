@@ -39,14 +39,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Knowledge Base Management:**
 - `aircana kb create` - Create a new knowledge base interactively
 - `aircana kb list` - List all configured knowledge bases
-- `aircana kb refresh <kb-name>` - Refresh knowledge base from Confluence and web sources
-- `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases
+- `aircana kb refresh <kb-name>` - Refresh knowledge base from Confluence and web sources (works for both local and remote KBs)
+- `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases (both local and remote)
 - `aircana kb add-url <kb-name> <url>` - Add a web URL to a knowledge base
 
 **Hooks:**
 - Hooks are automatically generated during `aircana init`
 - Default hooks include: `session_start`, `refresh_skills`, and `notification_sqs`
-- `refresh_skills` automatically refreshes remote knowledge bases once per 24 hours
+- `refresh_skills` automatically refreshes knowledge bases once per 24 hours (both local and remote)
 - Hook scripts are stored in `scripts/` directory
 - Hook configuration is managed via `hooks/hooks.json`
 
@@ -242,8 +242,9 @@ end
 Each knowledge base has a `manifest.json` that tracks knowledge sources:
 - Plugin mode: Stored in `agents/<kb-name>/manifest.json` (version controlled)
 - Non-plugin mode: Stored in `.claude/skills/<kb-name>/manifest.json`
-- Contains KB type (remote/local), source URLs, Confluence labels
-- Team members run `aircana kb refresh` to sync remote knowledge locally
+- Contains KB type (remote/local), source URLs, Confluence labels for discovery
+- Team members run `aircana kb refresh` to sync knowledge from Confluence/web sources
+- Refresh discovers new pages by searching the stored Confluence label
 
 **Plugin-Aware Path Resolution**:
 Configuration class detects plugin mode and resolves paths accordingly:
@@ -284,7 +285,8 @@ Knowledge bases can sync content from multiple sources:
 **Unified Management:**
 - Both source types tracked in manifest.json per knowledge base
 - Manifest schema version 1.0
-- `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for remote KBs
-- `aircana kb refresh-all` refreshes all configured remote knowledge bases
+- Confluence sources include the label used for discovery, enabling refresh to find new pages
+- `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for any KB (local or remote)
+- `aircana kb refresh-all` refreshes all configured knowledge bases (both local and remote)
 - **Plugin mode**: KB content stored in `skills/<kb-name>/`
 - **Non-plugin mode**: KB content stored in `.claude/skills/<kb-name>/`
