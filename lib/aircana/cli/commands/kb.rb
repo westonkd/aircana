@@ -15,13 +15,6 @@ module Aircana
         def refresh(kb_name)
           normalized_kb_name = normalize_string(kb_name)
 
-          # Check if this is a local knowledge base
-          kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(normalized_kb_name)
-          if kb_type == "local"
-            Aircana.human_logger.info "⊘ Skipping #{normalized_kb_name} (local knowledge base - no refresh needed)"
-            return
-          end
-
           perform_manifest_aware_refresh(normalized_kb_name)
           regenerate_skill_md(normalized_kb_name)
           regenerate_agent_md(normalized_kb_name)
@@ -145,22 +138,11 @@ module Aircana
             total: kb_names.size,
             successful: 0,
             failed: 0,
-            skipped: 0,
             total_pages: 0,
-            failed_kbs: [],
-            skipped_kbs: []
+            failed_kbs: []
           }
 
           kb_names.each do |kb_name|
-            # Check if this is a local knowledge base
-            kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(kb_name)
-            if kb_type == "local"
-              Aircana.human_logger.info "⊘ Skipping #{kb_name} (local knowledge base)"
-              results[:skipped] += 1
-              results[:skipped_kbs] << kb_name
-              next
-            end
-
             result = refresh_single_kb(kb_name)
             if result[:success]
               results[:successful] += 1
@@ -535,10 +517,6 @@ module Aircana
           Aircana.human_logger.info "=== Refresh All Summary ==="
           Aircana.human_logger.success "✓ Successful: #{results[:successful]}/#{results[:total]} KBs"
           Aircana.human_logger.success "✓ Total pages refreshed: #{results[:total_pages]}"
-
-          if results[:skipped].positive?
-            Aircana.human_logger.info "⊘ Skipped: #{results[:skipped]} KB(s) (local knowledge base)"
-          end
 
           if results[:failed].positive?
             Aircana.human_logger.error "✗ Failed: #{results[:failed]} KBs"
