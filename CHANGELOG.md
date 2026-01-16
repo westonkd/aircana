@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Knowledge base refresh commands now work for both local and remote KBs
+  - `aircana kb refresh <kb-name>` and `aircana kb refresh-all` now refresh local KBs
+  - Local KBs can have Confluence/web sources that need periodic refreshing
+  - Confluence sources now store the label used during creation for discovering new pages
+  - Refresh operation searches by label to find all pages, including newly added ones
+  - The distinction between "local" and "remote" is about git version control, not refresh capability
+
 ## [4.3.0] - 2025-11-10
 
 ### Fixed
