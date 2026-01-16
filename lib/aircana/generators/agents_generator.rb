@@ -31,9 +31,13 @@ module Aircana
         # Use the same description generation as skills
         agent_description = generate_agent_description_from_manifest(manifest, kb_name)
 
+        # Read existing color from agent file if it exists, otherwise use a random color
+        existing_color = read_existing_color(kb_name)
+
         new(
           kb_name: kb_name,
-          agent_description: agent_description
+          agent_description: agent_description,
+          color: existing_color
         )
       end
 
@@ -41,6 +45,21 @@ module Aircana
         # Same description as skill - optimized for Claude's agent discovery
         source_count = manifest["sources"]&.size || 0
         "Discover critical context for #{kb_name.split("-").join(" ")} from #{source_count} knowledge sources"
+      end
+
+      # Read the color from an existing agent file if it exists
+      def self.read_existing_color(kb_name)
+        agent_path = File.join(Aircana.configuration.agents_dir, "#{kb_name}.md")
+        return nil unless File.exist?(agent_path)
+
+        content = File.read(agent_path)
+        # Extract color from YAML frontmatter
+        # Format: color: <color_name>
+        match = content.match(/^color:\s*(\w+)\s*$/m)
+        match ? match[1] : nil
+      rescue StandardError
+        # If we can't read the file or parse it, return nil to generate a new color
+        nil
       end
 
       protected
