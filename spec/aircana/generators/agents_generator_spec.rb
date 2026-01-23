@@ -189,7 +189,7 @@ RSpec.describe Aircana::Generators::AgentsGenerator do
       agent_content = <<~AGENT
         ---
         name: test-kb
-        color:   teal   
+        color:   teal
         ---
       AGENT
 
