@@ -261,7 +261,7 @@ module Aircana
           someone understand when they should read it. Focus on the key topics covered.
 
           IMPORTANT: Prefix your summary with "[#{kb_name}]: " to indicate the scope.
-          Example format: "[#{kb_name}]: Summary of what the page covers"
+          Example format: "(#{kb_name} scope) Summary of topics covered"
 
           Respond with only the summary text (including prefix), no additional explanation or formatting.
         PROMPT
