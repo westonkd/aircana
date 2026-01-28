@@ -107,7 +107,7 @@ module Aircana
 
       def generate_summary(content, title)
         prompt = build_summary_prompt(content, title)
-        LLM::ClaudeClient.new.prompt(prompt).strip
+        Aircana::LLM.client.prompt(prompt).strip
       rescue StandardError => e
         Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
         # Fallback to title or truncated content

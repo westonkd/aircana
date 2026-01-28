@@ -458,6 +458,45 @@ export CONFLUENCE_USERNAME="your.email@company.com"
 export CONFLUENCE_API_TOKEN="your-generated-token"
 ```
 
+### LLM Provider Setup (Optional)
+
+Aircana uses an LLM to generate summaries and titles for knowledge base content. By default, it uses the Claude Code CLI, but you can configure it to use AWS Bedrock instead.
+
+#### Environment Variables
+
+```bash
+# Provider selection (default: claude)
+export AIRCANA_LLM_PROVIDER="claude"  # or "bedrock"
+
+# Bedrock-specific settings (only used when provider is "bedrock")
+export AIRCANA_BEDROCK_REGION="us-east-1"  # default
+export AIRCANA_BEDROCK_MODEL="anthropic.claude-3-haiku-20240307-v1:0"  # default
+```
+
+#### Using AWS Bedrock
+
+To use Bedrock instead of the Claude Code CLI:
+
+1. **Install the AWS SDK gem:**
+```bash
+gem install aws-sdk-bedrockruntime
+```
+
+2. **Configure AWS credentials** using any standard method (environment variables, IAM role, credentials file, etc.)
+
+3. **Set the provider:**
+```bash
+export AIRCANA_LLM_PROVIDER="bedrock"
+```
+
+4. **Optionally configure region and model:**
+```bash
+export AIRCANA_BEDROCK_REGION="us-west-2"
+export AIRCANA_BEDROCK_MODEL="anthropic.claude-3-sonnet-20240229-v1:0"
+```
+
+The Bedrock provider is useful in environments where the Claude Code CLI is not available or when you prefer to use your AWS infrastructure for LLM calls.
+
 ### SQS Notifications Setup (Optional)
 
 To enable SQS notifications for Claude Code events (useful for Slack/Teams integration):

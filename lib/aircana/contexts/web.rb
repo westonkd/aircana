@@ -7,7 +7,6 @@ require_relative "local"
 require_relative "manifest"
 require_relative "../progress_tracker"
 require_relative "../version"
-require_relative "../llm/claude_client"
 
 module Aircana
   module Contexts
@@ -162,8 +161,7 @@ module Aircana
 
       def generate_title_with_claude(content, url)
         prompt = build_title_generation_prompt(content, url)
-        claude_client = LLM::ClaudeClient.new
-        claude_client.prompt(prompt).strip
+        Aircana::LLM.client.prompt(prompt).strip
       end
 
       def build_title_generation_prompt(content, url) # rubocop:disable Metrics/MethodLength
@@ -219,7 +217,7 @@ module Aircana
 
       def generate_summary(content, title, url)
         prompt = build_summary_prompt(content, title, url)
-        LLM::ClaudeClient.new.prompt(prompt).strip
+        Aircana::LLM.client.prompt(prompt).strip
       rescue StandardError => e
         Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
         # Fallback to title or truncated content

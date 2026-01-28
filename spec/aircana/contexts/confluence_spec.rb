@@ -20,10 +20,9 @@ RSpec.describe Aircana::Contexts::Confluence do
     allow(Aircana::Contexts::Local).to receive(:new).and_return(mock_local_storage)
     allow(mock_local_storage).to receive(:store_content)
 
-    # Mock Claude API client for summary generation
-    mock_claude_client = instance_double(Aircana::LLM::ClaudeClient)
-    allow(Aircana::LLM::ClaudeClient).to receive(:new).and_return(mock_claude_client)
-    allow(mock_claude_client).to receive(:prompt).and_return("Generated summary from Claude")
+    mock_llm_client = instance_double(Aircana::LLM::ClaudeClient)
+    allow(Aircana::LLM).to receive(:client).and_return(mock_llm_client)
+    allow(mock_llm_client).to receive(:prompt).and_return("Generated summary from LLM")
   end
 
   describe "#fetch_pages_for" do

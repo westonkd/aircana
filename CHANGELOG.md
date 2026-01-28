@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0]
+
+### Added
+- Configurable LLM provider for summary/title generation
+  - New environment variable `AIRCANA_LLM_PROVIDER` to switch between providers
+  - Supports `claude` (default) and `bedrock` providers
+  - Claude provider uses Claude Code CLI for LLM calls
+  - Bedrock provider uses AWS Bedrock Runtime API with configurable region and model
+- AWS Bedrock integration as alternative LLM provider
+  - New environment variables: `AIRCANA_BEDROCK_REGION` (default: `us-east-1`), `AIRCANA_BEDROCK_MODEL` (default: `anthropic.claude-3-haiku-20240307-v1:0`)
+  - Lazy-loads `aws-sdk-bedrockruntime` gem (optional dependency, not bundled)
+  - Uses standard AWS credential chain for authentication
+- New `Aircana::LLM` module with factory pattern
+  - `Aircana::LLM.client` returns configured provider instance
+  - Base class with shared functionality (spinner, content truncation)
+  - Unknown providers fall back to Claude with warning
+
+### Changed
+- Refactored `ClaudeClient` to inherit from new `LLM::Base` class
+- Web and Confluence contexts now use `Aircana::LLM.client` factory instead of direct `ClaudeClient` instantiation
+
 ## [5.0.0]
 
 ### Removed

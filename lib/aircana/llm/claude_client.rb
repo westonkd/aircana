@@ -1,15 +1,11 @@
 # frozen_string_literal: true
 
 require "English"
-require "tty-spinner"
+require_relative "base"
 
 module Aircana
   module LLM
-    class ClaudeClient
-      def initialize
-        @spinner = nil
-      end
-
+    class ClaudeClient < Base
       def prompt(text)
         start_spinner("Generating response with Claude...")
 
@@ -24,25 +20,6 @@ module Aircana
       end
 
       private
-
-      def start_spinner(message)
-        @spinner = TTY::Spinner.new("[:spinner] #{message}", format: :dots)
-        @spinner.auto_spin
-      end
-
-      def success_spinner(message)
-        return unless @spinner
-
-        @spinner.stop("✓")
-        puts message
-      end
-
-      def error_spinner(message)
-        return unless @spinner
-
-        @spinner.stop("✗")
-        puts message
-      end
 
       def execute_claude_command(text)
         command = build_claude_command(text)

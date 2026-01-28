@@ -7,7 +7,8 @@ module Aircana
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
                   :claude_code_config_path, :claude_code_project_config_path, :kb_knowledge_dir,
                   :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
-                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir, :agents_dir
+                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir, :agents_dir,
+                  :llm_provider, :bedrock_region, :bedrock_model
 
     def initialize
       setup_directory_paths
@@ -15,6 +16,7 @@ module Aircana
       setup_claude_code_paths
       setup_stream
       setup_confluence_config
+      setup_llm_config
     end
 
     # Returns true if the current directory is a plugin (has .claude-plugin/plugin.json)
@@ -115,6 +117,12 @@ module Aircana
       @confluence_base_url = nil
       @confluence_username = nil
       @confluence_api_token = nil
+    end
+
+    def setup_llm_config
+      @llm_provider = nil
+      @bedrock_region = nil
+      @bedrock_model = nil
     end
   end
 end

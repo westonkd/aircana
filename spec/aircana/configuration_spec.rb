@@ -60,6 +60,35 @@ RSpec.describe Aircana::Configuration do
     end
   end
 
+  describe "llm configuration" do
+    it "has llm_provider attribute defaulting to nil" do
+      expect(config.llm_provider).to be_nil
+    end
+
+    it "allows setting llm_provider" do
+      config.llm_provider = "bedrock"
+      expect(config.llm_provider).to eq("bedrock")
+    end
+
+    it "has bedrock_region attribute defaulting to nil" do
+      expect(config.bedrock_region).to be_nil
+    end
+
+    it "allows setting bedrock_region" do
+      config.bedrock_region = "us-west-2"
+      expect(config.bedrock_region).to eq("us-west-2")
+    end
+
+    it "has bedrock_model attribute defaulting to nil" do
+      expect(config.bedrock_model).to be_nil
+    end
+
+    it "allows setting bedrock_model" do
+      config.bedrock_model = "anthropic.claude-3-sonnet-20240229-v1:0"
+      expect(config.bedrock_model).to eq("anthropic.claude-3-sonnet-20240229-v1:0")
+    end
+  end
+
   describe "#plugin_root" do
     context "when AIRCANA_PLUGIN_ROOT is set" do
       around do |example|

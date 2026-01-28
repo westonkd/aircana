@@ -12,9 +12,33 @@ require_relative "aircana/cli"
 require_relative "aircana/generators"
 require_relative "aircana/contexts/confluence"
 require_relative "aircana/contexts/local"
+require_relative "aircana/llm/base"
 require_relative "aircana/llm/claude_client"
 
 module Aircana
+  module LLM
+    class << self
+      def client
+        case provider
+        when "bedrock"
+          require_relative "aircana/llm/bedrock_client"
+          BedrockClient.new
+        when "claude", nil
+          ClaudeClient.new
+        else
+          Aircana.human_logger.warn("Unknown LLM provider '#{provider}', falling back to Claude")
+          ClaudeClient.new
+        end
+      end
+
+      private
+
+      def provider
+        Aircana.configuration.llm_provider
+      end
+    end
+  end
+
   class Error < StandardError; end
 
   class << self

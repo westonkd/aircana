@@ -85,10 +85,10 @@ RSpec.describe Aircana::Contexts::Web do
 
     describe "#generate_meaningful_title" do
       let(:url) { "https://example.com/test-page" }
-      let(:mock_claude_client) { instance_double(Aircana::LLM::ClaudeClient) }
+      let(:mock_llm_client) { instance_double(Aircana::LLM::ClaudeClient) }
 
       before do
-        allow(Aircana::LLM::ClaudeClient).to receive(:new).and_return(mock_claude_client)
+        allow(Aircana::LLM).to receive(:client).and_return(mock_llm_client)
       end
 
       it "uses HTML title when it's descriptive" do
@@ -99,27 +99,27 @@ RSpec.describe Aircana::Contexts::Web do
         expect(title).to eq(html_title)
       end
 
-      it "generates title with Claude when HTML title is generic" do
+      it "generates title with LLM when HTML title is generic" do
         html_title = "Home"
         content = "This page explains how to configure Docker containers for production deployment. " \
                   "It covers best practices for setting up production environments with proper logging, " \
                   "monitoring, and security configurations to ensure reliable deployments."
-        claude_title = "Docker Production Configuration Guide"
+        generated_title = "Docker Production Configuration Guide"
 
-        allow(mock_claude_client).to receive(:prompt).and_return(claude_title)
+        allow(mock_llm_client).to receive(:prompt).and_return(generated_title)
 
         title = web.send(:generate_meaningful_title, html_title, content, url)
-        expect(title).to eq(claude_title)
-        expect(mock_claude_client).to have_received(:prompt)
+        expect(title).to eq(generated_title)
+        expect(mock_llm_client).to have_received(:prompt)
       end
 
-      it "falls back to HTML title when Claude fails" do
+      it "falls back to HTML title when LLM fails" do
         html_title = "Page Title"
-        content = "Some content here that is long enough to trigger Claude generation. " \
+        content = "Some content here that is long enough to trigger LLM generation. " \
                   "This content should be substantial enough to pass the minimum length requirement " \
-                  "and attempt to generate a title with Claude, but Claude will fail in this test."
+                  "and attempt to generate a title with LLM, but it will fail in this test."
 
-        allow(mock_claude_client).to receive(:prompt).and_raise(StandardError.new("Claude error"))
+        allow(mock_llm_client).to receive(:prompt).and_raise(StandardError.new("LLM error"))
 
         title = web.send(:generate_meaningful_title, html_title, content, url)
         expect(title).to eq(html_title)
@@ -133,17 +133,17 @@ RSpec.describe Aircana::Contexts::Web do
         expect(title).to eq("Test Page")
       end
 
-      it "generates title with Claude when HTML title is nil" do
+      it "generates title with LLM when HTML title is nil" do
         html_title = nil
         content = "This is a detailed article about machine learning algorithms and their applications. " \
                   "The article covers supervised and unsupervised learning techniques, neural networks, " \
                   "and practical examples of implementing these algorithms in real-world scenarios."
-        claude_title = "Machine Learning Algorithms Guide"
+        generated_title = "Machine Learning Algorithms Guide"
 
-        allow(mock_claude_client).to receive(:prompt).and_return(claude_title)
+        allow(mock_llm_client).to receive(:prompt).and_return(generated_title)
 
         title = web.send(:generate_meaningful_title, html_title, content, url)
-        expect(title).to eq(claude_title)
+        expect(title).to eq(generated_title)
       end
     end
 
