@@ -477,19 +477,14 @@ export AIRCANA_BEDROCK_MODEL="anthropic.claude-3-haiku-20240307-v1:0"  # default
 
 To use Bedrock instead of the Claude Code CLI:
 
-1. **Install the AWS SDK gem:**
-```bash
-gem install aws-sdk-bedrockruntime
-```
+1. **Configure AWS credentials** using any standard method (environment variables, IAM role, credentials file, etc.)
 
-2. **Configure AWS credentials** using any standard method (environment variables, IAM role, credentials file, etc.)
-
-3. **Set the provider:**
+2. **Set the provider:**
 ```bash
 export AIRCANA_LLM_PROVIDER="bedrock"
 ```
 
-4. **Optionally configure region and model:**
+3. **Optionally configure region and model:**
 ```bash
 export AIRCANA_BEDROCK_REGION="us-west-2"
 export AIRCANA_BEDROCK_MODEL="anthropic.claude-3-sonnet-20240229-v1:0"

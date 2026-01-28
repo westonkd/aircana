@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bedrock provider uses AWS Bedrock Runtime API with configurable region and model
 - AWS Bedrock integration as alternative LLM provider
   - New environment variables: `AIRCANA_BEDROCK_REGION` (default: `us-east-1`), `AIRCANA_BEDROCK_MODEL` (default: `anthropic.claude-3-haiku-20240307-v1:0`)
-  - Lazy-loads `aws-sdk-bedrockruntime` gem (optional dependency, not bundled)
   - Uses standard AWS credential chain for authentication
+  - Added `aws-sdk-bedrockruntime` as a bundled dependency
 - New `Aircana::LLM` module with factory pattern
   - `Aircana::LLM.client` returns configured provider instance
   - Base class with shared functionality (spinner, content truncation)

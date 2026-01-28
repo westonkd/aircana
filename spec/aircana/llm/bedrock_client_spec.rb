@@ -86,8 +86,6 @@ RSpec.describe Aircana::LLM::BedrockClient do
 
     context "when Bedrock API fails" do
       before do
-        stub_const("Aws::BedrockRuntime::Client", Class.new)
-        allow(bedrock_client).to receive(:require_aws_sdk!)
         allow(Aws::BedrockRuntime::Client).to receive(:new).and_return(mock_aws_client)
         allow(mock_aws_client).to receive(:invoke_model).and_raise(StandardError, "API error")
       end
@@ -112,8 +110,6 @@ RSpec.describe Aircana::LLM::BedrockClient do
       let(:empty_response_body) { StringIO.new('{"content":[]}') }
 
       before do
-        stub_const("Aws::BedrockRuntime::Client", Class.new)
-        allow(bedrock_client).to receive(:require_aws_sdk!)
         allow(Aws::BedrockRuntime::Client).to receive(:new).and_return(mock_aws_client)
         allow(mock_aws_client).to receive(:invoke_model).and_return(mock_response)
         allow(mock_response).to receive(:body).and_return(empty_response_body)
