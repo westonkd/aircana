@@ -28,39 +28,16 @@ module Aircana
                                default: "e.g., 'Canvas Backend Database', 'API Design'")
           short_description = prompt.ask("Briefly describe what this KB contains:")
 
-          # Prompt for knowledge base type
-          kb_type = prompt.select("Knowledge base type:", [
-                                    {
-                                      name: "Local - Version controlled, no refresh needed",
-                                      value: "local"
-                                    },
-                                    {
-                                      name: "Remote - Fetched from Confluence/web, " \
-                                            "auto-refreshed via SessionStart hook",
-                                      value: "remote"
-                                    }
-                                  ])
-
           normalized_kb_name = normalize_string(kb_name)
 
-          # Prompt for knowledge fetching
-          fetched_confluence = prompt_for_knowledge_fetch(prompt, normalized_kb_name, kb_type, short_description)
+          fetched_confluence = prompt_for_knowledge_fetch(prompt, normalized_kb_name, short_description)
 
-          # Prompt for web URL fetching
-          fetched_urls = prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
+          fetched_urls = prompt_for_url_fetch(prompt, normalized_kb_name)
 
-          # Generate SKILL.md and agent if no content was fetched during the prompts
-          # (the prompt functions already generate it when they successfully fetch content)
           unless fetched_confluence || fetched_urls
             regenerate_skill_md(normalized_kb_name, short_description)
             regenerate_agent_md(normalized_kb_name)
           end
-
-          # If remote kb_type, ensure SessionStart hook is installed
-          ensure_remote_knowledge_refresh_hook if kb_type == "remote"
-
-          # Ensure gitignore is configured
-          ensure_gitignore_entry(kb_type)
 
           Aircana.human_logger.success "Knowledge base '#{kb_name}' setup complete!"
         end
@@ -84,30 +61,23 @@ module Aircana
             exit 1
           end
 
-          # Get kb_type from manifest
-          kb_type = Aircana::Contexts::Manifest.kb_type_from_manifest(normalized_kb_name)
-
           web = Aircana::Contexts::Web.new
-          result = web.fetch_url_for(kb_name: normalized_kb_name, url: url, kb_type: kb_type)
+          result = web.fetch_url_for(kb_name: normalized_kb_name, url: url)
 
           if result
-            # Update manifest with the new URL
             existing_sources = Aircana::Contexts::Manifest.sources_from_manifest(normalized_kb_name)
             web_sources = existing_sources.select { |s| s["type"] == "web" }
             other_sources = existing_sources.reject { |s| s["type"] == "web" }
 
             if web_sources.any?
-              # Add to existing web source
               web_sources.first["urls"] << result
             else
-              # Create new web source
               web_sources = [{ "type" => "web", "urls" => [result] }]
             end
 
             all_sources = other_sources + web_sources
             Aircana::Contexts::Manifest.update_manifest(normalized_kb_name, all_sources)
 
-            # Regenerate SKILL.md and agent
             regenerate_skill_md(normalized_kb_name)
             regenerate_agent_md(normalized_kb_name)
 
@@ -156,9 +126,9 @@ module Aircana
 
         private
 
-        def perform_refresh(normalized_kb_name, kb_type, label: nil)
+        def perform_refresh(normalized_kb_name, label: nil)
           confluence = Aircana::Contexts::Confluence.new
-          result = confluence.fetch_pages_for(kb_name: normalized_kb_name, kb_type: kb_type, label: label)
+          result = confluence.fetch_pages_for(kb_name: normalized_kb_name, label: label)
 
           log_refresh_result(normalized_kb_name, result[:pages_count])
           result
@@ -177,31 +147,26 @@ module Aircana
           total_pages = 0
           all_sources = []
 
-          # Try manifest-based refresh first
           if Aircana::Contexts::Manifest.manifest_exists?(normalized_kb_name)
             Aircana.human_logger.info "Refreshing from knowledge manifest..."
 
-            # Refresh Confluence sources
             confluence = Aircana::Contexts::Confluence.new
             confluence_result = confluence.refresh_from_manifest(kb_name: normalized_kb_name)
             total_pages += confluence_result[:pages_count]
             all_sources.concat(confluence_result[:sources])
 
-            # Refresh web sources
             web = Aircana::Contexts::Web.new
             web_result = web.refresh_web_sources(kb_name: normalized_kb_name)
             total_pages += web_result[:pages_count]
             all_sources.concat(web_result[:sources])
           else
             Aircana.human_logger.info "No manifest found, falling back to label-based search..."
-            kb_type = "remote" # Default to remote if no manifest
             confluence = Aircana::Contexts::Confluence.new
-            confluence_result = confluence.fetch_pages_for(kb_name: normalized_kb_name, kb_type: kb_type)
+            confluence_result = confluence.fetch_pages_for(kb_name: normalized_kb_name)
             total_pages += confluence_result[:pages_count]
             all_sources.concat(confluence_result[:sources])
           end
 
-          # Update manifest with all sources combined
           Aircana::Contexts::Manifest.update_manifest(normalized_kb_name, all_sources) if all_sources.any?
 
           log_refresh_result(normalized_kb_name, total_pages)
@@ -233,86 +198,6 @@ module Aircana
           Aircana.human_logger.warn "Failed to generate agent: #{e.message}"
         end
 
-        def ensure_gitignore_entry(kb_type)
-          gitignore_path = gitignore_file_path
-
-          if kb_type == "remote"
-            # For remote KBs, ensure knowledge files are ignored
-            ensure_remote_knowledge_ignored(gitignore_path)
-          else
-            # For local KBs, ensure skills directory is NOT ignored
-            ensure_local_knowledge_not_ignored(gitignore_path)
-          end
-        rescue StandardError => e
-          Aircana.human_logger.warn "Could not update .gitignore: #{e.message}"
-        end
-
-        def ensure_remote_knowledge_ignored(gitignore_path)
-          pattern = remote_knowledge_pattern
-          return if gitignore_has_pattern?(gitignore_path, pattern)
-
-          append_to_gitignore(gitignore_path, pattern)
-          Aircana.human_logger.success "Added remote knowledge files to .gitignore"
-        end
-
-        def ensure_local_knowledge_not_ignored(gitignore_path)
-          negation_pattern = local_knowledge_negation_pattern
-          return if gitignore_has_pattern?(gitignore_path, negation_pattern)
-
-          # Add comment and negation pattern
-          comment = "# Local KB knowledge IS version controlled (don't ignore)"
-          content_to_append = "\n#{comment}\n#{negation_pattern}\n"
-
-          existing_content = File.exist?(gitignore_path) ? File.read(gitignore_path) : ""
-          needs_newline = !existing_content.empty? && !existing_content.end_with?("\n")
-          content_to_append = "\n#{content_to_append}" if needs_newline
-
-          File.open(gitignore_path, "a") { |f| f.write(content_to_append) }
-          Aircana.human_logger.success "Added local knowledge negation to .gitignore"
-        end
-
-        def gitignore_file_path
-          File.join(Aircana.configuration.project_dir, ".gitignore")
-        end
-
-        def remote_knowledge_pattern
-          # Pattern depends on whether we're in a plugin
-          if Aircana.configuration.plugin_mode?
-            "skills/*/*.md"
-          else
-            ".claude/skills/*/*.md"
-          end
-        end
-
-        def local_knowledge_negation_pattern
-          # Negation pattern depends on whether we're in a plugin
-          if Aircana.configuration.plugin_mode?
-            "!skills/*/*.md"
-          else
-            "!.claude/skills/*/*.md"
-          end
-        end
-
-        def gitignore_has_pattern?(gitignore_path, pattern)
-          return false unless File.exist?(gitignore_path)
-
-          content = File.read(gitignore_path)
-          if content.lines.any? { |line| line.strip == pattern }
-            Aircana.human_logger.info "Pattern '#{pattern}' already in .gitignore"
-            true
-          else
-            false
-          end
-        end
-
-        def append_to_gitignore(gitignore_path, pattern)
-          existing_content = File.exist?(gitignore_path) ? File.read(gitignore_path) : ""
-          content_to_append = existing_content.empty? || existing_content.end_with?("\n") ? "" : "\n"
-          content_to_append += "#{pattern}\n"
-
-          File.open(gitignore_path, "a") { |f| f.write(content_to_append) }
-        end
-
         def log_no_pages_found(normalized_kb_name)
           Aircana.human_logger.info "No pages found for KB '#{normalized_kb_name}'. " \
                                     "Make sure pages are labeled with '#{normalized_kb_name}' in Confluence."
@@ -327,15 +212,13 @@ module Aircana
           string.strip.downcase.gsub(" ", "-")
         end
 
-        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-        # rubocop:disable Metrics/PerceivedComplexity
-        def prompt_for_knowledge_fetch(prompt, normalized_kb_name, kb_type, short_description)
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+        def prompt_for_knowledge_fetch(prompt, normalized_kb_name, short_description)
           return false unless confluence_configured?
 
           if prompt.yes?("Would you like to fetch knowledge for this KB from Confluence now?")
             Aircana.human_logger.info "Fetching knowledge from Confluence..."
 
-            # Optionally ask for custom label
             use_custom_label = prompt.yes?("Use a custom Confluence label? (default: #{normalized_kb_name})")
             label = if use_custom_label
                       prompt.ask("Enter Confluence label:")
@@ -343,41 +226,28 @@ module Aircana
                       normalized_kb_name
                     end
 
-            result = perform_refresh(normalized_kb_name, kb_type, label: label)
+            result = perform_refresh(normalized_kb_name, label: label)
             if result[:pages_count]&.positive?
-              ensure_gitignore_entry(kb_type)
               regenerate_skill_md(normalized_kb_name, short_description)
               regenerate_agent_md(normalized_kb_name)
               return true
             end
           else
-            refresh_message = if kb_type == "local"
-                                "fetch knowledge"
-                              else
-                                "run 'aircana kb refresh #{normalized_kb_name}'"
-                              end
             Aircana.human_logger.info(
-              "Skipping knowledge fetch. You can #{refresh_message} later."
+              "Skipping knowledge fetch. You can run 'aircana kb refresh #{normalized_kb_name}' later."
             )
           end
 
           false
         rescue Aircana::Error => e
           Aircana.human_logger.warn "Failed to fetch knowledge: #{e.message}"
-          refresh_message = if kb_type == "local"
-                              "fetch knowledge"
-                            else
-                              "try again later with 'aircana kb refresh #{normalized_kb_name}'"
-                            end
-          Aircana.human_logger.info "You can #{refresh_message}"
+          Aircana.human_logger.info "You can try again later with 'aircana kb refresh #{normalized_kb_name}'"
           false
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
-        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-        # rubocop:disable Metrics/PerceivedComplexity
-        def prompt_for_url_fetch(prompt, normalized_kb_name, kb_type)
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def prompt_for_url_fetch(prompt, normalized_kb_name)
           return false unless prompt.yes?("Would you like to add web URLs for this KB's knowledge base?")
 
           urls = []
@@ -398,11 +268,10 @@ module Aircana
           begin
             Aircana.human_logger.info "Fetching #{urls.size} URL(s)..."
             web = Aircana::Contexts::Web.new
-            result = web.fetch_urls_for(kb_name: normalized_kb_name, urls: urls, kb_type: kb_type)
+            result = web.fetch_urls_for(kb_name: normalized_kb_name, urls: urls)
 
             if result[:pages_count].positive?
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
-              ensure_gitignore_entry(kb_type)
               regenerate_skill_md(normalized_kb_name)
               regenerate_agent_md(normalized_kb_name)
               return true
@@ -418,8 +287,7 @@ module Aircana
 
           false
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/AbcSize
         def confluence_configured?
@@ -447,15 +315,10 @@ module Aircana
         def print_kbs_list(kb_folders)
           Aircana.human_logger.info("Configured knowledge bases:")
           kb_folders.each_with_index do |kb_name, index|
-            kb_type = get_kb_type(kb_name)
             sources_count = get_sources_count(kb_name)
-            Aircana.human_logger.info("  #{index + 1}. #{kb_name} (#{kb_type}, #{sources_count} sources)")
+            Aircana.human_logger.info("  #{index + 1}. #{kb_name} (#{sources_count} sources)")
           end
           Aircana.human_logger.info("\nTotal: #{kb_folders.length} knowledge bases")
-        end
-
-        def get_kb_type(kb_name)
-          Aircana::Contexts::Manifest.kb_type_from_manifest(kb_name) || "unknown"
         end
 
         def get_sources_count(kb_name)
@@ -528,63 +391,6 @@ module Aircana
           Aircana.human_logger.info ""
         end
         # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
-
-        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-        def ensure_remote_knowledge_refresh_hook
-          hooks_manifest = Aircana::HooksManifest.new(Aircana.configuration.plugin_root)
-
-          # Check if refresh hook already exists
-          current_hooks = hooks_manifest.read || {}
-          session_start_hooks = current_hooks["SessionStart"] || []
-
-          # Check if our refresh script already exists
-          refresh_hook_exists = session_start_hooks.any? do |hook_group|
-            hook_group["hooks"]&.any? { |h| h["command"]&.include?("refresh_remote_kbs.sh") }
-          end
-
-          return if refresh_hook_exists
-
-          # Generate the refresh script
-          generate_refresh_script
-
-          # Add hook to manifest
-          hook_entry = {
-            "type" => "command",
-            "command" => "${CLAUDE_PLUGIN_ROOT}/scripts/refresh_remote_kbs.sh"
-          }
-
-          hooks_manifest.add_hook(event: "SessionStart", hook_entry: hook_entry)
-          Aircana.human_logger.success "Added SessionStart hook to refresh remote knowledge bases"
-        end
-        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
-
-        # rubocop:disable Metrics/MethodLength
-        def generate_refresh_script
-          script_path = File.join(Aircana.configuration.scripts_dir, "refresh_remote_kbs.sh")
-          return if File.exist?(script_path)
-
-          script_content = <<~BASH
-            #!/bin/bash
-            # Auto-generated by Aircana
-            # Refreshes all remote knowledge bases from Confluence/web sources
-
-            cd "${CLAUDE_PLUGIN_ROOT}" || exit 1
-
-            # Only refresh if aircana is available
-            if ! command -v aircana &> /dev/null; then
-              echo "Aircana not found, skipping KB refresh"
-              exit 0
-            fi
-
-            # Refresh all remote KBs silently
-            aircana kb refresh-all 2>&1 | grep -E "(Successful|Failed|Error)" || true
-          BASH
-
-          FileUtils.mkdir_p(Aircana.configuration.scripts_dir)
-          File.write(script_path, script_content)
-          File.chmod(0o755, script_path)
-        end
-        # rubocop:enable Metrics/MethodLength
       end
     end
   end

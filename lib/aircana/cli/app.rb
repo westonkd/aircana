@@ -67,7 +67,7 @@ module Aircana
           KB.add_url(kb_name, url)
         end
 
-        desc "refresh-all", "Refresh all remote knowledge bases"
+        desc "refresh-all", "Refresh all knowledge bases"
         def refresh_all
           KB.refresh_all
         end

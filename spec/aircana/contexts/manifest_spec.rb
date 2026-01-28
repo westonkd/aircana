@@ -41,7 +41,7 @@ RSpec.describe Aircana::Contexts::Manifest do
       expect(manifest["version"]).to eq("1.0")
       expect(manifest["name"]).to eq(kb_name)
       expect(manifest["sources"]).to eq(sources)
-      expect(manifest["kb_type"]).to eq("local")
+      expect(manifest).not_to have_key("kb_type")
     end
 
     it "creates the manifest directory if it doesn't exist" do
@@ -50,13 +50,6 @@ RSpec.describe Aircana::Contexts::Manifest do
       described_class.create_manifest(kb_name, sources)
 
       expect(Dir).to exist(File.join(Aircana.configuration.kb_knowledge_dir, kb_name))
-    end
-
-    it "accepts kb_type parameter" do
-      result = described_class.create_manifest(kb_name, sources, kb_type: "remote")
-
-      manifest = JSON.parse(File.read(result))
-      expect(manifest["kb_type"]).to eq("remote")
     end
   end
 

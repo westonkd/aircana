@@ -72,7 +72,7 @@ RSpec.describe Aircana::Contexts::Confluence do
           .with("<h1>Test Content 2</h1><p>More content</p>", github_flavored: true)
           .and_return("# Test Content 2\n\nMore content")
 
-        result = confluence.fetch_pages_for(kb_name: "test-kb", kb_type: "remote")
+        result = confluence.fetch_pages_for(kb_name: "test-kb")
 
         expect(result[:pages_count]).to eq(2)
         expect(result[:sources]).to be_an(Array)
@@ -80,14 +80,12 @@ RSpec.describe Aircana::Contexts::Confluence do
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 1",
           content: "# Test Content 1\n\nSome content",
-          kb_name: "test-kb",
-          kb_type: "remote"
+          kb_name: "test-kb"
         )
         expect(mock_local_storage).to have_received(:store_content).with(
           title: "Test Page 2",
           content: "# Test Content 2\n\nMore content",
-          kb_name: "test-kb",
-          kb_type: "remote"
+          kb_name: "test-kb"
         )
       end
 
@@ -157,15 +155,14 @@ RSpec.describe Aircana::Contexts::Confluence do
           .with("<h1>Test Content</h1>", github_flavored: true)
           .and_return("# Test Content")
 
-        result = confluence.fetch_pages_for(kb_name: "test-kb", kb_type: "remote")
+        result = confluence.fetch_pages_for(kb_name: "test-kb")
 
         expect(result[:pages_count]).to eq(1)
         expect(result[:sources]).to be_an(Array)
         expect(mock_local_storage).to have_received(:store_content).with(
-          title: "Test Page", # title comes from the mock page data
+          title: "Test Page",
           content: "# Test Content",
-          kb_name: "test-kb",
-          kb_type: "remote"
+          kb_name: "test-kb"
         )
       end
     end

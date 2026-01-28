@@ -24,7 +24,7 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_pages_for(kb_name:, kb_type: "local", label: nil)
+      def fetch_pages_for(kb_name:, label: nil)
         validate_configuration!
         setup_httparty
 
@@ -32,15 +32,14 @@ module Aircana
         pages = search_and_log_pages(label_to_search)
         return { pages_count: 0, sources: [] } if pages.empty?
 
-        sources = process_pages_with_manifest(pages, kb_name, kb_type, label_to_search)
-        create_or_update_manifest(kb_name, sources, kb_type)
+        sources = process_pages_with_manifest(pages, kb_name, label_to_search)
+        create_or_update_manifest(kb_name, sources)
 
         { pages_count: pages.size, sources: sources }
       end
 
       def refresh_from_manifest(kb_name:)
         sources = Manifest.sources_from_manifest(kb_name)
-        kb_type = Manifest.kb_type_from_manifest(kb_name)
         return { pages_count: 0, sources: [] } if sources.empty?
 
         validate_configuration!
@@ -53,7 +52,6 @@ module Aircana
         labels_used = []
 
         confluence_sources.each do |source|
-          # Use label from manifest if available, otherwise fall back to kb_name
           label = source["label"] || kb_name
           labels_used << label
           pages = fetch_pages_by_label(label)
@@ -62,8 +60,7 @@ module Aircana
 
         return { pages_count: 0, sources: [] } if all_pages.empty?
 
-        # Use the first label for metadata (typically there's only one Confluence source per KB)
-        updated_sources = process_pages_with_manifest(all_pages, kb_name, kb_type, labels_used.first)
+        updated_sources = process_pages_with_manifest(all_pages, kb_name, labels_used.first)
 
         { pages_count: all_pages.size, sources: updated_sources }
       end
@@ -76,17 +73,17 @@ module Aircana
         pages
       end
 
-      def process_pages(pages, kb_name, kb_type = "local")
+      def process_pages(pages, kb_name)
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, kb_name, kb_type)
+          store_page_as_markdown(page, kb_name)
         end
       end
 
-      def process_pages_with_manifest(pages, kb_name, kb_type = "local", label = nil)
+      def process_pages_with_manifest(pages, kb_name, label = nil)
         page_metadata = []
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
-          store_page_as_markdown(page, kb_name, kb_type)
+          store_page_as_markdown(page, kb_name)
           page_metadata << extract_page_metadata(page)
         end
 
@@ -145,11 +142,11 @@ module Aircana
         [source]
       end
 
-      def create_or_update_manifest(kb_name, sources, kb_type = "local")
+      def create_or_update_manifest(kb_name, sources)
         if Manifest.manifest_exists?(kb_name)
-          Manifest.update_manifest(kb_name, sources, kb_type: kb_type)
+          Manifest.update_manifest(kb_name, sources)
         else
-          Manifest.create_manifest(kb_name, sources, kb_type: kb_type)
+          Manifest.create_manifest(kb_name, sources)
         end
       end
 

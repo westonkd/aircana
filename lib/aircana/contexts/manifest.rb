@@ -7,36 +7,32 @@ module Aircana
   module Contexts
     class Manifest
       class << self
-        def create_manifest(kb_name, sources, kb_type: "local")
+        def create_manifest(kb_name, sources)
           validate_sources(sources)
-          validate_kb_type(kb_type)
 
           manifest_path = manifest_path_for(kb_name)
-          manifest_data = build_manifest_data(kb_name, sources, kb_type)
+          manifest_data = build_manifest_data(kb_name, sources)
 
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
 
-          Aircana.human_logger.info "Created knowledge manifest for '#{kb_name}' (kb_type: #{kb_type})"
+          Aircana.human_logger.info "Created knowledge manifest for '#{kb_name}'"
           manifest_path
         end
 
-        def update_manifest(kb_name, sources, kb_type: nil)
+        def update_manifest(kb_name, sources)
           validate_sources(sources)
 
           manifest_path = manifest_path_for(kb_name)
 
           if File.exist?(manifest_path)
             existing_data = JSON.parse(File.read(manifest_path))
-            # Preserve existing kb_type unless explicitly provided
-            kb_type_to_use = kb_type || existing_data["kb_type"] || "local"
-            manifest_data = existing_data.merge({ "sources" => sources, "kb_type" => kb_type_to_use })
+            manifest_data = existing_data.merge({ "sources" => sources })
+            manifest_data.delete("kb_type")
           else
-            kb_type_to_use = kb_type || "local"
-            manifest_data = build_manifest_data(kb_name, sources, kb_type_to_use)
+            manifest_data = build_manifest_data(kb_name, sources)
           end
 
-          validate_kb_type(manifest_data["kb_type"])
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
           manifest_path
@@ -66,13 +62,6 @@ module Aircana
           manifest["sources"] || []
         end
 
-        def kb_type_from_manifest(kb_name)
-          manifest = read_manifest(kb_name)
-          return "local" unless manifest
-
-          manifest["kb_type"] || "local"
-        end
-
         def manifest_exists?(kb_name)
           File.exist?(manifest_path_for(kb_name))
         end
@@ -88,11 +77,10 @@ module Aircana
           File.join(Aircana.configuration.kb_knowledge_dir, kb_name)
         end
 
-        def build_manifest_data(kb_name, sources, kb_type = "local")
+        def build_manifest_data(kb_name, sources)
           {
             "version" => "1.0",
             "name" => kb_name,
-            "kb_type" => kb_type,
             "sources" => sources
           }
         end
@@ -107,10 +95,6 @@ module Aircana
           unless manifest_data["version"] == "1.0"
             raise ManifestError, "Unsupported manifest version: #{manifest_data["version"]}"
           end
-
-          # kb_type is optional for backward compatibility, defaults to "local"
-          kb_type = manifest_data["kb_type"] || "local"
-          validate_kb_type(kb_type)
 
           validate_sources(manifest_data["sources"])
         end
@@ -174,13 +158,6 @@ module Aircana
           raise ManifestError, "URL entry missing required field: url" unless url_entry.key?("url")
 
           raise ManifestError, "URL entry missing required field: summary" unless url_entry.key?("summary")
-        end
-
-        def validate_kb_type(kb_type)
-          valid_types = %w[remote local]
-          return if valid_types.include?(kb_type)
-
-          raise ManifestError, "Invalid kb_type: #{kb_type}. Must be one of: #{valid_types.join(", ")}"
         end
       end
     end

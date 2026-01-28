@@ -53,7 +53,6 @@ RSpec.describe Aircana::Generators::SkillsGenerator do
       {
         "version" => "1.0",
         "name" => kb_name,
-        "kb_type" => "local",
         "sources" => [
           {
             "type" => "confluence",

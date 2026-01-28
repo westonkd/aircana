@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0]
+
+### Removed
+- **BREAKING**: Removed remote knowledge base type entirely
+  - All knowledge bases are now version controlled in `skills/<kb-name>/`
+  - Removed `kb_type` field from manifests (existing manifests with `kb_type` are still readable)
+  - Removed KB type selection prompt during `aircana kb create`
+  - Removed `refresh_skills` hook template and auto-installation
+  - Removed automatic `.gitignore` management for remote KBs
+  - Removed `kb_type_from_manifest` method from Manifest class
+  - Removed `ensure_remote_knowledge_refresh_hook` functionality
+
+### Changed
+- `aircana kb refresh-all` description updated from "Refresh all remote knowledge bases" to "Refresh all knowledge bases"
+- `aircana kb list` no longer displays KB type (shows only source count)
+- Simplified KB workflow: create KB, fetch content, version control everything
+
+### Migration Guide
+To upgrade from version 4.x:
+1. Existing knowledge bases will continue to work - the `kb_type` field is simply ignored
+2. Remote KBs are no longer auto-refreshed on session start - run `aircana kb refresh <kb-name>` manually when needed
+3. All KB content in `skills/<kb-name>/` should now be committed to version control
+4. Remove any `refresh_skills` hook entries from `hooks/hooks.json` if present
+
 ## [4.4.0]
 
 ### Changed

@@ -5,7 +5,7 @@ require "fileutils"
 module Aircana
   module Contexts
     class Local
-      def store_content(title:, content:, kb_name:, kb_type: "local") # rubocop:disable Lint/UnusedMethodArgument
+      def store_content(title:, content:, kb_name:)
         kb_dir = create_kb_dir(kb_name)
         filename = sanitize_filename(title)
         filepath = File.join(kb_dir, "#{filename}.md")

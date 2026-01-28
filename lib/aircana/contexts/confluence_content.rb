@@ -64,15 +64,14 @@ module Aircana
         Aircana.human_logger.info "Found #{count} pages for KB '#{kb_name}'"
       end
 
-      def store_page_as_markdown(page, kb_name, kb_type = "local")
+      def store_page_as_markdown(page, kb_name)
         content = page&.dig("body", "storage", "value") || fetch_page_content(page&.[]("id"))
         markdown_content = convert_to_markdown(content)
 
         @local_storage.store_content(
           title: page&.[]("title"),
           content: markdown_content,
-          kb_name: kb_name,
-          kb_type: kb_type
+          kb_name: kb_name
         )
       end
     end
