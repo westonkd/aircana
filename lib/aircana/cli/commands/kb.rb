@@ -189,13 +189,22 @@ module Aircana
         def regenerate_agent_md(kb_name)
           return unless Aircana::Contexts::Manifest.manifest_exists?(kb_name)
 
-          # Generate agent from manifest
           generator = Generators::AgentsGenerator.from_manifest(kb_name)
-
           generator.generate
+
+          persist_color_if_needed(kb_name, generator.color)
+
           Aircana.human_logger.success "Generated agent for '#{kb_name}'"
         rescue StandardError => e
           Aircana.human_logger.warn "Failed to generate agent: #{e.message}"
+        end
+
+        def persist_color_if_needed(kb_name, color)
+          existing_color = Aircana::Contexts::Manifest.color_from_manifest(kb_name)
+          return if existing_color
+
+          sources = Aircana::Contexts::Manifest.sources_from_manifest(kb_name)
+          Aircana::Contexts::Manifest.update_manifest(kb_name, sources, color: color)
         end
 
         def log_no_pages_found(normalized_kb_name)

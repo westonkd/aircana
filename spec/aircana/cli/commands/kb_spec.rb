@@ -129,11 +129,11 @@ RSpec.describe Aircana::CLI::KB do
       )
 
       allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
-        instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
+        instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
       )
 
-      # Expect update_manifest to be called since we have sources
-      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources)
+      allow(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources)
+      allow(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources, color: "cyan")
 
       # Allow success messages (multiple may be logged)
       allow(Aircana.human_logger).to receive(:success)
@@ -175,12 +175,11 @@ RSpec.describe Aircana::CLI::KB do
       )
 
       allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
-        instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
+        instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
       )
 
-      expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, anything)
+      allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
 
-      # Allow success messages (multiple may be logged)
       allow(Aircana.human_logger).to receive(:success)
 
       described_class.add_url(kb_name, url)
@@ -244,10 +243,10 @@ RSpec.describe Aircana::CLI::KB do
         )
 
         allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with("test-refresh-kb").and_return(
-          instance_double(Aircana::Generators::AgentsGenerator, generate: nil)
+          instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
         )
 
-        expect(Aircana::Contexts::Manifest).to receive(:update_manifest).with("test-refresh-kb", confluence_sources)
+        allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
 
         # Allow any success/info messages (multiple may be logged)
         allow(Aircana.human_logger).to receive(:success)

@@ -23,17 +23,17 @@ module Aircana
         )
       end
 
-      # Generate agent markdown from manifest data
       def self.from_manifest(kb_name)
         manifest = Contexts::Manifest.read_manifest(kb_name)
         raise Error, "No manifest found for knowledge base '#{kb_name}'" unless manifest
 
-        # Use the same description generation as skills
         agent_description = generate_agent_description_from_manifest(manifest, kb_name)
+        color = manifest["color"]
 
         new(
           kb_name: kb_name,
-          agent_description: agent_description
+          agent_description: agent_description,
+          color: color
         )
       end
 

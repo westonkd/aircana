@@ -7,11 +7,11 @@ module Aircana
   module Contexts
     class Manifest
       class << self
-        def create_manifest(kb_name, sources)
+        def create_manifest(kb_name, sources, color: nil)
           validate_sources(sources)
 
           manifest_path = manifest_path_for(kb_name)
-          manifest_data = build_manifest_data(kb_name, sources)
+          manifest_data = build_manifest_data(kb_name, sources, color)
 
           FileUtils.mkdir_p(File.dirname(manifest_path))
           File.write(manifest_path, JSON.pretty_generate(manifest_data))
@@ -20,7 +20,7 @@ module Aircana
           manifest_path
         end
 
-        def update_manifest(kb_name, sources)
+        def update_manifest(kb_name, sources, color: nil)
           validate_sources(sources)
 
           manifest_path = manifest_path_for(kb_name)
@@ -29,8 +29,9 @@ module Aircana
             existing_data = JSON.parse(File.read(manifest_path))
             manifest_data = existing_data.merge({ "sources" => sources })
             manifest_data.delete("kb_type")
+            manifest_data["color"] = color if color
           else
-            manifest_data = build_manifest_data(kb_name, sources)
+            manifest_data = build_manifest_data(kb_name, sources, color)
           end
 
           FileUtils.mkdir_p(File.dirname(manifest_path))
@@ -62,6 +63,13 @@ module Aircana
           manifest["sources"] || []
         end
 
+        def color_from_manifest(kb_name)
+          manifest = read_manifest(kb_name)
+          return nil unless manifest
+
+          manifest["color"]
+        end
+
         def manifest_exists?(kb_name)
           File.exist?(manifest_path_for(kb_name))
         end
@@ -77,12 +85,14 @@ module Aircana
           File.join(Aircana.configuration.kb_knowledge_dir, kb_name)
         end
 
-        def build_manifest_data(kb_name, sources)
-          {
+        def build_manifest_data(kb_name, sources, color = nil)
+          data = {
             "version" => "1.0",
             "name" => kb_name,
             "sources" => sources
           }
+          data["color"] = color if color
+          data
         end
 
         def validate_manifest(manifest_data)

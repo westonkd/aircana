@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1]
+
+### Fixed
+- Fixed agent color changing randomly on KB refresh
+  - Colors are now persisted in manifest.json
+  - On first refresh after upgrade, the generated color is stored in the manifest
+  - Subsequent refreshes read the color from manifest, ensuring consistency
+  - Added `color` field to manifest schema (backward compatible)
+  - Added `color_from_manifest()` helper method to Manifest class
+
 ## [5.1.0]
 
 ### Added
