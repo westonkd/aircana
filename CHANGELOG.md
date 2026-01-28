@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0]
+
+### Added
+- Knowledge base name prefix in generated summaries
+  - All summaries now prefixed with `[kb-name]: ` to clarify scope
+  - Format: `"[canvas-database-migrations]: Learn about database migrations and schema changes"`
+  - Applies to both Confluence and web URL sources
+  - Helps clients understand which knowledge base each summary belongs to
+  - Fallback summaries also include the prefix when LLM generation fails
+
 ## [5.1.1]
 
 ### Fixed

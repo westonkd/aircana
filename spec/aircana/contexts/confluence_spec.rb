@@ -235,7 +235,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         }
         allow(mock_llm_client).to receive(:prompt).and_return("Generated summary")
 
-        metadata = confluence.send(:extract_page_metadata, page)
+        metadata = confluence.send(:extract_page_metadata, page, "test-kb")
 
         expect(metadata["content_checksum"]).to start_with("sha256:")
         expect(metadata["summary"]).to eq("Generated summary")
@@ -258,7 +258,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         }
         allow(mock_llm_client).to receive(:prompt)
 
-        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+        metadata = confluence.send(:extract_page_metadata, page, "test-kb", existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("Existing cached summary")
         expect(metadata["content_checksum"]).to eq(checksum)
@@ -281,7 +281,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         }
         allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
 
-        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+        metadata = confluence.send(:extract_page_metadata, page, "test-kb", existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("New generated summary")
         expect(mock_llm_client).to have_received(:prompt)
@@ -302,7 +302,7 @@ RSpec.describe Aircana::Contexts::Confluence do
         }
         allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
 
-        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+        metadata = confluence.send(:extract_page_metadata, page, "test-kb", existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("New generated summary")
         expect(mock_llm_client).to have_received(:prompt)

@@ -85,7 +85,7 @@ module Aircana
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
           store_page_as_markdown(page, kb_name)
-          page_metadata << extract_page_metadata(page, existing_metadata: existing_metadata)
+          page_metadata << extract_page_metadata(page, kb_name, existing_metadata: existing_metadata)
         end
 
         build_source_metadata(kb_name, page_metadata, label)
@@ -107,7 +107,7 @@ module Aircana
         metadata
       end
 
-      def extract_page_metadata(page, existing_metadata: nil)
+      def extract_page_metadata(page, kb_name, existing_metadata: nil)
         existing_metadata ||= {}
         content = page&.dig("body", "storage", "value") || ""
         markdown_content = convert_to_markdown(content)
@@ -119,7 +119,7 @@ module Aircana
                     Aircana.human_logger.info("Content unchanged for '#{title}', reusing summary")
                     existing["summary"]
                   else
-                    generate_summary(markdown_content, title)
+                    generate_summary(markdown_content, title, kb_name)
                   end
 
         {
@@ -130,16 +130,15 @@ module Aircana
         }
       end
 
-      def generate_summary(content, title)
-        prompt = build_summary_prompt(content, title)
+      def generate_summary(content, title, kb_name)
+        prompt = build_summary_prompt(content, title, kb_name)
         Aircana::LLM.client.prompt(prompt).strip
       rescue StandardError => e
         Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
-        # Fallback to title or truncated content
-        title || "#{content[0..80].gsub(/\s+/, " ").strip}..."
+        "[#{kb_name}]: #{title || "#{content[0..80].gsub(/\s+/, " ").strip}..."}"
       end
 
-      def build_summary_prompt(content, title)
+      def build_summary_prompt(content, title, kb_name)
         truncated_content = content.length > 10_000 ? "#{content[0..10_000]}..." : content
 
         <<~PROMPT
@@ -151,7 +150,10 @@ module Aircana
 
           Focus your summary on listing each topic or feature covered in the documentation.
 
-          Respond with only the summary text, no additional explanation or formatting.
+          IMPORTANT: Prefix your summary with "[#{kb_name}]: " to indicate the scope.
+          Example format: "[#{kb_name}]: Summary of topics covered"
+
+          Respond with only the summary text (including prefix), no additional explanation or formatting.
         PROMPT
       end
 

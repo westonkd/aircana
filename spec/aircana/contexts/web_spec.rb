@@ -256,7 +256,7 @@ RSpec.describe Aircana::Contexts::Web do
       it "includes content_checksum in returned metadata" do
         allow(mock_llm_client).to receive(:prompt).and_return("Generated summary")
 
-        metadata = web.send(:build_url_metadata, page_data)
+        metadata = web.send(:build_url_metadata, page_data, kb_name: kb_name)
 
         expect(metadata["content_checksum"]).to start_with("sha256:")
         expect(metadata["summary"]).to eq("Generated summary")
@@ -274,7 +274,7 @@ RSpec.describe Aircana::Contexts::Web do
         }
         allow(mock_llm_client).to receive(:prompt)
 
-        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+        metadata = web.send(:build_url_metadata, page_data, kb_name: kb_name, existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("Existing cached summary")
         expect(metadata["content_checksum"]).to eq(checksum)
@@ -291,7 +291,7 @@ RSpec.describe Aircana::Contexts::Web do
         }
         allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
 
-        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+        metadata = web.send(:build_url_metadata, page_data, kb_name: kb_name, existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("New generated summary")
         expect(mock_llm_client).to have_received(:prompt)
@@ -306,7 +306,7 @@ RSpec.describe Aircana::Contexts::Web do
         }
         allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
 
-        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+        metadata = web.send(:build_url_metadata, page_data, kb_name: kb_name, existing_metadata: existing_metadata)
 
         expect(metadata["summary"]).to eq("New generated summary")
         expect(mock_llm_client).to have_received(:prompt)

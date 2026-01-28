@@ -27,7 +27,7 @@ module Aircana
         page_data = fetch_and_process_url(url)
         store_page_as_markdown(page_data, kb_name)
 
-        build_url_metadata(page_data, existing_metadata: existing_metadata)
+        build_url_metadata(page_data, kb_name: kb_name, existing_metadata: existing_metadata)
       rescue StandardError => e
         handle_fetch_error(url, e)
         nil
@@ -222,49 +222,53 @@ module Aircana
         metadata
       end
 
-      def build_url_metadata(page_data, existing_metadata: nil)
+      def build_url_metadata(page_data, kb_name:, existing_metadata: nil)
         existing_metadata ||= {}
         content_checksum = Aircana::Checksum.compute(page_data[:content])
         existing = existing_metadata[page_data[:url]]
-        summary = resolve_summary(page_data, existing)
+        summary = resolve_summary(page_data, existing, kb_name)
 
         { "url" => page_data[:url], "summary" => summary, "content_checksum" => content_checksum }
       end
 
-      def resolve_summary(page_data, existing)
+      def resolve_summary(page_data, existing, kb_name)
         if existing && Aircana::Checksum.match?(existing["content_checksum"], page_data[:content])
           Aircana.human_logger.info("Content unchanged for '#{page_data[:title]}', reusing summary")
           existing["summary"]
         else
-          generate_summary(page_data[:content], page_data[:title], page_data[:url])
+          generate_summary(page_data[:content], page_data[:title], page_data[:url], kb_name)
         end
       end
 
-      def generate_summary(content, title, url)
-        prompt = build_summary_prompt(content, title, url)
+      def generate_summary(content, title, url, kb_name)
+        prompt = build_summary_prompt(content, title, url, kb_name)
         Aircana::LLM.client.prompt(prompt).strip
       rescue StandardError => e
         Aircana.human_logger.warn("Failed to generate summary: #{e.message}")
-        # Fallback to title or truncated content
-        title || "#{content[0..80].gsub(/\s+/, " ").strip}..."
+        "[#{kb_name}]: #{title || "#{content[0..80].gsub(/\s+/, " ").strip}..."}"
       end
 
-      def build_summary_prompt(content, title, url)
-        truncated_content = content.length > 2000 ? "#{content[0..2000]}..." : content
-
+      def build_summary_prompt(content, title, url, kb_name)
         <<~PROMPT
           Generate a concise 8-12 word summary of the following web page.
           URL: #{url}
           Title: #{title}
 
           Content:
-          #{truncated_content}
+          #{truncate_for_prompt(content, 2000)}
 
           The summary should describe what information this page contains in a way that helps
           someone understand when they should read it. Focus on the key topics covered.
 
-          Respond with only the summary text, no additional explanation or formatting.
+          IMPORTANT: Prefix your summary with "[#{kb_name}]: " to indicate the scope.
+          Example format: "[#{kb_name}]: Summary of what the page covers"
+
+          Respond with only the summary text (including prefix), no additional explanation or formatting.
         PROMPT
+      end
+
+      def truncate_for_prompt(content, max_length)
+        content.length > max_length ? "#{content[0..max_length]}..." : content
       end
 
       def build_sources_metadata(_urls, pages_metadata)
