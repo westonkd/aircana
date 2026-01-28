@@ -21,26 +21,27 @@ module Aircana
         @local_storage = Local.new
       end
 
-      def fetch_url_for(kb_name:, url:)
+      def fetch_url_for(kb_name:, url:, existing_metadata: nil)
         validate_url!(url)
 
         page_data = fetch_and_process_url(url)
         store_page_as_markdown(page_data, kb_name)
 
-        build_url_metadata(page_data)
+        build_url_metadata(page_data, existing_metadata: existing_metadata)
       rescue StandardError => e
         handle_fetch_error(url, e)
         nil
       end
 
-      def fetch_urls_for(kb_name:, urls:) # rubocop:disable Metrics/MethodLength
+      def fetch_urls_for(kb_name:, urls:, existing_metadata: nil) # rubocop:disable Metrics/MethodLength
         return { pages_count: 0, sources: [] } if urls.empty?
 
+        existing_metadata ||= load_existing_url_metadata(kb_name)
         pages_metadata = []
         successful_urls = []
 
         ProgressTracker.with_batch_progress(urls, "Fetching URLs") do |url, _index|
-          metadata = fetch_url_for(kb_name: kb_name, url: url)
+          metadata = fetch_url_for(kb_name: kb_name, url: url, existing_metadata: existing_metadata)
           if metadata
             pages_metadata << metadata
             successful_urls << url
@@ -65,7 +66,8 @@ module Aircana
         all_urls = web_sources.flat_map { |source| source["urls"]&.map { |u| u["url"] } || [] }
         return { pages_count: 0, sources: [] } if all_urls.empty?
 
-        fetch_urls_for(kb_name: kb_name, urls: all_urls)
+        existing_metadata = load_existing_url_metadata(kb_name)
+        fetch_urls_for(kb_name: kb_name, urls: all_urls, existing_metadata: existing_metadata)
       end
 
       private
@@ -206,13 +208,36 @@ module Aircana
         )
       end
 
-      def build_url_metadata(page_data)
-        summary = generate_summary(page_data[:content], page_data[:title], page_data[:url])
+      def load_existing_url_metadata(kb_name)
+        sources = Manifest.sources_from_manifest(kb_name)
+        web_sources = sources.select { |s| s["type"] == "web" }
+        return {} if web_sources.empty?
 
-        {
-          "url" => page_data[:url],
-          "summary" => summary
-        }
+        metadata = {}
+        web_sources.each do |source|
+          (source["urls"] || []).each do |url_entry|
+            metadata[url_entry["url"]] = url_entry
+          end
+        end
+        metadata
+      end
+
+      def build_url_metadata(page_data, existing_metadata: nil)
+        existing_metadata ||= {}
+        content_checksum = Aircana::Checksum.compute(page_data[:content])
+        existing = existing_metadata[page_data[:url]]
+        summary = resolve_summary(page_data, existing)
+
+        { "url" => page_data[:url], "summary" => summary, "content_checksum" => content_checksum }
+      end
+
+      def resolve_summary(page_data, existing)
+        if existing && Aircana::Checksum.match?(existing["content_checksum"], page_data[:content])
+          Aircana.human_logger.info("Content unchanged for '#{page_data[:title]}', reusing summary")
+          existing["summary"]
+        else
+          generate_summary(page_data[:content], page_data[:title], page_data[:url])
+        end
       end
 
       def generate_summary(content, title, url)

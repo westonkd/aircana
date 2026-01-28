@@ -213,4 +213,129 @@ RSpec.describe Aircana::Contexts::Confluence do
       end
     end
   end
+
+  describe "checksum optimization" do
+    let(:mock_llm_client) { instance_double(Aircana::LLM::ClaudeClient) }
+    let(:page_content) { "<h1>Test Content</h1><p>Some content here</p>" }
+    let(:markdown_content) { "# Test Content\n\nSome content here" }
+
+    before do
+      allow(Aircana::LLM).to receive(:client).and_return(mock_llm_client)
+      allow(ReverseMarkdown).to receive(:convert)
+        .with(page_content, github_flavored: true)
+        .and_return(markdown_content)
+    end
+
+    describe "#extract_page_metadata" do
+      it "includes content_checksum in returned metadata" do
+        page = {
+          "id" => "123",
+          "title" => "Test Page",
+          "body" => { "storage" => { "value" => page_content } }
+        }
+        allow(mock_llm_client).to receive(:prompt).and_return("Generated summary")
+
+        metadata = confluence.send(:extract_page_metadata, page)
+
+        expect(metadata["content_checksum"]).to start_with("sha256:")
+        expect(metadata["summary"]).to eq("Generated summary")
+      end
+
+      it "reuses summary when checksum matches existing metadata" do
+        checksum = Aircana::Checksum.compute(markdown_content)
+        existing_metadata = {
+          "123" => {
+            "id" => "123",
+            "title" => "Test Page",
+            "summary" => "Existing cached summary",
+            "content_checksum" => checksum
+          }
+        }
+        page = {
+          "id" => "123",
+          "title" => "Test Page",
+          "body" => { "storage" => { "value" => page_content } }
+        }
+        allow(mock_llm_client).to receive(:prompt)
+
+        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("Existing cached summary")
+        expect(metadata["content_checksum"]).to eq(checksum)
+        expect(mock_llm_client).not_to have_received(:prompt)
+      end
+
+      it "generates new summary when checksum differs" do
+        existing_metadata = {
+          "123" => {
+            "id" => "123",
+            "title" => "Test Page",
+            "summary" => "Old summary",
+            "content_checksum" => "sha256:different_checksum"
+          }
+        }
+        page = {
+          "id" => "123",
+          "title" => "Test Page",
+          "body" => { "storage" => { "value" => page_content } }
+        }
+        allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
+
+        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("New generated summary")
+        expect(mock_llm_client).to have_received(:prompt)
+      end
+
+      it "generates new summary when existing metadata has no checksum" do
+        existing_metadata = {
+          "123" => {
+            "id" => "123",
+            "title" => "Test Page",
+            "summary" => "Old summary without checksum"
+          }
+        }
+        page = {
+          "id" => "123",
+          "title" => "Test Page",
+          "body" => { "storage" => { "value" => page_content } }
+        }
+        allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
+
+        metadata = confluence.send(:extract_page_metadata, page, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("New generated summary")
+        expect(mock_llm_client).to have_received(:prompt)
+      end
+    end
+
+    describe "#load_existing_page_metadata" do
+      it "loads page metadata keyed by page ID" do
+        sources = [
+          {
+            "type" => "confluence",
+            "pages" => [
+              { "id" => "123", "title" => "Page 1", "summary" => "Summary 1", "content_checksum" => "sha256:abc" },
+              { "id" => "456", "title" => "Page 2", "summary" => "Summary 2", "content_checksum" => "sha256:def" }
+            ]
+          }
+        ]
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with("test-kb").and_return(sources)
+
+        metadata = confluence.send(:load_existing_page_metadata, "test-kb")
+
+        expect(metadata["123"]["title"]).to eq("Page 1")
+        expect(metadata["456"]["title"]).to eq("Page 2")
+      end
+
+      it "returns empty hash when no confluence sources exist" do
+        sources = [{ "type" => "web", "urls" => [] }]
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with("test-kb").and_return(sources)
+
+        metadata = confluence.send(:load_existing_page_metadata, "test-kb")
+
+        expect(metadata).to eq({})
+      end
+    end
+  end
 end

@@ -237,4 +237,109 @@ RSpec.describe Aircana::Contexts::Web do
       end
     end
   end
+
+  describe "checksum optimization" do
+    let(:mock_llm_client) { instance_double(Aircana::LLM::ClaudeClient) }
+    let(:page_data) do
+      {
+        url: "https://example.com/test",
+        title: "Test Page",
+        content: "# Test Content\n\nSome markdown content here"
+      }
+    end
+
+    before do
+      allow(Aircana::LLM).to receive(:client).and_return(mock_llm_client)
+    end
+
+    describe "#build_url_metadata" do
+      it "includes content_checksum in returned metadata" do
+        allow(mock_llm_client).to receive(:prompt).and_return("Generated summary")
+
+        metadata = web.send(:build_url_metadata, page_data)
+
+        expect(metadata["content_checksum"]).to start_with("sha256:")
+        expect(metadata["summary"]).to eq("Generated summary")
+        expect(metadata["url"]).to eq("https://example.com/test")
+      end
+
+      it "reuses summary when checksum matches existing metadata" do
+        checksum = Aircana::Checksum.compute(page_data[:content])
+        existing_metadata = {
+          "https://example.com/test" => {
+            "url" => "https://example.com/test",
+            "summary" => "Existing cached summary",
+            "content_checksum" => checksum
+          }
+        }
+        allow(mock_llm_client).to receive(:prompt)
+
+        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("Existing cached summary")
+        expect(metadata["content_checksum"]).to eq(checksum)
+        expect(mock_llm_client).not_to have_received(:prompt)
+      end
+
+      it "generates new summary when checksum differs" do
+        existing_metadata = {
+          "https://example.com/test" => {
+            "url" => "https://example.com/test",
+            "summary" => "Old summary",
+            "content_checksum" => "sha256:different_checksum"
+          }
+        }
+        allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
+
+        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("New generated summary")
+        expect(mock_llm_client).to have_received(:prompt)
+      end
+
+      it "generates new summary when existing metadata has no checksum" do
+        existing_metadata = {
+          "https://example.com/test" => {
+            "url" => "https://example.com/test",
+            "summary" => "Old summary without checksum"
+          }
+        }
+        allow(mock_llm_client).to receive(:prompt).and_return("New generated summary")
+
+        metadata = web.send(:build_url_metadata, page_data, existing_metadata: existing_metadata)
+
+        expect(metadata["summary"]).to eq("New generated summary")
+        expect(mock_llm_client).to have_received(:prompt)
+      end
+    end
+
+    describe "#load_existing_url_metadata" do
+      it "loads URL metadata keyed by URL" do
+        sources = [
+          {
+            "type" => "web",
+            "urls" => [
+              { "url" => "https://example.com/page1", "summary" => "Summary 1", "content_checksum" => "sha256:abc" },
+              { "url" => "https://example.com/page2", "summary" => "Summary 2", "content_checksum" => "sha256:def" }
+            ]
+          }
+        ]
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with(kb_name).and_return(sources)
+
+        metadata = web.send(:load_existing_url_metadata, kb_name)
+
+        expect(metadata["https://example.com/page1"]["summary"]).to eq("Summary 1")
+        expect(metadata["https://example.com/page2"]["summary"]).to eq("Summary 2")
+      end
+
+      it "returns empty hash when no web sources exist" do
+        sources = [{ "type" => "confluence", "pages" => [] }]
+        allow(Aircana::Contexts::Manifest).to receive(:sources_from_manifest).with(kb_name).and_return(sources)
+
+        metadata = web.send(:load_existing_url_metadata, kb_name)
+
+        expect(metadata).to eq({})
+      end
+    end
+  end
 end

@@ -81,10 +81,11 @@ module Aircana
 
       def process_pages_with_manifest(pages, kb_name, label = nil)
         page_metadata = []
+        existing_metadata = load_existing_page_metadata(kb_name)
 
         ProgressTracker.with_batch_progress(pages, "Processing pages") do |page, _index|
           store_page_as_markdown(page, kb_name)
-          page_metadata << extract_page_metadata(page)
+          page_metadata << extract_page_metadata(page, existing_metadata: existing_metadata)
         end
 
         build_source_metadata(kb_name, page_metadata, label)
@@ -92,16 +93,40 @@ module Aircana
 
       private
 
-      def extract_page_metadata(page)
+      def load_existing_page_metadata(kb_name)
+        sources = Manifest.sources_from_manifest(kb_name)
+        confluence_sources = sources.select { |s| s["type"] == "confluence" }
+        return {} if confluence_sources.empty?
+
+        metadata = {}
+        confluence_sources.each do |source|
+          (source["pages"] || []).each do |page|
+            metadata[page["id"]] = page
+          end
+        end
+        metadata
+      end
+
+      def extract_page_metadata(page, existing_metadata: nil)
+        existing_metadata ||= {}
         content = page&.dig("body", "storage", "value") || ""
         markdown_content = convert_to_markdown(content)
         title = page["title"] || "Confluence page"
-        summary = generate_summary(markdown_content, title)
+        content_checksum = Aircana::Checksum.compute(markdown_content)
+
+        existing = existing_metadata[page["id"]]
+        summary = if existing && Aircana::Checksum.match?(existing["content_checksum"], markdown_content)
+                    Aircana.human_logger.info("Content unchanged for '#{title}', reusing summary")
+                    existing["summary"]
+                  else
+                    generate_summary(markdown_content, title)
+                  end
 
         {
           "id" => page["id"],
           "title" => title,
-          "summary" => summary
+          "summary" => summary,
+          "content_checksum" => content_checksum
         }
       end
 
