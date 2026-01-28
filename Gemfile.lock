@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    aircana (5.1.1)
+    aircana (5.1.2)
       aws-sdk-bedrockruntime (~> 1.0)
       httparty (~> 0.21)
       reverse_markdown (~> 2.1)

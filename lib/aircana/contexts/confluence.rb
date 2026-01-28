@@ -140,7 +140,7 @@ module Aircana
       end
 
       def build_summary_prompt(content, title)
-        truncated_content = content.length > 2000 ? "#{content[0..2000]}..." : content
+        truncated_content = content.length > 10_000 ? "#{content[0..10_000]}..." : content
 
         <<~PROMPT
           Generate a concise 8-12 word summary of the following documentation.
@@ -149,8 +149,7 @@ module Aircana
           Content:
           #{truncated_content}
 
-          The summary should describe what information this document contains in a way that helps
-          someone understand when they should read it. Focus on the key topics covered.
+          Focus your summary on listing each topic or feature covered in the documentation.
 
           Respond with only the summary text, no additional explanation or formatting.
         PROMPT
