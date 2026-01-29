@@ -150,7 +150,7 @@ module Aircana
 
           Focus your summary on listing each topic or feature covered in the documentation.
 
-          IMPORTANT: Prefix your summary with "[#{kb_name}]: " to indicate the scope.
+          IMPORTANT: Prefix your summary with "(#{kb_name}): " to indicate the scope.
           Example format: "(#{kb_name} scope) Summary of topics covered"
 
           Respond with only the summary text (including prefix), no additional explanation or formatting.

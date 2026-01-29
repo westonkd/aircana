@@ -260,7 +260,7 @@ module Aircana
           The summary should describe what information this page contains in a way that helps
           someone understand when they should read it. Focus on the key topics covered.
 
-          IMPORTANT: Prefix your summary with "[#{kb_name}]: " to indicate the scope.
+          IMPORTANT: Prefix your summary with "(#{kb_name}): " to indicate the scope.
           Example format: "(#{kb_name} scope) Summary of topics covered"
 
           Respond with only the summary text (including prefix), no additional explanation or formatting.
