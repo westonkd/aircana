@@ -24,6 +24,15 @@ module Aircana
         # Process Confluence structured macros to make them compatible with Markdown conversion
         cleaned = html.dup
 
+        # Convert code blocks with CDATA content to <pre><code> tags
+        cleaned.gsub!(
+          %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>(?:.*?<ac:parameter[^>]*ac:name="language"[^>]*>([^<]*)</ac:parameter>)?.*?<ac:plain-text-body><!\[CDATA\[(.*?)\]\]></ac:plain-text-body>.*?</ac:structured-macro>}m
+        ) do
+          language = Regexp.last_match(1)&.strip || ""
+          code = Regexp.last_match(2) || ""
+          "<pre><code class=\"language-#{language}\">#{code}</code></pre>"
+        end
+
         # Remove empty code blocks (common issue with Confluence API)
         cleaned.gsub!(
           %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>.*?<ac:plain-text-body>\s*</ac:plain-text-body>.*?</ac:structured-macro>}m, ""

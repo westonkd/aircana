@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.2]
+
+### Fixed
+- Fixed Confluence code blocks not being converted to markdown
+  - Code blocks using `<ac:structured-macro ac:name="code">` with CDATA content were being stripped
+  - Added preprocessing to convert Confluence code macros to `<pre><code>` tags before markdown conversion
+  - Supports optional language parameter for syntax highlighting
+  - Handles multiline code content and extra Confluence parameters (breakoutMode, breakoutWidth)
+
 ## [5.2.0]
 
 ### Added

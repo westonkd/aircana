@@ -214,6 +214,115 @@ RSpec.describe Aircana::Contexts::Confluence do
     end
   end
 
+  describe "#preprocess_confluence_macros" do
+    it "converts code blocks with language parameter to pre/code tags" do
+      html = <<~HTML
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:parameter ac:name="language">ruby</ac:parameter>
+          <ac:plain-text-body><![CDATA[def hello
+          puts "Hello, World!"
+        end]]></ac:plain-text-body>
+        </ac:structured-macro>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-ruby">')
+      expect(result).to include("def hello")
+      expect(result).to include('puts "Hello, World!"')
+      expect(result).to include("</code></pre>")
+    end
+
+    it "converts code blocks without language parameter" do
+      html = <<~HTML
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:plain-text-body><![CDATA[some plain text code]]></ac:plain-text-body>
+        </ac:structured-macro>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-">')
+      expect(result).to include("some plain text code")
+    end
+
+    it "handles code blocks with extra parameters" do
+      html = <<~HTML
+        <ac:structured-macro ac:name="code" ac:schema-version="1" ac:local-id="abc123" ac:macro-id="def456">
+          <ac:parameter ac:name="language">javascript</ac:parameter>
+          <ac:parameter ac:name="breakoutMode">wide</ac:parameter>
+          <ac:parameter ac:name="breakoutWidth">760</ac:parameter>
+          <ac:plain-text-body><![CDATA[console.log("test");]]></ac:plain-text-body>
+        </ac:structured-macro>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-javascript">')
+      expect(result).to include('console.log("test");')
+      expect(result).not_to include("breakoutMode")
+      expect(result).not_to include("760")
+    end
+
+    it "handles multiline code content" do
+      html = <<~HTML
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:parameter ac:name="language">python</ac:parameter>
+          <ac:plain-text-body><![CDATA[def greet(name):
+            print(f"Hello, {name}!")
+
+        if __name__ == "__main__":
+            greet("World")]]></ac:plain-text-body>
+        </ac:structured-macro>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-python">')
+      expect(result).to include("def greet(name):")
+      expect(result).to include('print(f"Hello, {name}!")')
+      expect(result).to include('greet("World")')
+    end
+
+    it "removes empty code blocks" do
+      html = <<~HTML
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:plain-text-body>   </ac:plain-text-body>
+        </ac:structured-macro>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result.strip).to eq("")
+    end
+
+    it "processes multiple code blocks in the same document" do
+      html = <<~HTML
+        <p>First paragraph</p>
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:parameter ac:name="language">ruby</ac:parameter>
+          <ac:plain-text-body><![CDATA[puts "first"]]></ac:plain-text-body>
+        </ac:structured-macro>
+        <p>Middle paragraph</p>
+        <ac:structured-macro ac:name="code" ac:schema-version="1">
+          <ac:parameter ac:name="language">python</ac:parameter>
+          <ac:plain-text-body><![CDATA[print("second")]]></ac:plain-text-body>
+        </ac:structured-macro>
+        <p>Last paragraph</p>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-ruby">')
+      expect(result).to include('puts "first"')
+      expect(result).to include('<pre><code class="language-python">')
+      expect(result).to include('print("second")')
+      expect(result).to include("<p>First paragraph</p>")
+      expect(result).to include("<p>Middle paragraph</p>")
+      expect(result).to include("<p>Last paragraph</p>")
+    end
+  end
+
   describe "checksum optimization" do
     let(:mock_llm_client) { instance_double(Aircana::LLM::ClaudeClient) }
     let(:page_content) { "<h1>Test Content</h1><p>Some content here</p>" }
