@@ -321,6 +321,59 @@ RSpec.describe Aircana::Contexts::Confluence do
       expect(result).to include("<p>Middle paragraph</p>")
       expect(result).to include("<p>Last paragraph</p>")
     end
+
+    it "handles code blocks with whitespace around CDATA" do
+      html = <<~HTML
+        <p>Before code block</p>
+        <ac:structured-macro ac:name="code" ac:schema-version="1"
+              ac:macro-id="f3ae4329-9f50-48c9-98a8-a99b35d04cc6"><ac:plain-text-body>
+                <![CDATA[execute("CREATE VIEW...")]]>
+              </ac:plain-text-body></ac:structured-macro>
+        <p>After code block</p>
+      HTML
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-">')
+      expect(result).to include('execute("CREATE VIEW...")')
+      expect(result).to include("<p>Before code block</p>")
+      expect(result).to include("<p>After code block</p>")
+    end
+
+    it "handles inline code blocks without whitespace followed by info macros" do
+      html = "<p>Before code</p>" \
+             '<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="abc123">' \
+             '<ac:plain-text-body><![CDATA[execute("CREATE VIEW")]]></ac:plain-text-body>' \
+             "</ac:structured-macro>" \
+             "<p>Middle content</p>" \
+             '<ac:structured-macro ac:name="info" ac:schema-version="1">' \
+             "<ac:rich-text-body><p>Important info here</p></ac:rich-text-body>" \
+             "</ac:structured-macro>" \
+             "<p>After info</p>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-">')
+      expect(result).to include('execute("CREATE VIEW")')
+      expect(result).to include("<p>Before code</p>")
+      expect(result).to include("<p>Middle content</p>")
+      expect(result).to include("<p>Important info here</p>")
+      expect(result).to include("<p>After info</p>")
+    end
+
+    it "handles code blocks with non-language parameters only" do
+      html = '<ac:structured-macro ac:name="code" ac:schema-version="1">' \
+             '<ac:parameter ac:name="breakoutMode">wide</ac:parameter>' \
+             "<ac:plain-text-body><![CDATA[some code here]]></ac:plain-text-body>" \
+             "</ac:structured-macro>" \
+             "<p>Content after</p>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include('<pre><code class="language-">')
+      expect(result).to include("some code here")
+      expect(result).to include("<p>Content after</p>")
+    end
   end
 
   describe "checksum optimization" do

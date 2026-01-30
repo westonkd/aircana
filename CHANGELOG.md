@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.5]
+
+### Fixed
+- Hardened Confluence macro processing to prevent content truncation
+  - Added negative lookahead to fallback structured macro regex to exclude code macros
+  - Prevents edge case where unmatched code blocks could consume content up to a later info/note macro
+  - Defense in depth fix complementing the whitespace handling in 5.2.4
+
+## [5.2.4]
+
+### Fixed
+- Fixed Confluence code blocks with whitespace around CDATA not being parsed
+  - Confluence API often returns newlines/spaces between `<ac:plain-text-body>` and `<![CDATA[`
+  - Added `\s*` to regex to allow optional whitespace around CDATA sections
+  - Previously, unmatched code blocks were stripped by generic `ac:` tag removal, truncating content
+
 ## [5.2.2]
 
 ### Fixed

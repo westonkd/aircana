@@ -26,7 +26,7 @@ module Aircana
 
         # Convert code blocks with CDATA content to <pre><code> tags
         cleaned.gsub!(
-          %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>(?:.*?<ac:parameter[^>]*ac:name="language"[^>]*>([^<]*)</ac:parameter>)?.*?<ac:plain-text-body><!\[CDATA\[(.*?)\]\]></ac:plain-text-body>.*?</ac:structured-macro>}m
+          %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>(?:.*?<ac:parameter[^>]*ac:name="language"[^>]*>([^<]*)</ac:parameter>)?.*?<ac:plain-text-body>\s*<!\[CDATA\[(.*?)\]\]>\s*</ac:plain-text-body>.*?</ac:structured-macro>}m
         ) do
           language = Regexp.last_match(1)&.strip || ""
           code = Regexp.last_match(2) || ""
@@ -55,8 +55,9 @@ module Aircana
         )
 
         # Strip other structured macros but preserve rich text body content
+        # Uses negative lookahead to exclude code macros (which use plain-text-body, not rich-text-body)
         cleaned.gsub!(
-          %r{<ac:structured-macro[^>]*>.*?<ac:rich-text-body>(.*?)</ac:rich-text-body>.*?</ac:structured-macro>}m, '\1'
+          %r{<ac:structured-macro(?![^>]*ac:name="code")[^>]*>.*?<ac:rich-text-body>(.*?)</ac:rich-text-body>.*?</ac:structured-macro>}m, '\1'
         )
 
         # Remove any remaining Confluence-specific tags
