@@ -25,11 +25,14 @@ module Aircana
         cleaned = html.dup
 
         # Convert code blocks with CDATA content to <pre><code> tags
+        # Capture parameters separately and extract language in the replacement block
+        # to avoid pathological backtracking when optional language group spans multiple code blocks
         cleaned.gsub!(
-          %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>(?:.*?<ac:parameter[^>]*ac:name="language"[^>]*>([^<]*)</ac:parameter>)?.*?<ac:plain-text-body>\s*<!\[CDATA\[(.*?)\]\]>\s*</ac:plain-text-body>.*?</ac:structured-macro>}m
+          %r{<ac:structured-macro[^>]*ac:name="code"[^>]*>(.*?)<ac:plain-text-body>\s*<!\[CDATA\[(.*?)\]\]>\s*</ac:plain-text-body>.*?</ac:structured-macro>}m
         ) do
-          language = Regexp.last_match(1)&.strip || ""
+          params = Regexp.last_match(1)
           code = Regexp.last_match(2) || ""
+          language = params[/ac:name="language"[^>]*>([^<]*)/, 1]&.strip || ""
           "<pre><code class=\"language-#{language}\">#{code}</code></pre>"
         end
 

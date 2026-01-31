@@ -374,6 +374,26 @@ RSpec.describe Aircana::Contexts::Confluence do
       expect(result).to include("some code here")
       expect(result).to include("<p>Content after</p>")
     end
+
+    it "handles multiple code blocks where later one has language but earlier one does not" do
+      html = "<p>Before first code block</p>" \
+             '<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="first">' \
+             "<ac:plain-text-body><![CDATA[first code block - no language]]></ac:plain-text-body>" \
+             "</ac:structured-macro>" \
+             "<p>Content between code blocks - THIS MUST BE PRESERVED</p>" \
+             '<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="second">' \
+             '<ac:parameter ac:name="language">ruby</ac:parameter>' \
+             "<ac:plain-text-body><![CDATA[second code block - with language]]></ac:plain-text-body>" \
+             "</ac:structured-macro>" \
+             "<p>After second code block</p>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("first code block - no language")
+      expect(result).to include("second code block - with language")
+      expect(result).to include("Content between code blocks - THIS MUST BE PRESERVED")
+      expect(result).to include("After second code block")
+    end
   end
 
   describe "checksum optimization" do
