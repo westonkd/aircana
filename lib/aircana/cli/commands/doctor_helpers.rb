@@ -67,7 +67,7 @@ module Aircana
         end
 
         def find_available_editors
-          %w[code subl atom nano vim vi].select { |cmd| command_available?(cmd) }
+          %w[code subl atom nano nvim vim vi].select { |cmd| command_available?(cmd) }
         end
 
         def check_directory(path, description)
