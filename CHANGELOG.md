@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.7]
+
+### Fixed
+- Fixed content loss when stripping Confluence macros that have no rich text body
+  - Macros such as `toc` and `jira` have no `<ac:rich-text-body>` of their own
+  - The generic strip-and-preserve regex could span into a later, unrelated macro's body and delete everything in between
+  - `toc` macros are now removed outright, and the generic regex is barred from crossing another `<ac:structured-macro>` tag
+
+### Added
+- `nvim` is now recognized in the `aircana doctor` available editors list
+
 ## [5.2.6]
 
 ### Fixed
