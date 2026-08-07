@@ -394,6 +394,57 @@ RSpec.describe Aircana::Contexts::Confluence do
       expect(result).to include("Content between code blocks - THIS MUST BE PRESERVED")
       expect(result).to include("After second code block")
     end
+
+    it "does not delete content between a toc macro and a later unrelated macro's rich-text-body" do
+      html = "<ac:structured-macro ac:name=\"toc\" ac:schema-version=\"1\">" \
+             '<ac:parameter ac:name="maxLevel">6</ac:parameter>' \
+             "</ac:structured-macro>" \
+             "<h1>Section Heading</h1>" \
+             "<h2>First Entry Heading</h2>" \
+             "<p>THIS HEADING AND PARAGRAPH MUST SURVIVE</p>" \
+             '<ac:structured-macro ac:name="expand" ac:schema-version="1">' \
+             '<ac:parameter ac:name="title">Unrelated later section</ac:parameter>' \
+             "<ac:rich-text-body><p>Unrelated expand content</p></ac:rich-text-body>" \
+             "</ac:structured-macro>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("<h1>Section Heading</h1>")
+      expect(result).to include("<h2>First Entry Heading</h2>")
+      expect(result).to include("THIS HEADING AND PARAGRAPH MUST SURVIVE")
+      expect(result).to include("Unrelated expand content")
+      expect(result).not_to include("ac:structured-macro")
+    end
+
+    it "does not delete content between a jira macro (no rich-text-body) and a later macro's body" do
+      html = '<ac:structured-macro ac:name="jira" ac:schema-version="1">' \
+             '<ac:parameter ac:name="key">PROJ-123</ac:parameter>' \
+             "</ac:structured-macro>" \
+             "<h2>Entry heading right after the jira macro</h2>" \
+             "<p>THIS CONTENT MUST SURVIVE TOO</p>" \
+             '<ac:structured-macro ac:name="info" ac:schema-version="1">' \
+             "<ac:rich-text-body><p>Unrelated info content</p></ac:rich-text-body>" \
+             "</ac:structured-macro>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("<h2>Entry heading right after the jira macro</h2>")
+      expect(result).to include("THIS CONTENT MUST SURVIVE TOO")
+      expect(result).to include("Unrelated info content")
+    end
+
+    it "still preserves a panel macro's own rich-text-body when it directly follows a toc macro" do
+      html = '<ac:structured-macro ac:name="toc" ac:schema-version="1">' \
+             '<ac:parameter ac:name="maxLevel">6</ac:parameter>' \
+             "</ac:structured-macro>" \
+             '<ac:structured-macro ac:name="panel" ac:schema-version="1">' \
+             "<ac:rich-text-body><p>Panel content right after toc</p></ac:rich-text-body>" \
+             "</ac:structured-macro>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("<blockquote><p>Panel content right after toc</p></blockquote>")
+    end
   end
 
   describe "checksum optimization" do

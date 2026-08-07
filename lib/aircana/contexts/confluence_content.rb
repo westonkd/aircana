@@ -57,10 +57,20 @@ module Aircana
           %r{<ac:structured-macro[^>]*ac:name="warning"[^>]*>.*?<ac:rich-text-body>(.*?)</ac:rich-text-body>.*?</ac:structured-macro>}m, '<blockquote><strong>⚠️ Warning:</strong> \1</blockquote>'
         )
 
-        # Strip other structured macros but preserve rich text body content
-        # Uses negative lookahead to exclude code macros (which use plain-text-body, not rich-text-body)
+        # Remove toc macros outright: they have no rich-text-body of their own,
+        # so the generic strip-and-preserve step below can't match them and
+        # would otherwise span into an unrelated later macro's body, deleting
+        # everything in between.
         cleaned.gsub!(
-          %r{<ac:structured-macro(?![^>]*ac:name="code")[^>]*>.*?<ac:rich-text-body>(.*?)</ac:rich-text-body>.*?</ac:structured-macro>}m, '\1'
+          %r{<ac:structured-macro[^>]*ac:name="toc"[^>]*>.*?</ac:structured-macro>}m, ""
+        )
+
+        # Strip other structured macros but preserve rich text body content.
+        # The gaps around <ac:rich-text-body> are barred from crossing into
+        # another <ac:structured-macro> tag, so a macro without its own body
+        # (e.g. jira) fails this match instead of swallowing unrelated content.
+        cleaned.gsub!(
+          %r{<ac:structured-macro(?![^>]*ac:name="code")[^>]*>(?:(?!<ac:structured-macro).)*?<ac:rich-text-body>(.*?)</ac:rich-text-body>(?:(?!<ac:structured-macro).)*?</ac:structured-macro>}m, '\1'
         )
 
         # Remove any remaining Confluence-specific tags
