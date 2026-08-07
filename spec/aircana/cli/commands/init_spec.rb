@@ -25,7 +25,6 @@ RSpec.describe Aircana::CLI::Init do
     allow(Aircana.configuration).to receive(:scripts_dir).and_return(test_scripts_dir)
     allow(Aircana.configuration).to receive(:hooks_dir).and_return(test_hooks_dir)
     allow(Aircana.configuration).to receive(:commands_dir).and_return(File.join(test_target_dir, "commands"))
-    allow(Aircana.configuration).to receive(:agents_dir).and_return(File.join(test_target_dir, "agents"))
     allow(Aircana.configuration).to receive(:plugin_root).and_return(test_target_dir)
     allow(Aircana.configuration).to receive(:claude_code_project_config_path).and_return(test_target_dir)
 

@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.email = ["weston@dransfield.dev"]
   spec.homepage = "https://github.com/westonkd/aircana"
 
-  spec.summary = "CLI for creating and managing Claude Code plugins with per-agent knowledge bases"
-  spec.description = "Aircana generates distributable Claude Code plugins with specialized agents backed by " \
+  spec.summary = "CLI for creating and managing Claude Code plugins with Skill-based knowledge bases"
+  spec.description = "Aircana generates distributable Claude Code plugins with Agent Skills backed by " \
                      "Confluence and web knowledge sources. Includes manifest-based knowledge tracking, " \
                      "ERB template generation, and team collaboration features."
   spec.license = "MIT"

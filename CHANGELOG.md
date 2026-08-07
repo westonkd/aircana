@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0]
+
+Agent Skills are now the standard way to package knowledge for Claude Code. Aircana predates
+them and shipped knowledge bases as sub-agents, then added Skills alongside in 4.2.0. This
+release removes the agent half: aircana generates Skills and nothing else.
+
+### Removed
+- **BREAKING**: Removed all agent artifact generation
+  - Deleted `AgentsGenerator` and the `agents/base_agent.erb` template
+  - `aircana init` no longer creates an `agents/` directory
+  - The generated agent was a proxy whose only instruction was to invoke the matching skill,
+    so nothing is lost by consulting the skill directly
+- **BREAKING**: Removed the `/plan` slash command
+  - It worked by enumerating `agents/` and dispatching `Task(subagent_type=...)`, which has no
+    meaning without generated agents
+  - Claude Code has native plan mode; `/ask-expert` remains for consulting knowledge bases
+- **BREAKING**: Removed the `color` field from manifests
+  - It existed only to keep agent frontmatter stable across refreshes (added in 5.1.1)
+  - Skills have no color field
+  - `Manifest.color_from_manifest` is gone, and `create_manifest`/`update_manifest` no longer
+    accept a `color:` keyword
+  - `update_manifest` strips a legacy `color` key when it rewrites a manifest
+- Removed `Configuration#agents_dir`
+
+### Changed
+- `aircana plugin validate` now checks for `commands/`, `skills/`, and `hooks/`
+  - It previously required `agents/` and never checked `skills/` at all, so it would have
+    failed on every plugin created by this release
+- `aircana doctor` counts knowledge bases from `skills/*/SKILL.md`
+  - It previously globbed a hardcoded `.claude/agents/*.md`, so it reported "No knowledge
+    bases configured" for any plugin-mode repo
+- `plugin.json` now accepts a `skills` path override; `agents` is still accepted, since Claude
+  Code supports agents even though aircana no longer generates them
+- Renamed Confluence label-lookup parameters from `agent`/`agent_name` to `label`
+- `aircana dump-context` takes a `kb_name` argument instead of `agent_name`
+
+### Added
+- `aircana kb refresh` removes a stale `agents/<kb-name>.md` left by an earlier version
+  - Only files containing aircana's generated marker are deleted, so a hand-written agent is
+    left alone
+  - The `agents/` directory itself is removed once empty
+
+### Fixed
+- Corrected `README.md` and `CLAUDE.md`, which documented manifests at
+  `agents/<kb-name>/manifest.json`. They have been at `skills/<kb-name>/manifest.json` since
+  the move to the Skills layout
+- Removed remaining `kb_type` and remote-vs-local knowledge base documentation, which
+  described behavior deleted in 5.0.0
+
+### Migration Guide
+To upgrade from version 5.x:
+1. Delete the `agents/` directory from your plugin. Running `aircana kb refresh <kb-name>` will
+   remove the generated agent files for you; anything you hand-wrote is left for you to decide on.
+2. Delete `commands/plan.md` from your plugin. Aircana no longer generates it and will not
+   remove it for you, in case you edited it.
+3. If `plugin.json` has an `"agents"` path override pointing at aircana output, change the key
+   to `"skills"`.
+4. Existing manifests keep working. The `color` field is ignored and dropped the next time the
+   manifest is written.
+
 ## [5.2.7]
 
 ### Fixed

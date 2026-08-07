@@ -39,14 +39,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Knowledge Base Management:**
 - `aircana kb create` - Create a new knowledge base interactively
 - `aircana kb list` - List all configured knowledge bases
-- `aircana kb refresh <kb-name>` - Refresh knowledge base from Confluence and web sources (works for both local and remote KBs)
-- `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases (both local and remote)
+- `aircana kb refresh <kb-name>` - Refresh knowledge base from Confluence and web sources
+- `aircana kb refresh-all` - Refresh knowledge for all configured knowledge bases
 - `aircana kb add-url <kb-name> <url>` - Add a web URL to a knowledge base
 
 **Hooks:**
 - Hooks are automatically generated during `aircana init`
-- Default hooks include: `session_start`, `refresh_skills`, and `notification_sqs`
-- `refresh_skills` automatically refreshes knowledge bases once per 24 hours (both local and remote)
+- Default hooks include: `session_start` and `notification_sqs`
 - Hook scripts are stored in `scripts/` directory
 - Hook configuration is managed via `hooks/hooks.json`
 
@@ -90,14 +89,13 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
   - `manifest.rb`: Per-knowledge-base manifest system tracking:
     - Knowledge sources (Confluence, web)
     - Source metadata (page IDs, URLs, timestamps)
-    - KB type (local or remote)
     - Manifest format version (1.0)
   - `local.rb`: File system operations for storing knowledge
 
 - **Generators** (`lib/aircana/generators/`): ERB-based template generation
   - `base_generator.rb`: Base class with ERB rendering and file writing
   - `skills_generator.rb`: Knowledge base file generation (Markdown format)
-  - Command generators: plan, ask_expert
+  - Command generators: ask_expert
   - `hooks_generator.rb`: Hook script generation
   - Templates location: `lib/aircana/templates/`
 
@@ -122,17 +120,16 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
 - **Plugins**: Distributable Claude Code extensions with manifests, skills/knowledge bases, commands, and hooks
 - **Plugin Manifests**: JSON files defining plugin metadata (`.claude-plugin/plugin.json`)
 - **Knowledge Bases (Skills)**: Curated documentation from Confluence and web sources that provide domain expertise
-- **Manifests**: Per-knowledge-base JSON tracking sources, metadata, and KB type (local/remote)
+- **Manifests**: Per-knowledge-base JSON tracking knowledge sources and their metadata
 - **Hooks**: Event-driven automation through `hooks/hooks.json`
 - **Commands**: Custom slash commands for workflow automation
 
 ### File Organization
 - **Plugin Structure** (when in plugin mode):
   - `.claude-plugin/plugin.json` - Plugin manifest with metadata and versioning
-  - `agents/` - Knowledge base manifests (metadata about knowledge sources)
-  - `agents/<kb-name>/manifest.json` - Tracks knowledge sources per KB
-  - `skills/` - Knowledge base SKILL.md files (Claude Code reads from here)
+  - `skills/` - Knowledge bases (Claude Code reads from here)
   - `skills/<kb-name>/SKILL.md` - Main skill definition file
+  - `skills/<kb-name>/manifest.json` - Tracks knowledge sources per KB
   - `skills/<kb-name>/*.md` - Knowledge content (Confluence pages, web articles)
   - `commands/` - Slash command markdown files
   - `hooks/` - hooks.json manifest defining hook configurations
@@ -149,24 +146,18 @@ Aircana is a Ruby gem that creates and manages Claude Code plugins with knowledg
   - `~/.aircana/aircana.out/` - Generated templates output directory
 
 - **Knowledge Storage Architecture**:
-  - **Plugin Mode**:
-    - Manifests: `agents/<kb-name>/manifest.json` (version controlled)
-    - SKILL.md: `skills/<kb-name>/SKILL.md` (version controlled or gitignored based on KB type)
-    - Knowledge content: `skills/<kb-name>/*.md`
-    - Remote KBs: `skills/<kb-name>/` added to .gitignore (not version controlled)
-    - Local KBs: `skills/<kb-name>/` version controlled (team collaboration)
-  - **Non-Plugin Mode**:
-    - Everything in `.claude/skills/<kb-name>/`:
-      - `manifest.json` - KB manifest
-      - `SKILL.md` - Skill definition
-      - `*.md` - Knowledge content
-    - Team members can refresh knowledge independently
-    - Format:
+  - Everything for a KB lives in one directory: `skills/<kb-name>/` in plugin mode,
+    `.claude/skills/<kb-name>/` otherwise
+    - `SKILL.md` - Skill definition
+    - `manifest.json` - KB manifest
+    - `*.md` - Knowledge content
+  - Content is version controlled by default; gitignore an individual skill directory when
+    its content shouldn't be committed, and teammates rebuild it with `aircana kb refresh`
+  - Manifest format:
       ```json
       {
         "version": "1.0",
-        "kb_name": "my-kb",
-        "kb_type": "remote",
+        "name": "my-kb",
         "sources": [
           {
             "type": "confluence",
@@ -240,9 +231,9 @@ end
 
 **Manifest-Based Knowledge Tracking**:
 Each knowledge base has a `manifest.json` that tracks knowledge sources:
-- Plugin mode: Stored in `agents/<kb-name>/manifest.json` (version controlled)
+- Plugin mode: Stored in `skills/<kb-name>/manifest.json`
 - Non-plugin mode: Stored in `.claude/skills/<kb-name>/manifest.json`
-- Contains KB type (remote/local), source URLs, Confluence labels for discovery
+- Contains source URLs and the Confluence labels used for discovery
 - Team members run `aircana kb refresh` to sync knowledge from Confluence/web sources
 - Refresh discovers new pages by searching the stored Confluence label
 
@@ -286,7 +277,7 @@ Knowledge bases can sync content from multiple sources:
 - Both source types tracked in manifest.json per knowledge base
 - Manifest schema version 1.0
 - Confluence sources include the label used for discovery, enabling refresh to find new pages
-- `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for any KB (local or remote)
-- `aircana kb refresh-all` refreshes all configured knowledge bases (both local and remote)
+- `aircana kb refresh <kb-name>` refreshes all sources (Confluence + web) for a KB
+- `aircana kb refresh-all` refreshes all configured knowledge bases
 - **Plugin mode**: KB content stored in `skills/<kb-name>/`
 - **Non-plugin mode**: KB content stored in `.claude/skills/<kb-name>/`

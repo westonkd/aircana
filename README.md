@@ -43,7 +43,7 @@ aircana init --plugin-name my-custom-plugin
 
 This creates a plugin structure with:
 - `.claude-plugin/plugin.json` - Plugin manifest
-- `agents/` - Knowledge base definitions
+- `skills/` - Knowledge bases (Agent Skills)
 - `commands/` - Slash commands
 - `hooks/` - Hook configurations (hooks.json)
 - `scripts/` - Hook scripts and utilities
@@ -90,8 +90,6 @@ aircana plugin validate
 - Configure the Confluence integration and create domain-specific knowledge bases
 
 - Use the `/ask-expert` command to consult multiple specialized experts
-
-- Use the `/plan` command to create strategic implementation plans with expert consultation
 
 - Explore other tools by running `aircana --help`
 
@@ -140,7 +138,7 @@ ls -la
 
 This creates:
 - `.claude-plugin/plugin.json` - Plugin manifest with metadata
-- `agents/` - Directory for knowledge base definitions
+- `skills/` - Directory for knowledge bases (Agent Skills)
 - `commands/` - Custom slash commands
 - `hooks/hooks.json` - Hook configurations
 - `scripts/` - Hook scripts and utilities
@@ -154,13 +152,10 @@ aircana kb create
 You'll be prompted for:
 - **Knowledge base name**: e.g., "backend-api" (use kebab-case)
 - **Description**: e.g., "Expert in backend API development and best practices"
-- **Model**: Choose sonnet (smarter), haiku (faster), or inherit (uses default)
-- **Color**: Pick an interface color for visual identification
 
-The knowledge base file is created at `agents/backend-api.md` with:
-- Configuration (name, description, model)
-- Knowledge base path reference
-- Custom instructions
+The knowledge base is created at `skills/backend-api/` with:
+- `SKILL.md` - the skill definition Claude Code loads, with frontmatter and an index of sub-topics
+- `manifest.json` - the knowledge sources to refresh from
 
 ### Step 3: Tag Confluence Pages
 
@@ -186,11 +181,11 @@ This will:
 2. Download page content via Confluence REST API
 3. Convert HTML to Markdown using ReverseMarkdown
 4. Store content in the knowledge base directory
-5. Update `agents/backend-api/manifest.json` with source metadata
+5. Update `skills/backend-api/manifest.json` with source metadata
 
-**Output:** Knowledge files are created in `~/.claude/skills/backend-api/`
+**Output:** Knowledge files are created in `skills/backend-api/`, alongside `SKILL.md` and `manifest.json`.
 
-**Note:** The actual knowledge content is stored globally (not in your plugin directory) to avoid version control bloat and potential sensitive information leaks. Only the manifest (source tracking) is version controlled.
+**Note:** Knowledge content is version controlled with the plugin, so teammates get it on clone. Refresh only when the upstream sources change. If a knowledge base draws on content you don't want in the repo, gitignore that skill directory and have teammates run `aircana kb refresh` themselves.
 
 ### Step 5: Add Web URLs (Optional)
 
@@ -239,7 +234,7 @@ aircana kb refresh backend-api
 aircana kb refresh-all
 ```
 
-Knowledge sources are tracked in `agents/<kb-name>/manifest.json`, so team members can independently refresh without manual coordination.
+Knowledge sources are tracked in `skills/<kb-name>/manifest.json`, so team members can independently refresh without manual coordination.
 
 ## Key Concepts
 
@@ -278,7 +273,7 @@ Optional path overrides (for non-standard layouts):
 ```json
 {
   "commands": "./custom/commands/",
-  "agents": "./custom/skills/",
+  "skills": "./custom/skills/",
   "hooks": "./config/hooks.json",
   "mcpServers": "./mcp-config.json"
 }
@@ -310,19 +305,18 @@ Websites are also refreshed when `aircana kb refresh <KB-NAME>` is used.
 
 #### Structure
 
-Knowledge bases are stored within the plugin's agents directory. For example:
+Each knowledge base is a single Agent Skill directory under the plugin's `skills/` directory. For example:
 
 ```
 my-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
-├── agents/
-│   ├── backend-expert.md
+├── skills/
 │   └── backend-expert/
-│       ├── knowledge/          # (optional, for local KBs)
-│       │   ├── API-Design.md
-│       │   └── Authentication.md
-│       └── manifest.json
+│       ├── SKILL.md            # skill definition Claude Code loads
+│       ├── manifest.json       # knowledge sources to refresh from
+│       ├── API-Design.md
+│       └── Authentication.md
 ├── commands/
 │   └── ask-expert.md
 ├── hooks/
@@ -332,18 +326,23 @@ my-plugin/
     └── session_start.sh
 ```
 
-Knowledge base files and manifests are co-located in the plugin's `agents/` directory.
+`SKILL.md`, `manifest.json`, and the fetched knowledge files all live together in
+`skills/<kb-name>/`. Outside a plugin, the same layout is used under `.claude/skills/`.
 
 **Version Control Considerations:**
 
-In many cases, adding the actual knowledge base to version control is undesirable because:
-- Knowledge bases may contain numerous files, bloating repository size
-- Content may include sensitive information not suitable for public repos
-- Knowledge refreshes would create frequent, large commits
+Knowledge content is version controlled by default, so cloning the repo is enough to get
+working knowledge bases. `manifest.json` records where each file came from, so
+`aircana kb refresh` can rebuild the content from Confluence and web sources at any time.
 
-Aircana manages a per-knowledge-base `manifest.json` file to track knowledge sources without committing the actual content. Team members can refresh knowledge bases using `aircana kb refresh`.
+Committing content is not always the right call:
+- A knowledge base with many files adds to repository size
+- Content may include internal information unsuitable for a public repo
+- Each refresh produces a large diff
 
-For remote knowledge bases, actual content is stored in `~/.claude/skills/<kb-name>/`. For local knowledge bases, content is version-controlled in `agents/<kb-name>/knowledge/` and synced to the runtime location.
+When that applies, gitignore the individual skill directory but keep its `manifest.json`
+tracked. Teammates then run `aircana kb refresh <kb-name>` to fetch content under their own
+Confluence credentials.
 
 ### Plugin Artifacts
 
@@ -393,12 +392,10 @@ At Instructure this means you can easily configure Claude Code to send you slack
 
 ## Slash Commands
 
-Aircana provides two powerful slash commands that leverage your expert knowledge bases:
-
 ### `/ask-expert` - Expert Consultation
 
 Consults multiple specialized knowledge bases to answer questions by:
-- Using a coordinator to identify relevant expert agents
+- Using a coordinator to identify the relevant Skills
 - Running expert consultations in parallel for efficiency
 - Synthesizing responses into a comprehensive answer
 - Citing which experts contributed specific insights
@@ -412,32 +409,11 @@ Consults multiple specialized knowledge bases to answer questions by:
 
 The command automatically selects the most relevant experts based on your question and the knowledge bases available in your plugin.
 
-### `/plan` - Strategic Planning
-
-Creates strategic implementation plans by consulting domain experts. This command:
-- Verifies you're in Claude Code planning mode
-- Uses a coordinator to identify relevant expert agents
-- Consults experts in parallel for their domain-specific insights
-- Synthesizes expert input into a unified strategic plan
-- Presents the plan as numbered implementation steps
-- Focuses on high-level guidance (not exhaustive code implementations)
-
-**Example usage:**
-```
-# First, put Claude Code into planning mode, then:
-/plan Add authentication to the user API
-
-# Or provide task as argument:
-/plan "Refactor the database layer for better performance"
-```
-
-The plan focuses on strategic decisions, architecture considerations, and approach—leveraging the collective expertise of your knowledge bases to create well-informed implementation guidance.
-
 ## Configuration (Optional)
 
 ### Confluence Setup (Optional)
 
-To use agent knowledge sync features, you'll need to configure Confluence integration:
+To sync knowledge bases from Confluence, you'll need to configure the Confluence integration:
 
 #### 1. Generate Confluence API Token
 

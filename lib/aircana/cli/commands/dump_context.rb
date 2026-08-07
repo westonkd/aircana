@@ -6,7 +6,7 @@ module Aircana
   module CLI
     module DumpContext
       class << self
-        def run(_agent_name:, _verbose: true)
+        def run(_kb_name:, _verbose: true)
           Aircana.logger.level = Logger::ERROR
           Aircana.human_logger.info("Context dumping functionality has been removed.")
         end

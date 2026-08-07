@@ -115,7 +115,7 @@ module Aircana
 
         def create_plugin_structure(target_dir)
           # Create plugin directories
-          [".claude-plugin", "commands", "agents", "skills", "hooks", "scripts"].each do |dir|
+          [".claude-plugin", "commands", "skills", "hooks", "scripts"].each do |dir|
             dir_path = File.join(target_dir, dir)
             Aircana.create_dir_if_needed(dir_path)
             Aircana.human_logger.info("Created directory: #{dir}/")
@@ -242,8 +242,7 @@ module Aircana
           Aircana.human_logger.info("\nPlugin structure:")
           Aircana.human_logger.info("  .claude-plugin/plugin.json  - Plugin metadata")
           Aircana.human_logger.info("  commands/                   - Slash commands")
-          Aircana.human_logger.info("  agents/                     - Knowledge base manifests")
-          Aircana.human_logger.info("  skills/                     - Knowledge base SKILL.md files")
+          Aircana.human_logger.info("  skills/                     - Knowledge bases (SKILL.md + manifest.json)")
           Aircana.human_logger.info("  hooks/                      - Event hook configurations")
           Aircana.human_logger.info("  scripts/                    - Hook scripts and utilities")
           Aircana.human_logger.info("\nNext steps:")

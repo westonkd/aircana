@@ -17,7 +17,10 @@ spec_output*/
 /lib/bundler/man/
 .byebug_history
 .aircana/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/aircana/
 .last_refresh
 
 # Logs
@@ -84,11 +87,7 @@ docker-compose.override.yml
 !skills/*/*.md
 
 # Aircana testing files
-hooks
-scripts
-skills
-agents
+/hooks
+/scripts
+/skills
 spec_target*
-
-# But DO track template directories
-!lib/aircana/templates/agents/

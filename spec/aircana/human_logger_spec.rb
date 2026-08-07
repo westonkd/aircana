@@ -47,11 +47,6 @@ RSpec.describe Aircana::HumanLogger do
   end
 
   describe "context-aware emoji selection" do
-    it "uses agent emoji for agent-related messages" do
-      logger.info("Agent created successfully")
-      expect(output.string).to include("🤖")
-    end
-
     it "uses file emoji for file-related messages" do
       logger.info("File created at /path/to/file")
       expect(output.string).to include("📁")
@@ -85,8 +80,8 @@ RSpec.describe Aircana::HumanLogger do
 
   describe "priority handling" do
     it "prioritizes context-based emojis over action-based ones" do
-      logger.info("Created agent configuration file")
-      expect(output.string).to include("🤖") # Agent emoji should take precedence over created
+      logger.info("Created configuration file")
+      expect(output.string).to include("📁") # File emoji should take precedence over created
     end
   end
 end
