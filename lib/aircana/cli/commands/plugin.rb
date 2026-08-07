@@ -138,7 +138,7 @@ module Aircana
           end
 
           # Check directory structure
-          %w[agents commands hooks].each do |dir|
+          %w[commands skills hooks].each do |dir|
             dir_path = File.join(Aircana.configuration.plugin_root, dir)
             if Dir.exist?(dir_path)
               Aircana.human_logger.success("✓ Directory exists: #{dir}/")

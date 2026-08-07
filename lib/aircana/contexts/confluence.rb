@@ -202,30 +202,30 @@ module Aircana
         raise Error, "Confluence API token not configured"
       end
 
-      def fetch_pages_by_label(agent)
-        label_id = find_label_id(agent)
+      def fetch_pages_by_label(label)
+        label_id = find_label_id(label)
         return [] if label_id.nil?
 
         response = get_pages_for_label(label_id)
         response["results"] || []
       rescue HTTParty::Error, StandardError => e
-        handle_api_error("fetch pages for agent '#{agent}'", e, "Failed to fetch pages from Confluence")
+        handle_api_error("fetch pages for label '#{label}'", e, "Failed to fetch pages from Confluence")
       end
 
-      def find_label_id(agent_name)
+      def find_label_id(label)
         path = "/wiki/api/v2/labels"
         query_params = { limit: 250, prefix: LABEL_PREFIX }
         page_number = 1
 
-        label_id = search_labels_pagination(path, query_params, agent_name, page_number)
+        label_id = search_labels_pagination(path, query_params, label, page_number)
         clear_pagination_line
         label_id
       end
 
-      def search_labels_pagination(path, query_params, agent_name, page_number)
+      def search_labels_pagination(path, query_params, label, page_number)
         loop do
           response = fetch_labels_page(path, query_params, page_number)
-          label_id = find_matching_label_id(response, agent_name)
+          label_id = find_matching_label_id(response, label)
           return label_id if label_id
 
           next_cursor = extract_next_cursor(response)
@@ -246,9 +246,9 @@ module Aircana
         response
       end
 
-      def find_matching_label_id(response, agent_name)
+      def find_matching_label_id(response, label)
         labels = response["results"] || []
-        matching_label = labels.find { |label| label["name"] == agent_name }
+        matching_label = labels.find { |candidate| candidate["name"] == label }
         matching_label&.[]("id")
       end
 

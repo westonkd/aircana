@@ -52,14 +52,7 @@ RSpec.describe Aircana::Contexts::Manifest do
       expect(Dir).to exist(File.join(Aircana.configuration.kb_knowledge_dir, kb_name))
     end
 
-    it "stores color when provided" do
-      result = described_class.create_manifest(kb_name, sources, color: "cyan")
-
-      manifest = JSON.parse(File.read(result))
-      expect(manifest["color"]).to eq("cyan")
-    end
-
-    it "does not include color field when not provided" do
+    it "does not include a color field" do
       result = described_class.create_manifest(kb_name, sources)
 
       manifest = JSON.parse(File.read(result))
@@ -110,31 +103,16 @@ RSpec.describe Aircana::Contexts::Manifest do
       expect(manifest["sources"]).to eq(updated_sources)
     end
 
-    it "preserves existing color when not provided" do
-      manifest_path = described_class.create_manifest(kb_name, original_sources, color: "magenta")
+    it "strips the legacy color field from an existing manifest" do
+      manifest_path = described_class.create_manifest(kb_name, original_sources)
+      legacy = JSON.parse(File.read(manifest_path)).merge("color" => "magenta")
+      File.write(manifest_path, JSON.pretty_generate(legacy))
 
       described_class.update_manifest(kb_name, updated_sources)
 
       manifest = JSON.parse(File.read(manifest_path))
-      expect(manifest["color"]).to eq("magenta")
-    end
-
-    it "updates color when provided" do
-      manifest_path = described_class.create_manifest(kb_name, original_sources, color: "red")
-
-      described_class.update_manifest(kb_name, updated_sources, color: "blue")
-
-      manifest = JSON.parse(File.read(manifest_path))
-      expect(manifest["color"]).to eq("blue")
-    end
-
-    it "adds color to existing manifest without one" do
-      manifest_path = described_class.create_manifest(kb_name, original_sources)
-
-      described_class.update_manifest(kb_name, updated_sources, color: "green")
-
-      manifest = JSON.parse(File.read(manifest_path))
-      expect(manifest["color"]).to eq("green")
+      expect(manifest).not_to have_key("color")
+      expect(manifest["sources"]).to eq(updated_sources)
     end
   end
 
@@ -213,42 +191,6 @@ RSpec.describe Aircana::Contexts::Manifest do
       result = described_class.sources_from_manifest("non-existent-kb")
 
       expect(result).to eq([])
-    end
-  end
-
-  describe ".color_from_manifest" do
-    let(:kb_name) { "test-kb" }
-    let(:sources) do
-      [
-        {
-          "type" => "confluence",
-          "pages" => [
-            { "id" => "123", "summary" => "Test summary" }
-          ]
-        }
-      ]
-    end
-
-    it "returns color from manifest when present" do
-      described_class.create_manifest(kb_name, sources, color: "purple")
-
-      result = described_class.color_from_manifest(kb_name)
-
-      expect(result).to eq("purple")
-    end
-
-    it "returns nil when color is not in manifest" do
-      described_class.create_manifest(kb_name, sources)
-
-      result = described_class.color_from_manifest(kb_name)
-
-      expect(result).to be_nil
-    end
-
-    it "returns nil for non-existent manifest" do
-      result = described_class.color_from_manifest("non-existent-kb")
-
-      expect(result).to be_nil
     end
   end
 

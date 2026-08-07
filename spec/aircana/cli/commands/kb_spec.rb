@@ -128,12 +128,7 @@ RSpec.describe Aircana::CLI::KB do
         instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
       )
 
-      allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
-        instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
-      )
-
       allow(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources)
-      allow(Aircana::Contexts::Manifest).to receive(:update_manifest).with(kb_name, confluence_sources, color: "cyan")
 
       # Allow success messages (multiple may be logged)
       allow(Aircana.human_logger).to receive(:success)
@@ -172,10 +167,6 @@ RSpec.describe Aircana::CLI::KB do
 
       allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with(kb_name).and_return(
         instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
-      )
-
-      allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with(kb_name).and_return(
-        instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
       )
 
       allow(Aircana::Contexts::Manifest).to receive(:update_manifest)
@@ -240,10 +231,6 @@ RSpec.describe Aircana::CLI::KB do
 
         allow(Aircana::Generators::SkillsGenerator).to receive(:from_manifest).with("test-refresh-kb").and_return(
           instance_double(Aircana::Generators::SkillsGenerator, generate: nil)
-        )
-
-        allow(Aircana::Generators::AgentsGenerator).to receive(:from_manifest).with("test-refresh-kb").and_return(
-          instance_double(Aircana::Generators::AgentsGenerator, generate: nil, color: "cyan")
         )
 
         allow(Aircana::Contexts::Manifest).to receive(:update_manifest)

@@ -7,10 +7,10 @@ module Aircana
   # Manages Claude Code plugin manifest (plugin.json) files
   class PluginManifest # rubocop:disable Metrics/ClassLength
     REQUIRED_FIELDS = %w[name version].freeze
-    OPTIONAL_FIELDS = %w[description author homepage repository license keywords commands agents hooks
+    OPTIONAL_FIELDS = %w[description author homepage repository license keywords commands skills agents hooks
                          mcpServers].freeze
     ALL_FIELDS = (REQUIRED_FIELDS + OPTIONAL_FIELDS).freeze
-    PATH_OVERRIDE_FIELDS = %w[commands agents hooks mcpServers].freeze
+    PATH_OVERRIDE_FIELDS = %w[commands skills agents hooks mcpServers].freeze
 
     attr_reader :plugin_root
 

@@ -28,10 +28,10 @@ module Aircana
       end
 
       desc "dump-context",
-           "dumps knowledge, memories, and decisions for the specified agent"
+           "dumps knowledge for the specified knowledge base"
       option :verbose, type: :boolean, default: true
-      def dump_context(agent_name)
-        DumpContext.run(agent_name: agent_name, verbose: options[:verbose])
+      def dump_context(kb_name)
+        DumpContext.run(kb_name: kb_name, verbose: options[:verbose])
       end
 
       desc "generate", "Generates all configured files and dumps the configured output directory"

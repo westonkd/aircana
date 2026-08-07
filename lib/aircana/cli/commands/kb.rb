@@ -3,8 +3,8 @@
 require "json"
 require "tty-prompt"
 require_relative "../../generators/skills_generator"
-require_relative "../../generators/agents_generator"
 require_relative "../../contexts/manifest"
+require_relative "../../migrations/legacy_agent_cleanup"
 require_relative "../../contexts/web"
 
 module Aircana
@@ -16,7 +16,7 @@ module Aircana
 
           perform_manifest_aware_refresh(normalized_kb_name)
           regenerate_skill_md(normalized_kb_name)
-          regenerate_agent_md(normalized_kb_name)
+          Migrations::LegacyAgentCleanup.run(normalized_kb_name)
         rescue Aircana::Error => e
           handle_refresh_error(normalized_kb_name, e)
         end
@@ -36,7 +36,7 @@ module Aircana
 
           unless fetched_confluence || fetched_urls
             regenerate_skill_md(normalized_kb_name, short_description)
-            regenerate_agent_md(normalized_kb_name)
+            Migrations::LegacyAgentCleanup.run(normalized_kb_name)
           end
 
           Aircana.human_logger.success "Knowledge base '#{kb_name}' setup complete!"
@@ -79,7 +79,7 @@ module Aircana
             Aircana::Contexts::Manifest.update_manifest(normalized_kb_name, all_sources)
 
             regenerate_skill_md(normalized_kb_name)
-            regenerate_agent_md(normalized_kb_name)
+            Migrations::LegacyAgentCleanup.run(normalized_kb_name)
 
             Aircana.human_logger.success "Successfully added URL to KB '#{kb_name}'"
           else
@@ -186,27 +186,6 @@ module Aircana
           Aircana.human_logger.warn "Failed to generate SKILL.md: #{e.message}"
         end
 
-        def regenerate_agent_md(kb_name)
-          return unless Aircana::Contexts::Manifest.manifest_exists?(kb_name)
-
-          generator = Generators::AgentsGenerator.from_manifest(kb_name)
-          generator.generate
-
-          persist_color_if_needed(kb_name, generator.color)
-
-          Aircana.human_logger.success "Generated agent for '#{kb_name}'"
-        rescue StandardError => e
-          Aircana.human_logger.warn "Failed to generate agent: #{e.message}"
-        end
-
-        def persist_color_if_needed(kb_name, color)
-          existing_color = Aircana::Contexts::Manifest.color_from_manifest(kb_name)
-          return if existing_color
-
-          sources = Aircana::Contexts::Manifest.sources_from_manifest(kb_name)
-          Aircana::Contexts::Manifest.update_manifest(kb_name, sources, color: color)
-        end
-
         def log_no_pages_found(normalized_kb_name)
           Aircana.human_logger.info "No pages found for KB '#{normalized_kb_name}'. " \
                                     "Make sure pages are labeled with '#{normalized_kb_name}' in Confluence."
@@ -238,7 +217,7 @@ module Aircana
             result = perform_refresh(normalized_kb_name, label: label)
             if result[:pages_count]&.positive?
               regenerate_skill_md(normalized_kb_name, short_description)
-              regenerate_agent_md(normalized_kb_name)
+              Migrations::LegacyAgentCleanup.run(normalized_kb_name)
               return true
             end
           else
@@ -282,7 +261,7 @@ module Aircana
             if result[:pages_count].positive?
               Aircana.human_logger.success "Successfully fetched #{result[:pages_count]} URL(s)"
               regenerate_skill_md(normalized_kb_name)
-              regenerate_agent_md(normalized_kb_name)
+              Migrations::LegacyAgentCleanup.run(normalized_kb_name)
               return true
             else
               Aircana.human_logger.warn "No URLs were successfully fetched"
@@ -363,7 +342,7 @@ module Aircana
           begin
             result = perform_manifest_aware_refresh(kb_name)
             regenerate_skill_md(kb_name)
-            regenerate_agent_md(kb_name)
+            Migrations::LegacyAgentCleanup.run(kb_name)
             {
               success: true,
               pages_count: result[:pages_count],

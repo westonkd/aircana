@@ -13,7 +13,6 @@ module Aircana
       # Context-specific emojis
       file: "📁",
       files: "📁",
-      agent: "🤖",
       network: "🌐",
       page: "📄",
       pages: "📄",
@@ -88,7 +87,6 @@ module Aircana
     end
 
     def detect_content_emoji(message_lower)
-      return EMOJIS[:agent] if message_lower.include?("agent")
       return EMOJIS[:pages] if message_lower.match?(/\d+\s+pages?/)
       return EMOJIS[:page] if message_lower.include?("page")
       return EMOJIS[:files] if files_pattern_match?(message_lower)

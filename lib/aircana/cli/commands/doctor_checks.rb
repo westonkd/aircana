@@ -36,15 +36,16 @@ module Aircana
           Aircana.human_logger.info "\nAircana Configuration:"
 
           check_directory("~/.aircana", "Global Aircana directory")
-          check_agents_status
+          check_knowledge_bases_status
         end
 
-        def check_agents_status
-          agents_dir = File.join(Dir.pwd, ".claude", "agents")
-          if Dir.exist?(agents_dir) && !Dir.empty?(agents_dir)
-            kb_count = Dir.glob(File.join(agents_dir, "*.md")).size
+        def check_knowledge_bases_status
+          skills_dir = Aircana.configuration.skills_dir
+          kb_count = Dir.glob(File.join(skills_dir, "*", "SKILL.md")).size
+
+          if kb_count.positive?
             log_success("KBs", "#{kb_count} knowledge base(s) configured")
-          elsif Dir.exist?(agents_dir)
+          elsif Dir.exist?(skills_dir)
             log_info("KBs", "Knowledge bases directory exists but is empty")
           else
             log_info("KBs", "No knowledge bases configured yet")

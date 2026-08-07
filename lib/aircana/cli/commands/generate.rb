@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../generators/plan_command_generator"
 require_relative "../../generators/ask_expert_command_generator"
 require_relative "../../generators/hooks_generator"
 
@@ -10,7 +9,6 @@ module Aircana
       class << self
         def generators
           @generators ||= [
-            Aircana::Generators::PlanCommandGenerator.new,
             Aircana::Generators::AskExpertCommandGenerator.new
           ]
         end

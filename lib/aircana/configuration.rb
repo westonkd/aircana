@@ -7,7 +7,7 @@ module Aircana
     attr_accessor :global_dir, :project_dir, :stream, :output_dir,
                   :claude_code_config_path, :claude_code_project_config_path, :kb_knowledge_dir,
                   :hooks_dir, :scripts_dir, :confluence_base_url, :confluence_username, :confluence_api_token,
-                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir, :agents_dir,
+                  :plugin_root, :plugin_manifest_dir, :commands_dir, :skills_dir,
                   :llm_provider, :bedrock_region, :bedrock_model
 
     def initialize
@@ -71,37 +71,26 @@ module Aircana
       @output_dir = File.join(@global_dir, "aircana.out")
     end
 
-    # rubocop:disable Metrics/MethodLength
     def setup_plugin_paths
       # Plugin root can be set via AIRCANA_PLUGIN_ROOT (for hooks) or CLAUDE_PLUGIN_ROOT,
       # otherwise defaults to the current project directory
       @plugin_root = ENV.fetch("AIRCANA_PLUGIN_ROOT", ENV.fetch("CLAUDE_PLUGIN_ROOT", @project_dir))
       @plugin_manifest_dir = File.join(@plugin_root, ".claude-plugin")
       @commands_dir = File.join(@plugin_root, "commands")
-
-      # Skills directory location depends on whether we're in a plugin
-      # Plugin mode: skills/ (Claude Code standard location)
-      # Non-plugin mode: .claude/skills/ (local development/one-off usage)
-      @skills_dir = if plugin_mode?
-                      File.join(@plugin_root, "skills")
-                    else
-                      File.join(@plugin_root, ".claude", "skills")
-                    end
-
-      # Agents directory location depends on whether we're in a plugin
-      # Plugin mode: agents/ (Claude Code standard location)
-      # Non-plugin mode: .claude/agents/ (local development/one-off usage)
-      @agents_dir = if plugin_mode?
-                      File.join(@plugin_root, "agents")
-                    else
-                      File.join(@plugin_root, ".claude", "agents")
-                    end
-
+      @skills_dir = resolve_skills_dir
       @hooks_dir = File.join(@plugin_root, "hooks")
       @scripts_dir = File.join(@plugin_root, "scripts")
       @kb_knowledge_dir = @skills_dir
     end
-    # rubocop:enable Metrics/MethodLength
+
+    # Skills directory location depends on whether we're in a plugin
+    # Plugin mode: skills/ (Claude Code standard location)
+    # Non-plugin mode: .claude/skills/ (local development/one-off usage)
+    def resolve_skills_dir
+      return File.join(@plugin_root, "skills") if plugin_mode?
+
+      File.join(@plugin_root, ".claude", "skills")
+    end
 
     def setup_claude_code_paths
       @claude_code_config_path = File.join(Dir.home, ".claude")
