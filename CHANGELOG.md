@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.8]
+
+### Fixed
+- Fixed content loss after a self-closing `toc` macro, a regression introduced in 5.2.7
+  - Confluence emits body-less macros in self-closing form, so `[^>]*>` consumed the `/` and the tag was treated as an opening tag
+  - The strip then ran forward to the next unrelated macro's `</ac:structured-macro>` and deleted everything in between
+  - The `toc` regex now matches both tag forms, and the closing-tag form is barred from crossing another `<ac:structured-macro>` tag
+
 ## [5.2.7]
 
 ### Fixed

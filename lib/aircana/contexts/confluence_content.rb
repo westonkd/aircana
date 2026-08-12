@@ -61,8 +61,11 @@ module Aircana
         # so the generic strip-and-preserve step below can't match them and
         # would otherwise span into an unrelated later macro's body, deleting
         # everything in between.
+        # Confluence emits body-less macros in self-closing form, so match that
+        # form on its own and bar the closing-tag form from crossing into
+        # another <ac:structured-macro>.
         cleaned.gsub!(
-          %r{<ac:structured-macro[^>]*ac:name="toc"[^>]*>.*?</ac:structured-macro>}m, ""
+          %r{<ac:structured-macro[^>]*ac:name="toc"[^>]*?(?:/>|>(?:(?!<ac:structured-macro).)*?</ac:structured-macro>)}m, ""
         )
 
         # Strip other structured macros but preserve rich text body content.
