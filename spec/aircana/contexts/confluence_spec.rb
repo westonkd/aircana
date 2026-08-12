@@ -445,6 +445,38 @@ RSpec.describe Aircana::Contexts::Confluence do
 
       expect(result).to include("<blockquote><p>Panel content right after toc</p></blockquote>")
     end
+
+    it "does not delete content after a self-closing toc macro" do
+      html = '<ac:structured-macro ac:name="toc" ac:schema-version="1" ac:macro-id="d4e5f6"/>' \
+             "<h1>Section Heading</h1>" \
+             "<p>THIS CONTENT MUST SURVIVE</p>" \
+             '<ac:structured-macro ac:name="jira" ac:schema-version="1">' \
+             '<ac:parameter ac:name="key">PROJ-123</ac:parameter>' \
+             "</ac:structured-macro>" \
+             "<p>After the jira macro</p>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("<h1>Section Heading</h1>")
+      expect(result).to include("THIS CONTENT MUST SURVIVE")
+      expect(result).to include("After the jira macro")
+      expect(result).not_to include("ac:structured-macro")
+    end
+
+    it "still preserves a later macro's rich-text-body after a self-closing toc macro" do
+      html = '<ac:structured-macro ac:name="toc" ac:schema-version="1" ac:macro-id="d4e5f6"/>' \
+             "<p>Intro paragraph</p>" \
+             '<ac:structured-macro ac:name="expand" ac:schema-version="1">' \
+             '<ac:parameter ac:name="title">Later section</ac:parameter>' \
+             "<ac:rich-text-body><p>Expand content</p></ac:rich-text-body>" \
+             "</ac:structured-macro>"
+
+      result = confluence.send(:preprocess_confluence_macros, html)
+
+      expect(result).to include("Intro paragraph")
+      expect(result).to include("<p>Expand content</p>")
+      expect(result).not_to include("ac:structured-macro")
+    end
   end
 
   describe "checksum optimization" do
